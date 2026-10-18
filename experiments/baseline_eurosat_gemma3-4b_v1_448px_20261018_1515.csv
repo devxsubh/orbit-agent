@@ -1,0 +1,11 @@
+file,truth,guess,correct,answer,seconds,photo_bytes,label_bytes
+AnnualCrop_656.jpg,AnnualCrop,Forest,False,forest,6.28,3015,6
+Forest_1409.jpg,Forest,Forest,True,forest,6.31,2517,6
+HerbaceousVegetation_1090.jpg,HerbaceousVegetation,Forest,False,forest,6.16,3149,6
+Highway_2011.jpg,Highway,Highway,True,highway or road,6.22,3578,7
+Industrial_1901.jpg,Industrial,Residential,False,residential houses,6.18,4650,11
+Pasture_141.jpg,Pasture,SeaLake,False,sea or lake,6.56,3359,7
+PermanentCrop_1512.jpg,PermanentCrop,Forest,False,forest,6.2,3931,6
+Residential_1376.jpg,Residential,Highway,False,highway or road,6.34,4340,7
+River_759.jpg,River,Forest,False,forest,6.09,2902,6
+SeaLake_1319.jpg,SeaLake,Forest,False,forest,6.03,1359,6

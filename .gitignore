@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Big files: keep out of git
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+papers/**/*.pdf
+
+# Experiment outputs (keep summaries, skip heavy files)
+experiments/**/*.npy
+experiments/**/*.tif
+
+# Mac / editors
+.DS_Store
+.vscode/
+.env

@@ -1,0 +1,101 @@
+file,truth,guess,correct,answer,seconds,photo_bytes,label_bytes
+AnnualCrop_656.jpg,AnnualCrop,Forest,False,forest,6.45,3015,6
+AnnualCrop_1409.jpg,AnnualCrop,AnnualCrop,True,farmland with seasonal crops,6.49,3254,10
+AnnualCrop_1090.jpg,AnnualCrop,Forest,False,forest,5.96,3659,6
+AnnualCrop_2011.jpg,AnnualCrop,Pasture,False,pasture for animals,6.12,3340,7
+AnnualCrop_1901.jpg,AnnualCrop,Forest,False,forest,5.98,3225,6
+AnnualCrop_1821.jpg,AnnualCrop,Pasture,False,pasture for animals,6.06,3240,7
+AnnualCrop_1512.jpg,AnnualCrop,AnnualCrop,True,farmland with seasonal crops,6.05,3525,10
+AnnualCrop_1376.jpg,AnnualCrop,Forest,False,forest,5.9,3210,6
+AnnualCrop_793.jpg,AnnualCrop,Forest,False,forest,5.84,3267,6
+AnnualCrop_308.jpg,AnnualCrop,Forest,False,forest,5.86,3455,6
+Forest_1319.jpg,Forest,Forest,True,forest,5.94,2387,6
+Forest_475.jpg,Forest,Forest,True,forest,6.06,2687,6
+Forest_2554.jpg,Forest,Forest,True,forest,5.96,2454,6
+Forest_1115.jpg,Forest,Forest,True,forest,5.94,3422,6
+Forest_1108.jpg,Forest,Forest,True,forest,6.04,2651,6
+Forest_1343.jpg,Forest,Forest,True,forest,6.08,2581,6
+Forest_1804.jpg,Forest,Forest,True,forest,5.94,2862,6
+Forest_1856.jpg,Forest,SeaLake,False,sea or lake,6.04,2956,7
+Forest_2861.jpg,Forest,SeaLake,False,sea or lake,6.02,2824,7
+Forest_517.jpg,Forest,Forest,True,forest,5.88,2691,6
+HerbaceousVegetation_1096.jpg,HerbaceousVegetation,Highway,False,highway or road,6.05,3577,7
+HerbaceousVegetation_367.jpg,HerbaceousVegetation,River,False,river,5.99,4298,5
+HerbaceousVegetation_1731.jpg,HerbaceousVegetation,Highway,False,highway or road,6.04,4135,7
+HerbaceousVegetation_938.jpg,HerbaceousVegetation,Forest,False,forest,5.96,2814,6
+HerbaceousVegetation_694.jpg,HerbaceousVegetation,Forest,False,forest,5.92,3104,6
+HerbaceousVegetation_884.jpg,HerbaceousVegetation,Forest,False,forest,6.04,3282,6
+HerbaceousVegetation_307.jpg,HerbaceousVegetation,Forest,False,forest,6.04,3743,6
+HerbaceousVegetation_2545.jpg,HerbaceousVegetation,Forest,False,forest,6.03,3909,6
+HerbaceousVegetation_1810.jpg,HerbaceousVegetation,Forest,False,forest,5.92,4286,6
+HerbaceousVegetation_2654.jpg,HerbaceousVegetation,Forest,False,forest,5.81,3324,6
+Highway_920.jpg,Highway,Highway,True,highway or road,6.04,4460,7
+Highway_2023.jpg,Highway,Forest,False,forest,5.89,3625,6
+Highway_1021.jpg,Highway,Highway,True,highway or road,5.93,4201,7
+Highway_1587.jpg,Highway,Residential,False,residential houses,5.92,4237,11
+Highway_306.jpg,Highway,AnnualCrop,False,farmland with seasonal crops,6.02,3790,10
+Highway_2252.jpg,Highway,Highway,True,highway or road,5.95,4157,7
+Highway_2022.jpg,Highway,Forest,False,forest,5.85,3893,6
+Highway_1571.jpg,Highway,Industrial,False,industrial buildings,5.92,4506,10
+Highway_1792.jpg,Highway,Forest,False,forest,5.8,3691,6
+Highway_2239.jpg,Highway,AnnualCrop,False,farmland with seasonal crops,6.02,3945,10
+Industrial_1375.jpg,Industrial,Residential,False,residential houses,5.85,4621,11
+Industrial_134.jpg,Industrial,Industrial,True,industrial buildings,5.87,4340,10
+Industrial_24.jpg,Industrial,Industrial,True,industrial buildings,5.94,4734,10
+Industrial_1355.jpg,Industrial,Industrial,True,industrial buildings,5.86,4530,10
+Industrial_2321.jpg,Industrial,Residential,False,residential houses,5.83,4617,11
+Industrial_2266.jpg,Industrial,Residential,False,residential houses,5.87,4679,11
+Industrial_974.jpg,Industrial,Residential,False,residential houses,5.86,4658,11
+Industrial_1974.jpg,Industrial,Industrial,True,industrial buildings,5.9,4438,10
+Industrial_1158.jpg,Industrial,Industrial,True,industrial buildings,5.94,4571,10
+Industrial_441.jpg,Industrial,Industrial,True,industrial buildings,5.96,4411,10
+Pasture_1988.jpg,Pasture,Forest,False,forest,5.84,3049,6
+Pasture_1228.jpg,Pasture,AnnualCrop,False,farmland with seasonal crops,5.93,3194,10
+Pasture_992.jpg,Pasture,HerbaceousVegetation,False,grassland or shrubs,5.9,2232,20
+Pasture_899.jpg,Pasture,Forest,False,forest,5.78,3388,6
+Pasture_1697.jpg,Pasture,HerbaceousVegetation,False,grassland or shrubs,5.88,2967,20
+Pasture_1143.jpg,Pasture,Forest,False,forest,5.82,2428,6
+Pasture_215.jpg,Pasture,HerbaceousVegetation,False,grassland or shrubs,5.91,3386,20
+Pasture_1539.jpg,Pasture,Forest,False,forest,5.83,3375,6
+Pasture_727.jpg,Pasture,Pasture,True,pasture for animals,5.99,3324,7
+Pasture_357.jpg,Pasture,HerbaceousVegetation,False,grassland or shrubs,6.03,3614,20
+PermanentCrop_2331.jpg,PermanentCrop,Forest,False,forest,5.98,4310,6
+PermanentCrop_877.jpg,PermanentCrop,Industrial,False,industrial buildings,6.0,2897,10
+PermanentCrop_1707.jpg,PermanentCrop,AnnualCrop,False,farmland with seasonal crops,6.14,4145,10
+PermanentCrop_1254.jpg,PermanentCrop,Highway,False,highway or road,6.01,3689,7
+PermanentCrop_1167.jpg,PermanentCrop,Highway,False,highway or road,6.02,3357,7
+PermanentCrop_1839.jpg,PermanentCrop,Forest,False,forest,5.9,4031,6
+PermanentCrop_2065.jpg,PermanentCrop,Forest,False,forest,5.89,3762,6
+PermanentCrop_1292.jpg,PermanentCrop,Forest,False,forest,6.19,3573,6
+PermanentCrop_1857.jpg,PermanentCrop,AnnualCrop,False,farmland with seasonal crops,6.3,4215,10
+PermanentCrop_1370.jpg,PermanentCrop,AnnualCrop,False,farmland with seasonal crops,6.11,4239,10
+Residential_24.jpg,Residential,Forest,False,forest,5.92,4317,6
+Residential_2022.jpg,Residential,Industrial,False,industrial buildings,6.0,4334,10
+Residential_2670.jpg,Residential,Residential,True,residential houses,6.0,4405,11
+Residential_641.jpg,Residential,Highway,False,highway or road,6.29,4998,7
+Residential_2343.jpg,Residential,Forest,False,forest,6.15,4005,6
+Residential_1599.jpg,Residential,Forest,False,forest,6.16,4039,6
+Residential_2363.jpg,Residential,Residential,True,residential houses,6.72,4840,11
+Residential_2308.jpg,Residential,Highway,False,highway or road,7.02,5127,7
+Residential_1771.jpg,Residential,Forest,False,forest,7.28,4098,6
+Residential_77.jpg,Residential,Residential,True,residential houses,7.3,4156,11
+River_1983.jpg,River,Forest,False,forest,6.4,3334,6
+River_1261.jpg,River,Forest,False,forest,6.29,3468,6
+River_995.jpg,River,River,True,river,7.35,2956,5
+River_1629.jpg,River,River,True,river,7.25,2945,5
+River_717.jpg,River,Forest,False,forest,6.41,3197,6
+River_1900.jpg,River,Forest,False,forest,7.08,3014,6
+River_1600.jpg,River,SeaLake,False,sea or lake,7.99,3116,7
+River_452.jpg,River,Forest,False,forest,6.09,3150,6
+River_2398.jpg,River,HerbaceousVegetation,False,grassland or shrubs,6.42,3575,20
+River_1994.jpg,River,Pasture,False,pasture for animals,6.52,3261,7
+SeaLake_658.jpg,SeaLake,SeaLake,True,sea or lake,6.4,1662,7
+SeaLake_835.jpg,SeaLake,SeaLake,True,sea or lake,6.75,1364,7
+SeaLake_351.jpg,SeaLake,SeaLake,True,- sea or lake,6.32,1594,7
+SeaLake_1808.jpg,SeaLake,AnnualCrop,False,farmland with seasonal crops,6.52,1539,10
+SeaLake_822.jpg,SeaLake,Forest,False,forest,6.04,1260,6
+SeaLake_2194.jpg,SeaLake,Forest,False,forest,6.44,1756,6
+SeaLake_1204.jpg,SeaLake,Forest,False,forest,6.48,1477,6
+SeaLake_1843.jpg,SeaLake,Forest,False,forest,6.19,1575,6
+SeaLake_1116.jpg,SeaLake,SeaLake,True,sea or lake,6.37,1436,7
+SeaLake_2161.jpg,SeaLake,Pasture,False,pasture for animals,6.22,1455,7

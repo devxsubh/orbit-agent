@@ -1,0 +1,33 @@
+file,truth,guess,correct,answer,seconds,photo_bytes,label_bytes
+airport_6.jpg,Airport,Airport,True,airport,34.21,452360,7
+bareland_288.jpg,BareLand,BareLand,True,bare land,11.93,269834,8
+baseballfield_50.jpg,BaseballField,BaseballField,True,baseball field,9.96,92609,13
+beach_170.jpg,Beach,Beach,True,beach,6.69,159028,5
+bridge_265.jpg,Bridge,Bridge,True,bridge,11.74,277934,6
+center_253.jpg,Center,Industrial,False,industrial area,7.28,501138,10
+church_164.jpg,Church,Church,True,church,6.36,136038,6
+commercial_287.jpg,Commercial,Center,False,city center,6.54,380780,6
+denseresidential_30.jpg,DenseResidential,DenseResidential,True,dense residential area,8.13,796102,16
+desert_183.jpg,Desert,Desert,True,desert,7.04,300556,6
+farmland_322.jpg,Farmland,Farmland,True,farmland,6.77,459965,8
+forest_195.jpg,Forest,Forest,True,forest,6.45,358300,6
+industrial_13.jpg,Industrial,Parking,False,parking lot,6.44,422615,7
+meadow_199.jpg,Meadow,Meadow,True,meadow,6.55,160703,6
+mediumresidential_133.jpg,MediumResidential,SparseResidential,False,sparse residential area,7.1,442292,17
+mountain_200.jpg,Mountain,Mountain,True,mountain,6.62,87482,8
+park_317.jpg,Park,Park,True,park,6.58,478234,4
+parking_358.jpg,Parking,Parking,True,parking lot,6.51,396848,7
+playground_15.jpg,Playground,Stadium,False,stadium,7.66,111402,7
+pond_96.jpg,Pond,Pond,True,pond,6.89,102325,4
+port_238.jpg,Port,Port,True,port,6.38,69102,4
+railwaystation_142.jpg,RailwayStation,Parking,False,"parking lot
+railway station
+viaduct",7.79,422266,7
+resort_133.jpg,Resort,Resort,True,resort,6.81,160816,6
+river_288.jpg,River,River,True,river,6.6,105244,5
+school_148.jpg,School,School,True,school,6.6,276471,6
+sparseresidential_236.jpg,SparseResidential,Forest,False,forest,6.72,759921,6
+square_231.jpg,Square,Park,False,park,6.49,452356,4
+stadium_198.jpg,Stadium,Stadium,True,stadium,6.62,268333,7
+storagetanks_56.jpg,StorageTanks,StorageTanks,True,storage tanks,6.49,361422,12
+viaduct_366.jpg,Viaduct,Viaduct,True,viaduct,6.51,387983,7

@@ -1,0 +1,12 @@
+# Orbit + data
+skyfield        # where the satellite is, when it can talk to Earth
+numpy
+pandas
+pillow          # images
+rasterio        # Sentinel-2 satellite files (GeoTIFF / JP2)
+matplotlib
+tqdm
+
+# AI model + agent
+ollama          # runs Gemma 3 locally
+langgraph       # the decision loop

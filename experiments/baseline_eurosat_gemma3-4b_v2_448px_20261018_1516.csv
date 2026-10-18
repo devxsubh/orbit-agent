@@ -1,0 +1,11 @@
+file,truth,guess,correct,answer,seconds,photo_bytes,label_bytes
+AnnualCrop_656.jpg,AnnualCrop,AnnualCrop,True,farmland with seasonal crops,7.11,3015,10
+Forest_1409.jpg,Forest,Residential,False,residential houses,6.99,2517,11
+HerbaceousVegetation_1090.jpg,HerbaceousVegetation,AnnualCrop,False,farmland with seasonal crops,6.95,3149,10
+Highway_2011.jpg,Highway,Forest,False,forest,7.11,3578,6
+Industrial_1901.jpg,Industrial,PermanentCrop,False,orchards or vineyards,6.89,4650,13
+Pasture_141.jpg,Pasture,PermanentCrop,False,orchards or vineyards,6.73,3359,13
+PermanentCrop_1512.jpg,PermanentCrop,AnnualCrop,False,farmland with seasonal crops,6.98,3931,10
+Residential_1376.jpg,Residential,River,False,river,6.8,4340,5
+River_759.jpg,River,Forest,False,forest,7.05,2902,6
+SeaLake_1319.jpg,SeaLake,AnnualCrop,False,farmland with seasonal crops,6.78,1359,10

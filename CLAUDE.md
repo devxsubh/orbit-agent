@@ -1,0 +1,151 @@
+# orbit-agent: context for Claude
+
+Last updated: 18 Oct 2026 (handed over from a claude.ai chat).
+
+## How to work with me (Subham)
+- **Write simple, short, plain language.** Dense answers are hard for me to read.
+- **Plan before big changes.** Show the plan, then build.
+- Test code before handing it over. If the model or network isn't reachable, test with fakes and say so.
+- Keep code beginner-friendly: clear names, short comments, plain-English terminal output.
+
+About me: final-year CS (AI) student at Newton School of Technology (Rishihood University), Delhi.
+Good at Python, LangGraph + Claude agents, RAG, full-stack.
+Goals for this project:
+1. A **research paper** (helps with M.Tech / foreign university applications)
+2. A **demo** for internships at Indian spacetech companies (target: strong internship by end of Nov 2026)
+3. Maybe a startup later, but research + career first
+
+## The project in one line
+An AI agent that runs on a satellite and decides what is worth sending down to Earth.
+
+### The problem
+Satellites take far more photos than they can send down. They only get a few minutes of
+connection per ground-station pass. Most data is wasted or arrives late.
+
+### The idea
+A small vision-language model (Gemma 3) on the satellite looks at each photo. An agent decides:
+- **Skip** (clouds, nothing useful)
+- **Describe** in short text
+- **Send** a crop or the full image
+- **Not sure?** Send the full image instead of guessing (abstain)
+
+### Research question
+With a fixed downlink budget, how much useful information can an onboard agent deliver,
+compared with sending everything raw?
+
+**Main metric:** correct information reaching the ground per MB sent (`src/eval/metrics.py`).
+**Baselines to beat:** send everything raw / cloud filter only / caption every photo (NAVI-style) /
+smart compression (FOOL paper).
+
+### Method: "a satellite on your desk"
+- Laptop now, Jetson Orin Nano later (same chip family as flight hardware)
+- Free Sentinel-2 photos replayed as if the satellite is flying over Earth
+- Real orbit data (TLE) decides when the satellite can talk to the ground
+
+## Why this topic (research done Oct 2026)
+- **NAVI-Orbital (NASA JPL, arXiv 2606.18271):** on 16 Apr 2026, the first vision-language model
+  ran fully in orbit. Gemma 3 on Loft Orbital's YAM-9 satellite, Nvidia Jetson Orin AGX, 4-bit GGUF.
+  88.16% zero-shot accuracy on the AID dataset. **Our project builds on this.**
+- Others: DPhi Space ran a Liquid AI VLM in orbit (Apr 2026). ImageSat ran Gemma-3n on a Jetson Orin
+  satellite processor at under 2 s per image (SmallSat 2026).
+- **Downlink bottleneck:** Kodan (ASPLOS 2023) cut downlink by about 89-97% with onboard processing.
+- **Open problems** (On-Orbit Space AI survey, arXiv 2604.16518): trust and verification in orbit,
+  what to send down, multi-satellite tasking, power limits, conservative fallback modes.
+- **Indian companies doing this:** SkyServe (Bengaluru, STORM onboard AI platform, tested with NASA JPL),
+  Pixxel ($100M round, hyperspectral, Pathfinder orbital data centre with Sarvam),
+  GalaxEye (Jetson Orin onboard), Digantara, SatSure.
+- **Honest business read:** few buyers (satellite operators, government, defence). Treat this as
+  research + career first.
+- Alternative considered and set aside: Lean theorem-proving agents (Meta's AutoformBench, Oct 2026).
+
+## My setup (MacBook, Apple Silicon)
+- Project folder: `~/Downloads/SubhamPortfolio/orbit-agent` (not a git repo yet)
+- **Python:** system Python is 3.9 (too old). The `.venv` uses pyenv Python 3.12.0.
+  Always run `source .venv/bin/activate` first.
+- **Ollama** is installed and a Gemma 3 model is downloaded. Check the exact name with `ollama list`.
+  The code auto-picks any `gemma3*` model if `gemma3:4b` isn't found.
+- **My network blocks some sites** (connection reset): `celestrak.org`, `par.nsf.gov`.
+  These work: arXiv, Zenodo, PyPI, Hugging Face, `tle.ivanstanojevic.me`.
+  Note: `tle.ivanstanojevic.me` rejects a "Mozilla" User-Agent (406). Use `orbit-agent/0.1`.
+- No Jetson yet. Laptop only for now.
+
+## Files
+| Path | What it is | Status |
+|---|---|---|
+| `README.md` | Project overview, 10-week plan, status checklist | done |
+| `papers/README.md` | Reading list in order, with links | done |
+| `papers/download_papers.sh` | Downloads the free PDFs | done (8 of 10 downloaded) |
+| `notes/_template.md` | Template for paper notes | done |
+| `setup.sh` | One-time setup: finds Python 3.10+, makes `.venv`, installs packages | done, works |
+| `check_setup.py` | Health check | done |
+| `src/orbit/contact_windows.py` | Orbit simulator: passes over a ground station, data budget per pass, map | **done, works on my Mac** |
+| `src/orbit/backup_tles.txt` | Built-in orbit data (17 Oct 2026) for Sentinel-2A/2B, offline fallback | done |
+| `src/data/eurosat.py` | Downloads EuroSAT (Zenodo, about 95 MB), picks random photos per class | written, tested with fakes only |
+| `src/data/aid.py` | AID (NAVI's dataset) from Hugging Face `blanchon/AID`. Downloads only the sampled photos (10/class = 85 MB) | **done, works** |
+| `src/model/vlm.py` | Talks to Gemma 3 via Ollama: `ask`, `describe_image`, `classify_image`, `check_ready` | written, tested with fakes only |
+| `src/eval/baseline_eurosat.py` | Zero-shot accuracy test on EuroSAT, saves CSV to `experiments/` | written, tested with fakes only |
+| `src/eval/metrics.py` | `accuracy`, `useful_per_mb` | done |
+| `src/agent/decide.py` | Agent decisions (SKIP / DESCRIBE / SEND_CROP / SEND_FULL) | **stub, TODO** |
+
+## How to run
+```bash
+cd ~/Downloads/SubhamPortfolio/orbit-agent
+source .venv/bin/activate
+
+python -m src.orbit.contact_windows                      # passes over Delhi, next 24 h, + map
+python -m src.orbit.contact_windows --station svalbard   # other options: --hours, --rate, --satellite
+python -m src.data.eurosat                               # download photos (once)
+python -m src.eval.baseline_eurosat --per-class 3        # quick model test (30 photos)
+python -m src.eval.baseline_eurosat                      # full baseline (100 photos)
+python -m src.eval.baseline_eurosat --prompt v2          # prompt v0 (numbers), v1 (names, shuffled), v2 (names + descriptions)
+python -m src.eval.baseline_eurosat --size 896           # image size (default 448)
+python -m src.data.aid                                   # download 300 AID photos (once)
+python -m src.eval.baseline_eurosat --dataset aid        # AID baseline (300 photos, ~40 min)
+python -m src.model.vlm path/to/photo.jpg                # describe one photo
+python check_setup.py                                    # health check
+```
+
+## Results so far
+- **Orbit simulator (real run on my Mac, 18 Oct 2026):** Sentinel-2A passes over Delhi 2 times a day,
+  about 10.4 min each (around 10:56 AM and 10:36 PM IST). That's about 7.7 GB per pass at 100 Mbps.
+  The satellite can talk to Delhi only **1.4%** of the time. Svalbard (polar) gets about 10%.
+- **EuroSAT baseline v0 (18 Oct 2026, gemma3:4b, 100 photos):** 26% accuracy (3 big groups: 66%),
+  6.1 s per photo. Strong answer bias: "Forest" 40x, "SeaLake" 20x. 4 blue-water photos got
+  "none of the options" → `unknown`. Full details in README. Mac has **8 GB RAM**, so gemma3:12b won't fit.
+- **Prompt test (100 photos):** v0 26%, **v1 29% (best, keep)**, v2 22%. Prompts barely matter
+  (within chance at n=100). "Forest" bias stays. v2's descriptions made water photos 0/10.
+- **Image size test (v1, 100 photos):** 224 px 32%, 448 px 29%, 896 px 30%. Same answer on 87-88%
+  of photos, so no real effect. Keep 448. Every tweak so far: 22-32%. Limit = 64x64 photos and/or 4B model.
+- **AID quick test (30 photos, 1/class, v1):** **73%**, 8.1 s per photo. Sharp photos fix most of it;
+  the 4B model is fine. Mistakes are close classes (medium vs sparse residential, etc.).
+  `baseline_eurosat.py` now takes `--dataset eurosat|aid` (name kept so old commands still work).
+  **Next: full AID run (300 photos), then a second model (see README "Next step").**
+
+## Key decisions
+- Satellites: Sentinel-2A (NORAD 40697), Sentinel-2B (42063). Default ground station: Delhi.
+- Orbit data order: fresh saved copy, then CelesTrak, then TLE API mirror, then old saved copy,
+  then built-in backup. TLE lines are checksum-checked.
+- Downlink speed default: 100 Mbps (assumption for a small satellite; change with `--rate`).
+- Times are shown in IST.
+- Photos: EuroSAT RGB (Zenodo record 7711810). 64x64 pixels, so they're upscaled to 448x448 for the model.
+- Classification prompt: numbered list of 10 classes, "reply with only the number", temperature 0.
+  The parser looks for a number first, then for the label words.
+- Compare our accuracy with NAVI's 88.16% on AID (AID photos are sharper than EuroSAT's).
+- Big files stay out of git: `data/raw/*` and the PDFs are in `.gitignore`.
+
+## Next steps
+1. Run the EuroSAT baseline on the real model. Record accuracy, speed and mix-ups in README.
+2. Improve the baseline: try prompts, image size, other models (e.g. gemma3n), and the AID dataset.
+3. Connect orbit + photos: replay photos along the satellite's real path (`ground_track()`),
+   so the "satellite" sees a queue of photos between ground passes.
+4. Build agent v1 in `src/agent/` with LangGraph: skip / describe / crop / full + "not sure"
+   (abstain), with a downlink budget taken from the contact windows.
+5. Experiments vs the baselines. Main number: correct info per MB sent.
+6. Demo video by about week 4 (for internship applications). Paper draft by week 10.
+
+## Papers (in `papers/`, reading order in `papers/README.md`)
+01 Orbital Edge Computing (Denby & Lucia 2020) · 02 Kodan (2023, **missing**: my network blocks NSF,
+download by hand from https://par.nsf.gov/servlets/purl/10424445) · 03 Φ-Sat-1 (**paywalled**, IEEE TGRS 2022)
+· 04 NAVI-Orbital ⭐ · 05 FOOL · 06 On-Orbit Space AI survey ⭐ · 07 ML in embedded space systems review
+· 08 Gemma 3 report · 09 AID dataset · 10 EuroSAT dataset.
+Read first: 01, 04, 06.
