@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- orbit-agent mark: Earth, the orbit, the satellite (blue) and the ground station (orange) -->
+  <rect width="64" height="64" rx="14" fill="#0e1013"/>
+  <ellipse cx="32" cy="34" rx="25" ry="9" fill="none" stroke="#4da3ff" stroke-width="2"
+           stroke-opacity="0.55" transform="rotate(-28 32 34)"/>
+  <circle cx="32" cy="34" r="13" fill="#1a1d22" stroke="#4b515c" stroke-width="2"/>
+  <line x1="54" y1="22.3" x2="36.5" y2="25" stroke="#4da3ff" stroke-width="1.6" stroke-dasharray="2.5 2"/>
+  <path d="M34 22.5 L36.5 25 L34 27.5 L31.5 25 Z" fill="#ff9a3c"/>
+  <circle cx="54" cy="22.3" r="4" fill="#4da3ff" stroke="#ffffff" stroke-width="1.5"/>
+</svg>

@@ -1,10 +1,10 @@
-# orbit-agent
+# <img src="docs/logo.svg" width="36" alt=""> orbit-agent
 
 **An AI agent that runs on a satellite and decides what is worth sending down to Earth.**
 
 Gemma 3 (4B) vision-language model · real orbit data · Python · laptop now, Jetson Orin later
 
-![Demo: the satellite passes over Delhi and sends down what the agent chose](docs/demo_pass.png)
+![Demo: during a pass over Delhi only 41% of the waiting photos fit as full photos, but the agent still sends a label for every one](docs/demo_pass.png)
 
 ## Main result
 
@@ -113,17 +113,29 @@ With real JPEG sizes, the agent could look better just by picking photos that co
 - **One satellite, one ground station, one day.** Skipping cloudy photos and sending crops are not built yet.
 
 ## Demo
-A web page that plays back one day of the satellite: the orbit, each photo and the agent's choice,
-the queue waiting onboard, each downlink pass, and the running score (raw vs agent v3).
-It uses the final test photos.
+A web page that plays back one day of the satellite, using the final test photos.
 
 ```bash
 python -m src.demo.export      # makes demo/data.js and demo/thumbs/ (photos)
 open demo/index.html           # opens in the browser, no server needed
 ```
 
-Space = play/pause. "Next pass" jumps ahead. Passes slow down automatically.
+What you see:
+- **Map:** the satellite's path, the night side (no photos there), and the zone where it can talk to Delhi.
+  Each photo is a dot: filled green = sure, amber ring = not sure.
+- **Timeline:** drag it, or click a pass time (orange) to jump there.
+- **Score so far:** one bar for "send all raw" and one for agent v3, on the same downlink.
+  Green = correct info, red = wrong label, striped = nothing arrived.
+- **Latest photo:** what the model says, the chance it's right (50% line = sure from here),
+  the agent's choice, and the real answer (for checking only).
+- **Waiting on the satellite:** photos queued for the next pass, and how many fit as full photos.
+  During a pass you see the full photos going down.
+
+Keys: Space = play/pause, N = next pass, ← → = 1 minute. Passes play slower so you can watch them.
 `index.html?t=60000` opens at a set time (seconds after the start).
+
+**Colours mean the same thing everywhere** (demo and charts): blue = satellite and downlink,
+orange = ground station and passes, green = sure or correct, amber = not sure, red = wrong, grey = send all raw.
 
 ![End of the day: agent v3 92% vs raw 60%](docs/demo_end.png)
 
