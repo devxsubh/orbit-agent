@@ -6,6 +6,8 @@ Source: Hugging Face copy at huggingface.co/datasets/blanchon/AID
 
 Download 10 photos per class:
     python -m src.data.aid
+Download the test set (photos 11-20 of each class, never used for tuning):
+    python -m src.data.aid --skip 10
 """
 from __future__ import annotations
 
@@ -95,11 +97,13 @@ def _download(label: str, name: str) -> Path:
     return dest
 
 
-def sample(per_class: int = 10, seed: int = 42) -> list[tuple[Path, str]]:
+def sample(per_class: int = 10, seed: int = 42, skip: int = 0) -> list[tuple[Path, str]]:
     """Pick `per_class` random photos from each class, download them, return (path, label).
 
     Each class is shuffled with its own seed, so a small run (--per-class 3)
     uses the same first photos as a big run (--per-class 10).
+    skip: leave out the first photos of each class. skip=10 gives a NEW test set
+          (photos 11-20) that never overlaps the first 10.
     """
     from tqdm import tqdm
 
@@ -107,7 +111,7 @@ def sample(per_class: int = 10, seed: int = 42) -> list[tuple[Path, str]]:
     for label, names in file_list().items():
         names = list(names)
         random.Random(f"{seed}-{label}").shuffle(names)
-        picked += [(label, n) for n in names[:per_class]]
+        picked += [(label, n) for n in names[skip:skip + per_class]]
 
     photos = []
     for label, name in tqdm(picked, desc="AID photos", unit="photo"):
@@ -116,6 +120,12 @@ def sample(per_class: int = 10, seed: int = 42) -> list[tuple[Path, str]]:
 
 
 if __name__ == "__main__":
-    photos = sample(10)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Download AID photos")
+    parser.add_argument("--per-class", type=int, default=10)
+    parser.add_argument("--skip", type=int, default=0, help="10 = the test set (photos 11-20)")
+    args = parser.parse_args()
+    photos = sample(args.per_class, skip=args.skip)
     size_mb = sum(p.stat().st_size for p, _ in photos) / 1e6
     print(f"\nReady: {len(photos)} AID photos ({size_mb:.0f} MB) in {AID_DIR}")

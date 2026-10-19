@@ -1,0 +1,32 @@
+file,truth,guess,correct,answer,seconds,photo_bytes,label_bytes,several,margin,agree,majority,other_guesses
+airport_44.jpg,Airport,Airport,True,airport,26.1,282726,7,False,13.752,3,Airport,Airport|Airport
+bareland_200.jpg,BareLand,BareLand,True,bare land,15.32,317513,8,False,6.788,3,BareLand,BareLand|BareLand
+baseballfield_91.jpg,BaseballField,BaseballField,True,baseball field,11.51,108709,13,False,8.566,3,BaseballField,BaseballField|BaseballField
+beach_329.jpg,Beach,Beach,True,beach,13.02,273992,5,False,14.144,3,Beach,Beach|Beach
+bridge_343.jpg,Bridge,Bridge,True,bridge,7.55,139155,6,False,9.197,3,Bridge,Bridge|Bridge
+center_182.jpg,Center,Industrial,False,industrial area,6.12,325255,10,False,0.973,1,Airport,Airport|Airport
+church_240.jpg,Church,Center,False,city center,6.54,323645,6,False,19.038,3,Center,Center|Center
+commercial_81.jpg,Commercial,Center,False,city center,7.71,157355,6,False,4.573,2,Center,RailwayStation|Center
+denseresidential_133.jpg,DenseResidential,DenseResidential,True,dense residential area,9.66,802721,16,False,16.633,1,DenseResidential,MediumResidential|SparseResidential
+desert_240.jpg,Desert,Desert,True,desert,16.96,226100,6,False,4.165,2,Desert,BareLand|Desert
+farmland_9.jpg,Farmland,Farmland,True,farmland,17.27,82322,8,False,22.648,3,Farmland,Farmland|Farmland
+forest_80.jpg,Forest,Forest,True,forest,15.07,129799,6,False,19.169,3,Forest,Forest|Forest
+industrial_312.jpg,Industrial,Industrial,True,industrial area,8.85,339907,10,False,8.424,3,Industrial,Industrial|Industrial
+meadow_34.jpg,Meadow,Farmland,False,farmland,25.68,160000,8,False,22.67,3,Farmland,Farmland|Farmland
+mediumresidential_226.jpg,MediumResidential,MediumResidential,True,medium residential area,22.28,731453,17,False,17.615,2,MediumResidential,SparseResidential|MediumResidential
+mountain_18.jpg,Mountain,Mountain,True,mountain,9.7,397879,8,False,11.985,3,Mountain,Mountain|Mountain
+park_12.jpg,Park,Park,True,park,11.08,309973,4,False,10.138,3,Park,Park|Park
+parking_116.jpg,Parking,Parking,True,parking lot,11.63,394351,7,False,17.397,3,Parking,Parking|Parking
+playground_258.jpg,Playground,Stadium,False,stadium,21.34,153091,7,False,13.485,3,Stadium,Stadium|Stadium
+pond_336.jpg,Pond,StorageTanks,False,storage tanks,11.7,178058,12,False,6.335,2,StorageTanks,Pond|StorageTanks
+port_269.jpg,Port,Port,True,port,6.98,43376,4,False,12.009,3,Port,Port|Port
+railwaystation_191.jpg,RailwayStation,Farmland,False,farmland,6.78,350691,8,False,16.964,2,Farmland,RailwayStation|Farmland
+resort_62.jpg,Resort,Resort,True,resort,6.68,184459,6,False,2.614,1,Resort,SparseResidential|Parking
+river_366.jpg,River,Forest,False,forest,8.61,324586,6,False,0.832,2,Forest,Forest|River
+school_265.jpg,School,School,True,school stadium baseball field parking lot,7.91,374015,6,False,1.734,1,BaseballField,BaseballField|BaseballField
+sparseresidential_134.jpg,SparseResidential,SparseResidential,True,sparse residential area,7.11,686778,17,False,0.653,2,SparseResidential,BareLand|SparseResidential
+square_278.jpg,Square,Parking,False,parking lot,9.77,273245,7,False,17.084,1,Parking,Stadium|Park
+stadium_177.jpg,Stadium,Stadium,True,stadium,8.38,274606,7,False,7.533,3,Stadium,Stadium|Stadium
+storagetanks_292.jpg,StorageTanks,StorageTanks,True,"storage tanks
+industrial area",8.2,435597,12,True,2.798,3,StorageTanks,StorageTanks|StorageTanks
+viaduct_87.jpg,Viaduct,Farmland,False,farmland,6.54,203158,8,False,14.13,1,Farmland,Viaduct|Meadow

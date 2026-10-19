@@ -69,6 +69,25 @@ def ask(image_path, prompt: str, model: str = MODEL, size: int = 448) -> str:
     return response["message"]["content"].strip()
 
 
+def ask_detailed(image_path, prompt: str, model: str = MODEL, size: int = 448,
+                 top_logprobs: int = 10) -> tuple[str, list]:
+    """Like ask(), but also returns how sure the model was of each word (token).
+
+    Returns (answer, tokens). Each token is (text, log-probability, [(other text, log-prob), ...]):
+    the word it picked, and the other words it almost picked.
+    """
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt, "images": [_prepare(image_path, size)]}],
+        options={"temperature": 0},
+        logprobs=True,
+        top_logprobs=top_logprobs,
+    )
+    tokens = [(t.token, t.logprob, [(a.token, a.logprob) for a in (t.top_logprobs or [])])
+              for t in (response.logprobs or [])]
+    return response.message.content.strip(), tokens
+
+
 def describe_image(image_path, model: str = MODEL) -> str:
     return ask(image_path, "Describe this satellite photo in one sentence.", model)
 
@@ -113,6 +132,13 @@ def build_prompt(version: str, names: list[str], labels: dict[str, str],
     raise ValueError(f"Unknown prompt version: {version}. Use one of {PROMPTS}")
 
 
+def shuffled_names(labels: dict[str, str], image_path, seed: int = 42) -> list[str]:
+    """Label order for one photo (v1/v2). Same seed + same photo -> same order."""
+    names = list(labels)
+    random.Random(f"{seed}-{Path(image_path).name}").shuffle(names)
+    return names
+
+
 def classify_image(image_path, labels: dict[str, str], model: str = MODEL,
                    prompt: str = "v0", size: int = 448,
                    details: dict[str, str] | None = None,
@@ -126,9 +152,7 @@ def classify_image(image_path, labels: dict[str, str], model: str = MODEL,
 
     Returns (label it picked, its raw answer, seconds taken).
     """
-    names = list(labels)
-    if prompt != "v0":
-        random.Random(f"{seed}-{Path(image_path).name}").shuffle(names)
+    names = list(labels) if prompt == "v0" else shuffled_names(labels, image_path, seed)
     question = build_prompt(prompt, names, labels, details, intro)
 
     start = time.perf_counter()
@@ -178,6 +202,19 @@ def _parse_words(answer: str, names: list[str], labels: dict[str, str]) -> str:
             if match and match.start() < best_pos:
                 best_pos, best_name = match.start(), name
     return best_name
+
+
+def labels_mentioned(answer: str, labels: dict[str, str]) -> list[str]:
+    """All different labels in a reply, e.g. "parking lot\\nviaduct" -> [Parking, Viaduct].
+
+    More than one means the model isn't sure. Each line (or comma part) is read separately.
+    """
+    found = []
+    for part in re.split(r"[\n,;/]", answer):
+        name = _parse_words(part, list(labels), labels)
+        if name != "unknown" and name not in found:
+            found.append(name)
+    return found
 
 
 if __name__ == "__main__":

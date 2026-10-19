@@ -81,11 +81,15 @@ smart compression (FOOL paper).
 | `src/orbit/contact_windows.py` | Orbit simulator: passes over a ground station, data budget per pass, map | **done, works on my Mac** |
 | `src/orbit/backup_tles.txt` | Built-in orbit data (17 Oct 2026) for Sentinel-2A/2B, offline fallback | done |
 | `src/data/eurosat.py` | Downloads EuroSAT (Zenodo, about 95 MB), picks random photos per class | written, tested with fakes only |
+| `src/orbit/replay.py` | Photo replay: photo every 30 s in daylight along `ground_track()`, queued per Delhi pass, budget = pass time x `--rate`. `build_replay()` returns windows for the agent | **done, works** |
 | `src/data/aid.py` | AID (NAVI's dataset) from Hugging Face `blanchon/AID`. Downloads only the sampled photos (10/class = 85 MB) | **done, works** |
 | `src/model/vlm.py` | Talks to Gemma 3 via Ollama: `ask`, `describe_image`, `classify_image`, `check_ready` | written, tested with fakes only |
 | `src/eval/baseline_eurosat.py` | Zero-shot accuracy test on EuroSAT, saves CSV to `experiments/` | written, tested with fakes only |
 | `src/eval/metrics.py` | `accuracy`, `useful_per_mb` | done |
-| `src/agent/decide.py` | Agent decisions (SKIP / DESCRIBE / SEND_CROP / SEND_FULL) | **stub, TODO** |
+| `src/agent/decide.py` | Agent v1 + v2 (plain rules): label every photo, then full photos by priority. v2 uses the better "not sure" rule and sends "unsure: X?" labels (DESCRIBE_UNSURE). Also baselines `plan_raw`, `plan_caption` | **done, works** (SKIP / SEND_CROP not used yet) |
+| `src/eval/run_agent.py` | Runs all 4 policies (raw, caption, agent v1, agent v2) on the replay at several `--rates`, uses saved answers (no model calls). Prefers the full "not sure" test CSV if it exists. Saves `experiments/agents_*.csv` | **done, works** |
+| `src/model/confidence.py` | "Not sure" signals: A several answers, B confused classes (from first 300), C answer margin (logprobs), D agreement over 3 shuffled asks. `is_unsure()` = agent v2 rule (A or D or margin < 8), fixed before testing | **done, works** |
+| `src/eval/confidence_test.py` | Runs the signals on 300 NEW AID photos (11-20/class), resumable; prints AUROC + wrong caught at 10/20/30% flagged; saves CSV + chart. `--evaluate-only` | **done, works** (quick 30-photo run done) |
 
 ## How to run
 ```bash
@@ -101,6 +105,10 @@ python -m src.eval.baseline_eurosat --prompt v2          # prompt v0 (numbers), 
 python -m src.eval.baseline_eurosat --size 896           # image size (default 448)
 python -m src.data.aid                                   # download 300 AID photos (once)
 python -m src.eval.baseline_eurosat --dataset aid        # AID baseline (300 photos, ~40 min)
+python -m src.orbit.replay --start 2026-10-19T00:00      # photo replay: queue + budget per pass (--rate, --every, --hours)
+python -m src.data.aid --skip 10                         # download the 300 NEW test photos (once, done)
+python -m src.eval.confidence_test                       # "not sure" signals on 300 new photos (~2 h, resumable)
+python -m src.eval.run_agent                             # raw vs caption-all vs agent v1 vs v2 at 0.25-4 Mbps (seconds)
 python -m src.model.vlm path/to/photo.jpg                # describe one photo
 python check_setup.py                                    # health check
 ```
@@ -119,7 +127,34 @@ python check_setup.py                                    # health check
 - **AID quick test (30 photos, 1/class, v1):** **73%**, 8.1 s per photo. Sharp photos fix most of it;
   the 4B model is fine. Mistakes are close classes (medium vs sparse residential, etc.).
   `baseline_eurosat.py` now takes `--dataset eurosat|aid` (name kept so old commands still work).
-  **Next: full AID run (300 photos), then a second model (see README "Next step").**
+- **AID full baseline (300 photos, v1):** **61%** (182/300), 7.5 s per photo. NAVI: 88.16% (check their
+  model size/prompt/split in paper 04 before comparing). Quick-test 30 photos gave identical answers
+  (repeatable). Worst: Playground→Stadium 9/10, SparseResidential→Forest 9/10. In 5/300 replies the
+  model listed several answers = uncertainty signal, useful for the agent's abstain rule.
+- **Photo replay (24 h from 2026-10-19 00:00 UTC, Delhi, 1 Mbps, every 30 s, daylight):** 3 passes,
+  1,088 photos (308 MB) waiting; raw sending fits only 58%. Default rate is 1 Mbps because AID
+  photos are ~0.3 MB JPEGs (at 100 Mbps everything fits). Photo content is a random AID stand-in.
+- **Decision (Subham):** photos that don't fit in a pass are **dropped** (fresh data first), not carried over.
+- **Agent v1 (same replay, 1,088 photos):** correct info, agent vs raw: 0.25 Mbps 67% vs 15%,
+  1 Mbps 82% vs 60%, 2 Mbps 93% vs 89%, 4 Mbps both 100%. Caption-all: 61% but 429 wrong labels.
+  "Correct per MB" alone is misleading (caption-all ~13,700/MB): always report correct + wrong + MB.
+  Weak spot: wrong labels (193 at 1 Mbps). Only 5/300 answers "unsure", so abstain rule barely fires.
+  Scoring assumes a full photo = correct (ground can see it). INTERESTING = human-activity AID classes.
+- **Next: "not sure" step (plan in README).** Ollama 0.40.6 returns logprobs (`"logprobs": true,
+  "top_logprobs": N` in /api/chat) → token-probability confidence is free. Test on 300 NEW AID photos
+  (11–20 per class); first 300 only for learning rules. **Decision (Subham): an "unsure"-marked label
+  scores as no info** (neither correct nor wrong).
+- **"Not sure" step built (19 Oct 2026).** Logprobs are saturated (model ~100% sure even when wrong),
+  so margin C uses the gap to the best DIFFERENT token. Quick test (30 new photos, 10 wrong, too few):
+  AUROC A 0.47, B 0.74, C 0.46, D 0.69. v2 rule flags 53%, catches 7/10 wrong. Replay at 1 Mbps:
+  v2 88 wrong labels vs v1 204, but correct info 75% vs 81% (trust vs coverage trade-off).
+  Majority vote of 3 asks didn't help accuracy. **Don't retune the rule on test photos.**
+- **"Not sure" full test (300 new photos, 19 Oct 2026):** accuracy 65% (194/300). AUROC: A 0.50,
+  **B 0.79 (best, free)**, C 0.58, D 0.70, combined 0.69. D: all 3 agree -> 77% right, else ~32%.
+  v2 rule (A or D or margin<8) flags 45%, catches 62% of wrong; it left out B and included weak C.
+  Replay (new photos): 1 Mbps v1 85% correct / 158 wrong, v2 82% / 106 wrong (+90 unsure);
+  2 Mbps v2 best on both (96% / 44 wrong); 0.25 Mbps v2 too careful (54% vs v1 72%, but 140 vs 310 wrong).
+  Raw at 1 Mbps 59%. Test photos 11-20 are now "used": a v3 rule must be judged on photos 21-30.
 
 ## Key decisions
 - Satellites: Sentinel-2A (NORAD 40697), Sentinel-2B (42063). Default ground station: Delhi.
