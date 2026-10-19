@@ -1,0 +1,65 @@
+# Puts the demo page online with GitHub Pages: https://devxsubh.github.io/orbit-agent/
+# Runs on every push to main, or by hand (Actions tab -> "Demo page" -> Run workflow).
+name: Demo page
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Allowed to publish to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy at a time; a newer push cancels an older one
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      # Only Pillow is needed (no model, no orbit maths)
+      - name: Install Pillow
+        run: pip install pillow
+
+      # Keep the downloaded AID photos between runs (new download only if data.js changes)
+      - name: Reuse downloaded photos
+        uses: actions/cache@v4
+        with:
+          path: data/raw/aid
+          key: aid-photos-${{ hashFiles('demo/data.js') }}
+          restore-keys: aid-photos-
+
+      - name: Build the site
+        run: python -m src.demo.build_site
+
+      - name: Set up Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

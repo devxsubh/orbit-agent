@@ -90,6 +90,7 @@ smart compression (FOOL paper).
 | `src/eval/run_agent.py` | Runs all 4 policies (raw, caption, agent v1, agent v2) on the replay at several `--rates`, uses saved answers (no model calls). Prefers the full "not sure" test CSV if it exists. Saves `experiments/agents_*.csv` | **done, works** |
 | `src/model/confidence.py` | "Not sure" signals: A several answers, B confused classes (from first 300), C answer margin (logprobs), D agreement over 3 shuffled asks. `is_unsure()` = agent v2 rule (A or D or margin < 8), fixed before testing | **done, works** |
 | `src/demo/export.py` + `demo/index.html` | Demo: export runs replay + agent once → `demo/data.js` + `demo/thumbs/` (gitignored); index.html plays it back (map with night side, timeline, stacked score bars, photo card, queue). Rebuilt minimal on 19 Oct (plain words, IBM Plex fonts, `docs/logo.svg`); tested with puppeteer (all controls, phone width) | **done, works** |
+| `src/demo/build_site.py` + `.github/workflows/pages.yml` | Website for GitHub Pages: copies demo page + saved `data.js` + logo into `site/` (gitignored), remakes the thumbnails from Hugging Face (retries 3x). No model or replay. Workflow runs on push to `main`. Live at https://devxsubh.github.io/orbit-agent/ | **done, tested locally** (clean copy, all files load) |
 | `src/eval/plot_results.py` | Draws `docs/results.png` (dark, demo colours) from the final agents CSV, for the README | **done, works** |
 | `docs/` | README images (`results.png`, `demo_pass.png`, `demo_end.png`) + `experiment_log.md` (full history, moved out of README on 19 Oct) | done |
 | `src/eval/confidence_test.py` | Runs the signals on 300 NEW AID photos (11-20/class), resumable; prints AUROC + wrong caught at 10/20/30% flagged; saves CSV + chart. `--evaluate-only` | **done, works** (quick 30-photo run done) |
@@ -116,6 +117,7 @@ python -m src.eval.confidence_test --skip 20             # FINAL test photos 21-
 python -m src.eval.run_agent --sizes jpeg               # use real JPEG sizes (default: equal sizes)
 python -m src.demo.export && open demo/index.html       # demo page (dark theme, colour = meaning)
 python -m src.eval.plot_results                          # redraw docs/results.png for the README
+python -m src.demo.build_site && python -m http.server -d site   # website as GitHub Pages shows it
 python -m src.model.vlm path/to/photo.jpg                # describe one photo
 python check_setup.py                                    # health check
 ```

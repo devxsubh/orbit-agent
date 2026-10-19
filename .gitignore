@@ -21,3 +21,6 @@ experiments/**/*.tif
 
 # Demo photo thumbnails (made by python -m src.demo.export; AID licence unclear)
 demo/thumbs/
+
+# Website built by python -m src.demo.build_site (GitHub Pages)
+site/
