@@ -18,3 +18,6 @@ experiments/**/*.tif
 .DS_Store
 .vscode/
 .env
+
+# Demo photo thumbnails (made by python -m src.demo.export; AID licence unclear)
+demo/thumbs/
