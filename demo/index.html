@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>orbit-agent demo</title>
+<style>
+  :root {
+    --bg: #121211; --surface: #1a1a19; --surface-2: #232321; --border: #33332f;
+    --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e86;
+    --blue: #3987e5;    /* satellite, full photos */
+    --orange: #d95926;  /* ground station, wrong labels */
+    --aqua: #199e70;    /* sure labels, correct info */
+    --yellow: #c98500;  /* unsure labels */
+    --ocean: #161615; --land: #2c2c29; --grid: #23231f;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .brand h1 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: .2px; }
+  .brand p { margin: 2px 0 0; color: var(--text-2); font-size: 12.5px; }
+  .clock { margin-left: auto; text-align: right; }
+  .clock .time { font-size: 20px; font-weight: 600; }
+  .clock .sub { font-size: 12px; color: var(--text-2); }
+  .status { padding: 5px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+    border: 1px solid var(--border); color: var(--text-2); white-space: nowrap; }
+  .status.live { background: rgba(57,135,229,.16); border-color: var(--blue); color: #a9cdf5; }
+  .controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  button, select { font: inherit; color: var(--text); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 11px; cursor: pointer; }
+  button:hover, select:hover { border-color: var(--muted); }
+  button.primary { background: var(--blue); border-color: var(--blue); color: #fff; min-width: 76px; }
+  label.check { display: flex; gap: 6px; align-items: center; color: var(--text-2); font-size: 12.5px; }
+
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 16px; padding: 16px 20px; align-items: start; }
+  .about { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+  .about b { color: var(--text-2); font-weight: 600; }
+  .map-wrap { position: relative; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px; min-width: 0; }
+  canvas#map { width: 100%; display: block; border-radius: 6px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; color: var(--text-2); font-size: 12.5px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .timeline { margin-top: 10px; position: relative; }
+  .timeline input { width: 100%; accent-color: var(--blue); }
+  .pass-marks { position: relative; height: 8px; margin: 0 8px; }
+  .pass-marks i { position: absolute; top: 0; height: 8px; min-width: 3px; background: var(--blue);
+    border-radius: 2px; opacity: .8; }
+  .timeline .ends { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2px 8px; color: var(--muted); font-size: 11.5px; }
+
+  aside { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+  .card h2 { margin: 0 0 10px; font-size: 12px; font-weight: 600; color: var(--text-2);
+    text-transform: uppercase; letter-spacing: .6px; }
+  .photo-row { display: flex; gap: 12px; }
+  .photo-row img { width: 112px; height: 112px; border-radius: 8px; object-fit: cover;
+    background: var(--surface-2); flex: none; }
+  .photo-info { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .says { font-size: 16px; font-weight: 600; }
+  .bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+  .bar > div { height: 100%; border-radius: 3px; }
+  .small { font-size: 12.5px; color: var(--text-2); }
+  .chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    border: 1px solid; width: fit-content; }
+  .chip.sure { color: #7fd6b4; border-color: var(--aqua); background: rgba(25,158,112,.14); }
+  .chip.unsure { color: #f0c66b; border-color: var(--yellow); background: rgba(201,133,0,.14); }
+  .decision { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .truth { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+  .big { font-size: 26px; font-weight: 650; }
+  .queue-line { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .fit-bar { position: relative; height: 10px; background: var(--surface-2); border-radius: 5px; overflow: hidden; margin: 8px 0 6px; }
+  .fit-bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--blue); border-radius: 5px; }
+
+  table.score { width: 100%; border-collapse: collapse; }
+  table.score th { text-align: right; font-size: 12px; color: var(--text-2); font-weight: 600; padding: 0 0 6px; }
+  table.score th:first-child, table.score td:first-child { text-align: left; }
+  table.score td { padding: 5px 0; border-top: 1px solid var(--border); text-align: right; }
+  table.score td.agent { font-weight: 650; }
+  .note { margin-top: 8px; color: var(--muted); font-size: 11.5px; }
+
+  .downlink { margin-top: 10px; display: none; }
+  .downlink.on { display: block; }
+  .strip { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-top: 6px; }
+  .strip img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; background: var(--surface-2); }
+
+  .missing { max-width: 560px; margin: 80px auto; padding: 24px; text-align: center; }
+  code { background: var(--surface-2); padding: 2px 6px; border-radius: 4px; }
+
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; padding: 12px 16px; }
+    header { padding: 12px 16px; }
+    .clock { margin-left: 0; text-align: left; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>orbit-agent</h1>
+    <p>An AI on the satellite decides what is worth sending down to Earth</p>
+  </div>
+  <div class="controls">
+    <button id="play" class="primary">Play</button>
+    <select id="speed" aria-label="Speed">
+      <option value="60">1 min / s</option>
+      <option value="300">5 min / s</option>
+      <option value="900" selected>15 min / s</option>
+      <option value="3600">1 hour / s</option>
+    </select>
+    <button id="next">Next pass ⏭</button>
+    <button id="restart">Restart</button>
+    <label class="check"><input type="checkbox" id="slow" checked> Slow down during passes</label>
+  </div>
+  <span id="status" class="status">Out of contact</span>
+  <div class="clock">
+    <div id="time" class="time num">--</div>
+    <div id="clock-sub" class="sub">--</div>
+  </div>
+</header>
+
+<main id="app">
+  <section class="map-wrap">
+    <canvas id="map" aria-label="World map with the satellite's path"></canvas>
+    <div class="timeline">
+      <div class="pass-marks" id="pass-marks"></div>
+      <input type="range" id="scrub" min="0" max="86400" step="30" value="0" aria-label="Time">
+      <div class="ends"><span id="t-start">--</span><span>Blue marks = passes over the ground station</span><span id="t-end">--</span></div>
+    </div>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--blue)"></i>Satellite</span>
+      <span><i class="dot" style="background:var(--orange)"></i>Ground station + contact zone</span>
+      <span><i class="dot" style="background:var(--aqua)"></i>Photo: model is sure</span>
+      <span><i class="dot" style="background:var(--yellow)"></i>Photo: model is not sure</span>
+    </div>
+    <div class="about" id="about"></div>
+  </section>
+
+  <aside>
+    <div class="card">
+      <h2>Latest photo onboard</h2>
+      <div class="photo-row">
+        <img id="ph-img" alt="">
+        <div class="photo-info">
+          <div class="small">Model says</div>
+          <div id="ph-says" class="says">--</div>
+          <div class="small">Chance it's right: <b id="ph-chance" class="num">--</b></div>
+          <div class="bar"><div id="ph-bar"></div></div>
+          <span id="ph-chip" class="chip sure">--</span>
+        </div>
+      </div>
+      <div class="decision small">At the next pass: <b id="ph-decision">--</b></div>
+      <div id="ph-truth" class="truth">--</div>
+    </div>
+
+    <div class="card">
+      <h2>Waiting onboard</h2>
+      <div class="queue-line"><span class="big num" id="q-count">0</span><span class="small num" id="q-mb">0 MB</span></div>
+      <div class="small" id="q-next">--</div>
+      <div class="fit-bar"><div class="fill" id="q-fit"></div></div>
+      <div class="small" id="q-fit-text">--</div>
+      <div class="downlink" id="downlink">
+        <div class="small"><b style="color:var(--text)">Sending now:</b> <span id="dl-text">--</span></div>
+        <div class="strip" id="dl-strip"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Reached the ground so far</h2>
+      <table class="score">
+        <thead><tr><th></th><th>Send all raw</th><th id="agent-name">Agent</th></tr></thead>
+        <tbody>
+          <tr><td>Correct info</td><td class="num" id="s-raw-correct">0</td><td class="num agent" id="s-ag-correct">0</td></tr>
+          <tr><td>Wrong labels</td><td class="num" id="s-raw-wrong">0</td><td class="num agent" id="s-ag-wrong">0</td></tr>
+          <tr><td>"Unsure" labels</td><td class="num">0</td><td class="num agent" id="s-ag-unsure">0</td></tr>
+          <tr><td>Full photos</td><td class="num" id="s-raw-full">0</td><td class="num agent" id="s-ag-full">0</td></tr>
+        </tbody>
+      </table>
+      <div class="note" id="s-note">--</div>
+    </div>
+  </aside>
+</main>
+
+<script src="data.js"></script>
+<script>
+"use strict";
+const D = window.DEMO;
+if (!D) {
+  document.getElementById("app").outerHTML =
+    '<div class="missing"><h2>No demo data yet</h2><p>From the orbit-agent folder, run:</p>' +
+    '<p><code>python -m src.demo.export</code></p><p>Then reload this page.</p></div>';
+  throw new Error("demo/data.js missing");
+}
+
+// ---- Data ----
+const F = D.photo_fields;
+const photos = D.photos.map(row => Object.fromEntries(F.map((k, i) => [k, row[i]])))
+  .sort((a, b) => a.t - b.t);
+const passes = D.passes;
+const DAY = D.hours * 3600;
+const START = new Date(D.start_utc).getTime();
+const label = name => D.labels[name] || name;
+const DECISION_TEXT = {
+  F: "send the full photo", L: "send the label only", U: 'send an "unsure" label',
+  D: "dropped (doesn't fit)", "": "waits for tomorrow's pass",
+};
+document.getElementById("agent-name").textContent = D.agent.replace("agent", "Agent");
+document.getElementById("about").innerHTML =
+  `<b>What's real:</b> the orbit (${D.satellite}, real orbit data), pass times over ${D.station}, ` +
+  `and the downlink budget (${D.rate_mbps} Mbps). <b>What's a stand-in:</b> each photo is an AID ` +
+  `aerial photo (${D.photo_kb} KB each), not the real view at that spot. The model's answers are real ` +
+  `(gemma3:4b on a laptop, ${D.photo_set}).`;
+
+// ---- Time state ----
+let t = 0, playing = false, lastFrame = null;
+const $ = id => document.getElementById(id);
+const scrub = $("scrub");
+scrub.max = DAY;
+
+function fmt(t, opts) {
+  return new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", ...opts }).format(new Date(START + t * 1000));
+}
+const clockText = t => fmt(t, { hour: "2-digit", minute: "2-digit", hour12: false });
+$("t-start").textContent = fmt(0, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }) + " IST";
+$("t-end").textContent = fmt(DAY, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }) + " IST";
+for (const p of passes) {
+  const mark = document.createElement("i");
+  mark.style.left = (p.start / DAY * 100) + "%";
+  mark.style.width = ((p.end - p.start) / DAY * 100) + "%";
+  $("pass-marks").appendChild(mark);
+}
+
+const currentPass = () => passes.findIndex(p => p.start <= t && t <= p.end);
+const nextPass = () => passes.findIndex(p => p.end > t);
+
+// ---- Map ----
+const canvas = $("map"), ctx = canvas.getContext("2d");
+const base = document.createElement("canvas"), bctx = base.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+const X = lon => (lon + 180) / 360 * W;
+const Y = lat => (90 - lat) / 180 * H;
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+function drawBase() {
+  base.width = W * DPR; base.height = H * DPR;
+  bctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  bctx.fillStyle = css("--ocean"); bctx.fillRect(0, 0, W, H);
+  bctx.strokeStyle = css("--grid"); bctx.lineWidth = 1;
+  for (let lon = -180; lon <= 180; lon += 30) { bctx.beginPath(); bctx.moveTo(X(lon), 0); bctx.lineTo(X(lon), H); bctx.stroke(); }
+  for (let lat = -90; lat <= 90; lat += 30) { bctx.beginPath(); bctx.moveTo(0, Y(lat)); bctx.lineTo(W, Y(lat)); bctx.stroke(); }
+  bctx.fillStyle = css("--land");
+  for (const ring of D.land) {
+    bctx.beginPath();
+    ring.forEach(([lon, lat], i) => {
+      if (i && Math.abs(lon - ring[i - 1][0]) > 180) {
+        // Ring wraps around the date line (Antarctica): run along the map edge
+        const edge = ring[i - 1][0] > 0 ? 180 : -180;
+        bctx.lineTo(X(edge), Y(-90)); bctx.lineTo(X(-edge), Y(-90));
+      }
+      i ? bctx.lineTo(X(lon), Y(lat)) : bctx.moveTo(X(lon), Y(lat));
+    });
+    bctx.closePath(); bctx.fill();
+  }
+}
+
+function resize() {
+  DPR = window.devicePixelRatio || 1;
+  W = canvas.clientWidth; H = Math.round(W / 2);
+  canvas.width = W * DPR; canvas.height = H * DPR; canvas.style.height = H + "px";
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  drawBase(); render();
+}
+
+function trackLine(from, to, style, width, dash) {
+  ctx.strokeStyle = style; ctx.lineWidth = width; ctx.setLineDash(dash || []);
+  ctx.beginPath();
+  let prev = null;
+  for (const [pt, lat, lon] of D.track) {
+    if (pt < from || pt > to) continue;
+    if (!prev || Math.abs(lon - prev) > 180) ctx.moveTo(X(lon), Y(lat)); else ctx.lineTo(X(lon), Y(lat));
+    prev = lon;
+  }
+  ctx.stroke(); ctx.setLineDash([]);
+}
+
+function satPosition(t) {
+  const i = Math.min(D.track.length - 2, Math.floor(t / 30));
+  const [t0, la0, lo0] = D.track[i], [t1, la1, lo1] = D.track[i + 1];
+  const f = (t - t0) / (t1 - t0 || 1);
+  let dlon = lo1 - lo0; if (dlon > 180) dlon -= 360; if (dlon < -180) dlon += 360;
+  let lon = lo0 + dlon * f; if (lon > 180) lon -= 360; if (lon < -180) lon += 360;
+  return [la0 + (la1 - la0) * f, lon];
+}
+
+function render() {
+  if (!W) return;
+  ctx.drawImage(base, 0, 0, W, H);
+  const live = currentPass() >= 0;
+
+  // Contact zone: where the satellite is above 10° for the station (about 18.75° around it)
+  const zone = 18.75, sx = X(D.station_lon), sy = Y(D.station_lat);
+  ctx.beginPath();
+  ctx.ellipse(sx, sy, zone / Math.cos(D.station_lat * Math.PI / 180) / 360 * W, zone / 180 * H, 0, 0, 2 * Math.PI);
+  ctx.fillStyle = live ? "rgba(217,89,38,.20)" : "rgba(217,89,38,.08)"; ctx.fill();
+  ctx.strokeStyle = "rgba(217,89,38,.55)"; ctx.lineWidth = 1; ctx.stroke();
+
+  // Photos taken in the last 3 hours
+  const taken = photos.filter(p => p.t <= t && p.t > t - 3 * 3600);
+  for (const p of taken) {
+    const age = (t - p.t) / (3 * 3600);
+    ctx.globalAlpha = 0.85 - 0.6 * age;
+    ctx.fillStyle = p.chance >= 50 ? css("--aqua") : css("--yellow");
+    ctx.beginPath(); ctx.arc(X(p.lon), Y(p.lat), 2.2, 0, 2 * Math.PI); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Path: next 100 min dashed, last 100 min solid
+  trackLine(t, t + 6000, "rgba(57,135,229,.35)", 1.5, [4, 4]);
+  trackLine(t - 6000, t, "rgba(57,135,229,.85)", 2);
+
+  const [lat, lon] = satPosition(t);
+  if (live) {
+    ctx.strokeStyle = css("--blue"); ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(X(lon), Y(lat)); ctx.lineTo(sx, sy); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // Ground station
+  ctx.fillStyle = css("--orange");
+  ctx.beginPath(); ctx.arc(sx, sy, 5, 0, 2 * Math.PI); ctx.fill();
+  ctx.strokeStyle = css("--surface"); ctx.lineWidth = 2; ctx.stroke();
+  ctx.font = "600 12px system-ui, sans-serif"; ctx.fillStyle = css("--text");
+  ctx.textAlign = "right"; ctx.fillText(D.station, sx - 9, sy + 4); ctx.textAlign = "left";
+
+  // Satellite (with a soft glow)
+  const pulse = 9 + 3 * Math.sin(performance.now() / 250);
+  ctx.fillStyle = "rgba(57,135,229,.25)";
+  ctx.beginPath(); ctx.arc(X(lon), Y(lat), pulse, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillStyle = css("--blue");
+  ctx.beginPath(); ctx.arc(X(lon), Y(lat), 5.5, 0, 2 * Math.PI); ctx.fill();
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = css("--text"); ctx.fillText(D.satellite, X(lon) + 10, Y(lat) - 9);
+}
+
+// ---- Side panel ----
+let shownPhoto = null, shownStrip = "";
+
+function updatePanel() {
+  const live = currentPass();
+  const status = $("status");
+  status.textContent = live >= 0 ? `Talking to ${D.station}` : "Out of contact";
+  status.classList.toggle("live", live >= 0);
+  $("time").textContent = clockText(t) + " IST";
+  $("clock-sub").textContent = fmt(t, { day: "numeric", month: "short" }) +
+    ` · ${D.satellite} · downlink ${D.rate_mbps} Mbps`;
+  scrub.value = t;
+
+  // Latest photo
+  let last = null;
+  for (const p of photos) { if (p.t > t) break; last = p; }
+  if (last !== shownPhoto) {
+    shownPhoto = last;
+    if (last) {
+      $("ph-img").src = "thumbs/" + D.images[last.img];
+      $("ph-img").alt = "Photo: " + label(last.truth);
+      $("ph-says").textContent = label(last.guess);
+      $("ph-chance").textContent = last.chance + "%";
+      const bar = $("ph-bar"), sure = last.chance >= 50;
+      bar.style.width = last.chance + "%";
+      bar.style.background = sure ? "var(--aqua)" : "var(--yellow)";
+      const chip = $("ph-chip");
+      chip.textContent = sure ? "Sure" : "Not sure";
+      chip.className = "chip " + (sure ? "sure" : "unsure");
+      $("ph-decision").textContent = DECISION_TEXT[last.agent];
+      const ok = last.truth === last.guess;
+      $("ph-truth").textContent = `Truth: ${label(last.truth)} ${ok ? "✓" : "✗"}  (for checking only; the satellite doesn't know this)`;
+    } else {
+      $("ph-says").textContent = "No photos yet";
+    }
+  }
+
+  // Queue for the next pass
+  const ni = nextPass();
+  const kb = D.photo_kb;
+  if (ni >= 0) {
+    const p = passes[ni];
+    const waiting = photos.filter(ph => ph.window === ni && ph.t <= t).length;
+    const mb = waiting * kb / 1000;
+    $("q-count").textContent = waiting.toLocaleString();
+    $("q-mb").textContent = `${mb.toFixed(1)} MB as full photos`;
+    $("q-next").textContent = live >= 0
+      ? `Pass in progress: ends ${clockText(p.end)} IST`
+      : `Next pass: ${clockText(p.start)} IST (in ${Math.round((p.start - t) / 60)} min, ${Math.round((p.end - p.start) / 60)} min long)`;
+    const share = mb ? Math.min(1, p.budget_mb / mb) : 1;
+    $("q-fit").style.width = (share * 100) + "%";
+    $("q-fit-text").textContent = mb
+      ? `This pass can send ${p.budget_mb} MB: ${Math.round(share * 100)}% of the waiting photos fit.`
+      : `This pass can send ${p.budget_mb} MB.`;
+  } else {
+    const waiting = photos.filter(ph => ph.window === -1 && ph.t <= t).length;
+    $("q-count").textContent = waiting.toLocaleString();
+    $("q-mb").textContent = `${(waiting * kb / 1000).toFixed(1)} MB`;
+    $("q-next").textContent = "No more passes today. These wait for tomorrow.";
+    $("q-fit").style.width = "0%"; $("q-fit-text").textContent = "";
+  }
+
+  // Downlink in progress: show the full photos going down
+  const dl = $("downlink");
+  dl.classList.toggle("on", live >= 0);
+  if (live >= 0) {
+    const p = passes[live];
+    const progress = (t - p.start) / (p.end - p.start);
+    const full = photos.filter(ph => ph.window === live && ph.agent === "F");
+    const sent = Math.ceil(progress * full.length);
+    $("dl-text").textContent = `${sent} of ${full.length} full photos, plus short labels for the rest`;
+    const recent = full.slice(Math.max(0, sent - 16), sent);
+    const key = live + ":" + sent;
+    if (key !== shownStrip) {
+      shownStrip = key;
+      $("dl-strip").innerHTML = recent.map(ph =>
+        `<img src="thumbs/${D.images[ph.img]}" alt="${label(ph.truth)}" title="${label(ph.truth)}">`).join("");
+    }
+  }
+
+  // Score so far (a pass in progress counts in proportion)
+  const sum = { agent_correct: 0, agent_wrong: 0, agent_unsure: 0, agent_full: 0,
+                raw_correct: 0, raw_wrong: 0, raw_full: 0 };
+  let photosSent = 0;
+  for (const p of passes) {
+    const f = t >= p.end ? 1 : t > p.start ? (t - p.start) / (p.end - p.start) : 0;
+    for (const k in sum) sum[k] += f * p[k];
+    if (f > 0) photosSent += f * photos.filter(ph => ph.window === passes.indexOf(p)).length;
+  }
+  const n = Math.round(photosSent) || 0;
+  const pct = v => n ? ` (${Math.round(v / n * 100)}%)` : "";
+  const r = Math.round;
+  $("s-raw-correct").textContent = r(sum.raw_correct).toLocaleString() + pct(sum.raw_correct);
+  $("s-ag-correct").textContent = r(sum.agent_correct).toLocaleString() + pct(sum.agent_correct);
+  $("s-raw-wrong").textContent = r(sum.raw_wrong);
+  $("s-ag-wrong").textContent = r(sum.agent_wrong);
+  $("s-ag-unsure").textContent = r(sum.agent_unsure);
+  $("s-raw-full").textContent = r(sum.raw_full).toLocaleString();
+  $("s-ag-full").textContent = r(sum.agent_full).toLocaleString();
+  $("s-note").textContent = n
+    ? `Out of ${n.toLocaleString()} photos taken before these passes. Same downlink budget for both.`
+    : "Nothing sent yet. Results appear during each pass.";
+}
+
+// ---- Loop and controls ----
+function frame(now) {
+  if (playing && lastFrame !== null) {
+    const real = Math.min(0.1, (now - lastFrame) / 1000);
+    let speed = Number($("speed").value);
+    if ($("slow").checked && currentPass() >= 0) speed = Math.min(speed, 60);
+    t = Math.min(DAY, t + real * speed);
+    if (t >= DAY) setPlaying(false);
+  }
+  lastFrame = now;
+  render(); updatePanel();
+  requestAnimationFrame(frame);
+}
+function setPlaying(on) { playing = on; $("play").textContent = on ? "Pause" : "Play"; }
+$("play").onclick = () => { if (t >= DAY) t = 0; setPlaying(!playing); };
+$("restart").onclick = () => { t = 0; setPlaying(false); };
+$("next").onclick = () => { const i = nextPass(); if (i >= 0) t = Math.max(t, passes[i].start - 90); };
+scrub.oninput = () => { t = Number(scrub.value); };
+document.addEventListener("keydown", e => {
+  if (e.code === "Space" && e.target.tagName !== "SELECT") { e.preventDefault(); $("play").click(); }
+});
+window.addEventListener("resize", resize);
+resize();
+const params = new URLSearchParams(location.search);
+if (params.has("t")) t = Number(params.get("t"));
+if (params.has("play")) setPlaying(true);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

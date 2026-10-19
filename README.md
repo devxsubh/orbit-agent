@@ -244,6 +244,62 @@ Change one thing at a time, on the same 100 photos, so we know what helped.
 5. ~~**AID dataset.**~~ Done: 61% on 300 photos (NAVI: 88.16%).
 6. **Better report:** a mix-up chart (confusion matrix) and group accuracy saved with each run.
 
+## Agent v3: chance-based decisions (19 Oct 2026)
+Instead of a yes/no "not sure" rule, v3 estimates **the chance each label is right** (p),
+from the free signal B (+ agreement D in full v3). It learns this on the tuning photos (11–20).
+- Label: plain if p ≥ 50%, else marked "unsure" (a label more likely wrong than right is worth less than nothing).
+- Then full photos go to where they add the most value per byte.
+- **v3-lite** = free signal only (1 model call per photo). **v3** = + agreement (3 calls).
+
+**Photo sizes matter.** With real JPEG sizes, v3 partly won by choosing photos that compress well
+(simple scenes). Real satellite tiles are all the same size. So experiments now give every photo
+the same size by default (`--sizes equal`). Earlier tables above used real JPEG sizes.
+
+Tuning photos 11–20, equal sizes (v3 learned on these, so this is NOT the final result):
+
+| Downlink | Policy | Correct info | Wrong labels |
+|---|---|---|---|
+| 0.25 Mbps | agent v1 | 72% | 304 |
+| | agent v3 | 73% | 171 |
+| 1 Mbps | agent v1 | 86% | 150 |
+| | agent v3 | 93% | 73 |
+
+### Final test (19 Oct 2026): photos 21–30, never used while building
+Files: `experiments/confidence_aid_test_gemma3-4b_r3_n10_skip20.csv` (+ `.png`),
+`experiments/agents_delhi_final_equal_20261019_1229.csv`. Model accuracy on these photos: 63%.
+
+**"Not sure" signals hold up on new photos:** B (free) 0.77, combined 0.71, D 0.68, C 0.63, A 0.50.
+
+**Main result**: same replay (1,088 photos, equal sizes), correct info / wrong labels:
+
+| Downlink | Send all raw | Caption all | Agent v1 | Agent v2 | Agent v3-lite (1 call) | **Agent v3** (3 calls) |
+|---|---|---|---|---|---|---|
+| 0.25 Mbps | 15% / 0 | 63% / 404 | **70%** / 331 | 58% / 132 | 65% / 204 | 68% / 192 |
+| 0.5 Mbps | 30% / 0 | 63% / 404 | 74% / 282 | 72% / 129 | 78% / 167 | **79%** / 164 |
+| 1 Mbps | 60% / 0 | 63% / 404 | 84% / 173 | 89% / 85 | 91% / 99 | **92%** / 90 |
+| 2 Mbps | 89% / 0 | 63% / 404 | 95% / 51 | 97% / 29 | 99% / 7 | **99%** / 6 |
+| 4 Mbps | 100% / 0 | 63% / 404 | 100% / 0 | 100% / 0 | 100% / 0 | 100% / 0 |
+
+**What we learned**
+- **At 1 Mbps, agent v3 delivers 92% correct info vs 60% for sending raw,** with the same MB, and
+  about half the wrong labels of v1 (90 vs 173).
+- **v3-lite is almost as good with no extra model calls** (91% vs 92% at 1 Mbps). The free signal
+  does most of the work. That matters on a satellite with little power.
+- **When the budget is very tight (0.25 Mbps), there's a trade-off:** v1 delivers a bit more correct info
+  (70% vs 68%), v3 sends 42% fewer wrong labels (192 vs 331). Which is better depends on how costly a wrong label is.
+- **The chances are honest on new photos:** when v3 says about 75%, 77% are right; about 94%, 91% are right.
+- When everything fits (4 Mbps), all policies are equal. The agent only helps when the downlink is the bottleneck.
+
+## Demo
+A web page that plays back one day of the satellite: orbit, photos, the agent's choices and each
+downlink pass, with "send all raw" vs the agent side by side.
+```bash
+python -m src.demo.export      # makes demo/data.js and demo/thumbs/ (photos)
+open demo/index.html           # opens in your browser; no server needed
+```
+Tips for recording: press Space to play/pause; "Next pass" jumps ahead; passes slow down automatically.
+`index.html?t=60000` opens at a set time (seconds after the start).
+
 ## Next step: better "not sure" detection (planned 18 Oct 2026)
 Goal: fewer wrong labels sent down, without losing correct info.
 
@@ -333,5 +389,7 @@ Accuracy on the new photos: **65%** (194/300), close to the first set's 61%.
 - [ ] Second model (optional)
 - [x] Photo replay along the real orbit (`python -m src.orbit.replay`)
 - [x] Agent v1, plain rules (`python -m src.eval.run_agent`): 82% vs 60% raw at 1 Mbps
+- [x] "Not sure" signals + agents v2, v3 (final test: v3 92% vs raw 60% at 1 Mbps)
+- [x] Demo page (`demo/index.html`)
 - [ ] Experiments
 - [ ] Paper draft

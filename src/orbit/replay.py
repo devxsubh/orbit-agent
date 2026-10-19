@@ -65,10 +65,13 @@ def is_daytime(when: datetime, lon: float) -> bool:
 def build_replay(sat, station: str, start: datetime, hours: float,
                  photo_pool: list[tuple[Path, str]], every_seconds: int = 30,
                  rate_mbps: float = 1.0, seed: int = 42,
-                 daytime_only: bool = True) -> tuple[list[Window], list[Photo]]:
+                 daytime_only: bool = True,
+                 photo_bytes: int | None = None) -> tuple[list[Window], list[Photo]]:
     """Simulate `hours` of flying. Returns (windows, photos left over after the last pass).
 
     photo_pool: (path, true class) pairs; each new photo picks one at random.
+    photo_bytes: give every photo this size (like raw satellite tiles, which are all the same
+                 size). None = use each JPEG's real size (simple scenes compress smaller).
     """
     end = start + timedelta(hours=hours)
     passes = contact_windows(sat, station, start, end)
@@ -82,7 +85,8 @@ def build_replay(sat, station: str, start: datetime, hours: float,
         if any(p.start <= when <= p.end for p in passes):
             continue  # busy talking to the ground during a pass
         path, truth = rng.choice(photo_pool)
-        photo = Photo(when, float(lat), float(lon), path, truth, path.stat().st_size)
+        size = photo_bytes or path.stat().st_size
+        photo = Photo(when, float(lat), float(lon), path, truth, size)
         # The photo waits for the first pass that starts after it was taken
         target = next((w for w in windows if w.downlink.start > when), None)
         (target.photos if target else left_over).append(photo)

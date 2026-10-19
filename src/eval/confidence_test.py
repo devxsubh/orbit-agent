@@ -4,9 +4,11 @@ Run from the orbit-agent folder:
     python -m src.eval.confidence_test --per-class 1    (quick test: 30 photos, ~4 min)
     python -m src.eval.confidence_test                  (test set: 300 NEW photos, ~2 hours)
     python -m src.eval.confidence_test --evaluate-only  (redo the table + chart, no model)
+    python -m src.eval.confidence_test --skip 20        (final test set: photos 21-30)
 
-Uses AID photos 11-20 of each class (never used for tuning). Safe to stop and restart:
-photos already done are kept in the CSV and skipped.
+Photo sets (per class): 1-10 = first baseline, 11-20 = tuning (--skip 10, default),
+21-30 = final test (--skip 20, never looked at while building the agent).
+Safe to stop and restart: photos already done are kept in the CSV and skipped.
 """
 from __future__ import annotations
 
@@ -27,13 +29,13 @@ FIELDS = ["file", "truth", "guess", "correct", "answer", "seconds", "photo_bytes
           "several", "margin", "agree", "majority", "other_guesses"]
 
 
-def run(model: str, per_class: int, repeats: int, out: Path) -> None:
+def run(model: str, per_class: int, repeats: int, out: Path, skip: int = 10) -> None:
     """Ask the model about every test photo; append rows to `out` (skips photos already done)."""
     done = set()
     if out.exists():
         with open(out) as f:
             done = {row["file"] for row in csv.DictReader(f)}
-    photos = [(p, t) for p, t in aid.sample(per_class, skip=10) if p.name not in done]
+    photos = [(p, t) for p, t in aid.sample(per_class, skip=skip) if p.name not in done]
     if done:
         print(f"{len(done)} photos already done, {len(photos)} to go.")
     if not photos:
@@ -176,18 +178,25 @@ def evaluate(out: Path, repeats: int) -> None:
     print(f"\nAnswers: {out}\nChart:   {chart}")
 
 
+def results_path(model: str = MODEL, repeats: int = 3, per_class: int = 10, skip: int = 10) -> Path:
+    """Where a run's answers are saved. (Photos 11-20 keep the original file name.)"""
+    tag = f"{model.replace(':', '-')}_r{repeats}_n{per_class}" + (f"_skip{skip}" if skip != 10 else "")
+    return ROOT / "experiments" / f"confidence_aid_test_{tag}.csv"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Test the 'not sure' signals on new AID photos")
     parser.add_argument("--per-class", type=int, default=10, help="test photos per class")
     parser.add_argument("--repeats", type=int, default=3, help="asks per photo (signal D)")
     parser.add_argument("--model", default=MODEL)
+    parser.add_argument("--skip", type=int, default=10,
+                        help="10 = tuning photos 11-20, 20 = final test photos 21-30")
     parser.add_argument("--evaluate-only", action="store_true", help="skip the model, redo results")
     args = parser.parse_args()
 
-    tag = f"{args.model.replace(':', '-')}_r{args.repeats}_n{args.per_class}"
-    out = ROOT / "experiments" / f"confidence_aid_test_{tag}.csv"
+    out = results_path(args.model, args.repeats, args.per_class, args.skip)
     if not args.evaluate_only:
-        run(check_ready(args.model), args.per_class, args.repeats, out)
+        run(check_ready(args.model), args.per_class, args.repeats, out, args.skip)
     if not out.exists():
         raise SystemExit(f"No results yet: {out}")
     evaluate(out, args.repeats)

@@ -1,0 +1,7 @@
+rate_mbps,policy,photos,mb_sent,full_photos,correct,wrong_labels,unsure_labels,interesting_correct,interesting_total,correct_per_mb
+1.0,send all raw,1088,183.5,642,642,0,0,436,754,3.5
+1.0,caption all,1088,0.05,0,730,358,0,499,754,15187.45
+1.0,agent v1,1088,183.44,608,930,158,0,666,754,5.07
+1.0,agent v2,1088,183.42,582,892,106,90,678,754,4.86
+1.0,agent v3-lite,1088,183.42,727,1008,44,36,687,754,5.5
+1.0,agent v3,1088,183.34,710,1010,46,32,688,754,5.51

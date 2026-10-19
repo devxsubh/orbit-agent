@@ -1,0 +1,305 @@
+file,truth,guess,correct,answer,seconds,photo_bytes,label_bytes,several,margin,agree,majority,other_guesses
+airport_248.jpg,Airport,Airport,True,airport,27.03,301533,7,False,8.522,3,Airport,Airport|Airport
+airport_99.jpg,Airport,Airport,True,airport,9.69,328286,7,False,14.464,3,Airport,Airport|Airport
+airport_34.jpg,Airport,Airport,True,airport,11.35,352287,7,False,14.757,3,Airport,Airport|Airport
+airport_322.jpg,Airport,Airport,True,airport,9.04,425352,7,False,15.934,3,Airport,Airport|Airport
+airport_201.jpg,Airport,Airport,True,airport,6.68,259306,7,False,15.308,3,Airport,Airport|Airport
+airport_244.jpg,Airport,Airport,True,airport,6.65,293417,7,False,15.691,3,Airport,Airport|Airport
+airport_310.jpg,Airport,Airport,True,airport,6.79,360013,7,False,15.06,3,Airport,Airport|Airport
+airport_177.jpg,Airport,Airport,True,airport,6.71,394266,7,False,13.032,3,Airport,Airport|Airport
+airport_127.jpg,Airport,Airport,True,airport,7.32,339729,7,False,17.402,3,Airport,Airport|Airport
+airport_108.jpg,Airport,Airport,True,airport,8.47,320820,7,False,15.412,3,Airport,Airport|Airport
+bareland_133.jpg,BareLand,BareLand,True,bare land,6.7,449535,8,False,9.003,3,BareLand,BareLand|BareLand
+bareland_254.jpg,BareLand,BareLand,True,bare land,9.35,362056,8,False,5.146,2,BareLand,Desert|BareLand
+bareland_29.jpg,BareLand,Desert,False,desert,6.28,130839,6,False,1.817,3,Desert,Desert|Desert
+bareland_207.jpg,BareLand,BareLand,True,bare land,6.42,303338,8,False,0.8,2,BareLand,BareLand|MediumResidential
+bareland_94.jpg,BareLand,BareLand,True,bare land,6.29,127550,8,False,5.515,3,BareLand,BareLand|BareLand
+bareland_127.jpg,BareLand,BareLand,True,bare land,7.52,395581,8,False,9.572,3,BareLand,BareLand|BareLand
+bareland_273.jpg,BareLand,BareLand,True,bare land,13.99,347491,8,False,10.491,2,BareLand,BareLand|Center
+bareland_69.jpg,BareLand,BareLand,True,bare land,8.24,75247,8,False,11.788,3,BareLand,BareLand|BareLand
+bareland_222.jpg,BareLand,Desert,False,desert,8.25,351069,6,False,5.653,2,Desert,BareLand|Desert
+bareland_238.jpg,BareLand,BareLand,True,bare land,7.33,307736,8,False,10.469,3,BareLand,BareLand|BareLand
+baseballfield_85.jpg,BaseballField,BaseballField,True,baseball field,8.65,104358,13,False,2.664,2,BaseballField,Park|BaseballField
+baseballfield_92.jpg,BaseballField,BaseballField,True,baseball field,6.59,105653,13,False,10.092,2,BaseballField,BaseballField|School
+baseballfield_99.jpg,BaseballField,BaseballField,True,baseball field,7.54,102352,13,False,18.13,3,BaseballField,BaseballField|BaseballField
+baseballfield_111.jpg,BaseballField,BaseballField,True,baseball field,6.32,106591,13,False,10.492,3,BaseballField,BaseballField|BaseballField
+baseballfield_20.jpg,BaseballField,BaseballField,True,baseball field,7.0,115093,13,False,3.132,3,BaseballField,BaseballField|BaseballField
+baseballfield_219.jpg,BaseballField,BaseballField,True,baseball field,6.35,344527,13,False,16.122,3,BaseballField,BaseballField|BaseballField
+baseballfield_197.jpg,BaseballField,Park,False,park,6.18,370219,4,False,8.906,1,BaseballField,BaseballField|BaseballField
+baseballfield_40.jpg,BaseballField,BaseballField,True,baseball field,6.48,105946,13,False,16.087,3,BaseballField,BaseballField|BaseballField
+baseballfield_86.jpg,BaseballField,BaseballField,True,baseball field,8.1,88056,13,False,5.578,3,BaseballField,BaseballField|BaseballField
+baseballfield_117.jpg,BaseballField,BaseballField,True,baseball field,9.93,105353,13,False,8.572,2,BaseballField,Park|BaseballField
+beach_336.jpg,Beach,Beach,True,beach,6.88,324087,5,False,13.535,3,Beach,Beach|Beach
+beach_311.jpg,Beach,Beach,True,beach,6.46,272110,5,False,15.259,3,Beach,Beach|Beach
+beach_145.jpg,Beach,Beach,True,beach,7.3,117191,5,False,13.178,3,Beach,Beach|Beach
+beach_209.jpg,Beach,Beach,True,beach,6.2,159727,5,False,15.538,3,Beach,Beach|Beach
+beach_306.jpg,Beach,Beach,True,beach,6.22,327018,5,False,14.571,3,Beach,Beach|Beach
+beach_282.jpg,Beach,Beach,True,beach,6.16,314444,5,False,14.338,3,Beach,Beach|Beach
+beach_121.jpg,Beach,Beach,True,beach,6.11,116675,5,False,16.355,3,Beach,Beach|Beach
+beach_166.jpg,Beach,Beach,True,beach,6.1,133804,5,False,10.16,3,Beach,Beach|Beach
+beach_375.jpg,Beach,Beach,True,beach,6.14,274360,5,False,14.365,3,Beach,Beach|Beach
+beach_229.jpg,Beach,Beach,True,beach,6.09,109295,5,False,15.729,3,Beach,Beach|Beach
+bridge_75.jpg,Bridge,Bridge,True,bridge,6.07,151650,6,False,18.222,3,Bridge,Bridge|Bridge
+bridge_324.jpg,Bridge,Bridge,True,bridge,6.21,127351,6,False,11.803,3,Bridge,Bridge|Bridge
+bridge_225.jpg,Bridge,Bridge,True,bridge,6.12,278476,6,False,16.343,2,Bridge,Bridge|Viaduct
+bridge_275.jpg,Bridge,Bridge,True,bridge,6.13,173802,6,False,10.129,3,Bridge,Bridge|Bridge
+bridge_230.jpg,Bridge,Bridge,True,bridge,6.18,315625,6,False,4.899,3,Bridge,Bridge|Bridge
+bridge_27.jpg,Bridge,Bridge,True,bridge,7.79,203078,6,False,17.417,3,Bridge,Bridge|Bridge
+bridge_279.jpg,Bridge,Bridge,True,bridge,7.33,170110,6,False,17.121,3,Bridge,Bridge|Bridge
+bridge_209.jpg,Bridge,Viaduct,False,viaduct,6.5,145053,7,False,4.302,2,Viaduct,Viaduct|Bridge
+bridge_95.jpg,Bridge,Parking,False,parking lot,6.39,165261,7,False,11.345,3,Parking,Parking|Parking
+bridge_124.jpg,Bridge,Bridge,True,bridge,6.56,67129,6,False,8.112,3,Bridge,Bridge|Bridge
+center_200.jpg,Center,Stadium,False,stadium,6.67,408008,7,False,15.217,3,Stadium,Stadium|Stadium
+center_146.jpg,Center,Port,False,port,6.7,379773,4,False,10.521,1,Stadium,Stadium|Stadium
+center_77.jpg,Center,Square,False,square,6.2,319226,6,False,9.813,3,Square,Square|Square
+center_7.jpg,Center,Parking,False,parking lot,6.26,392249,7,False,10.918,3,Parking,Parking|Parking
+center_53.jpg,Center,Center,True,city center,6.18,329967,6,False,7.511,2,Center,Stadium|Center
+center_236.jpg,Center,Stadium,False,stadium,6.13,314372,7,False,15.669,3,Stadium,Stadium|Stadium
+center_249.jpg,Center,School,False,school,6.07,377997,6,False,14.557,3,School,School|School
+center_232.jpg,Center,Stadium,False,stadium,6.22,295262,7,False,15.619,3,Stadium,Stadium|Stadium
+center_143.jpg,Center,Stadium,False,stadium,7.14,395975,7,False,5.831,3,Stadium,Stadium|Stadium
+center_142.jpg,Center,Playground,False,playground,6.73,340451,10,False,7.949,1,Park,Park|Park
+church_107.jpg,Church,Center,False,city center,6.16,158010,6,False,10.963,3,Center,Center|Center
+church_29.jpg,Church,Church,True,church,6.08,164786,6,False,13.57,3,Church,Church|Church
+church_11.jpg,Church,Center,False,city center,6.29,180567,6,False,4.744,3,Center,Center|Center
+church_12.jpg,Church,Church,True,church,6.31,149840,6,False,10.266,3,Church,Church|Church
+church_200.jpg,Church,Center,False,city center,7.33,439164,6,False,3.375,3,Center,Center|Center
+church_189.jpg,Church,Center,False,city center,6.24,160038,6,False,7.503,2,Center,Square|Center
+church_18.jpg,Church,Church,True,church,6.15,156680,6,False,11.306,3,Church,Church|Church
+church_82.jpg,Church,Church,True,church,6.11,133799,6,False,16.613,2,Church,BareLand|Church
+church_119.jpg,Church,DenseResidential,False,dense residential area,6.41,109376,16,False,14.381,1,DenseResidential,Center|MediumResidential
+church_7.jpg,Church,Parking,False,parking lot,6.33,149612,7,False,12.285,2,Parking,Parking|MediumResidential
+commercial_22.jpg,Commercial,Square,False,square,6.16,170542,6,False,2.42,1,Square,Center|School
+commercial_311.jpg,Commercial,Center,False,city center,6.14,333568,6,False,13.746,3,Center,Center|Center
+commercial_253.jpg,Commercial,Parking,False,parking lot,6.14,311744,7,False,9.542,1,Parking,MediumResidential|Center
+commercial_257.jpg,Commercial,Center,False,city center,7.77,296001,6,False,15.552,1,DenseResidential,DenseResidential|DenseResidential
+commercial_42.jpg,Commercial,Center,False,city center,6.35,381582,6,False,14.339,3,Center,Center|Center
+commercial_110.jpg,Commercial,DenseResidential,False,dense residential area,6.27,157848,16,False,5.936,1,Center,Center|Center
+commercial_221.jpg,Commercial,Center,False,city center,6.18,362722,6,False,16.674,2,Center,MediumResidential|Center
+commercial_266.jpg,Commercial,DenseResidential,False,dense residential area,6.24,387636,16,False,4.38,2,DenseResidential,DenseResidential|Center
+commercial_187.jpg,Commercial,SparseResidential,False,sparse residential area,6.26,328992,17,False,1.989,2,SparseResidential,SparseResidential|Center
+commercial_16.jpg,Commercial,DenseResidential,False,dense residential area,6.23,417146,16,False,12.506,2,DenseResidential,DenseResidential|Commercial
+denseresidential_374.jpg,DenseResidential,DenseResidential,True,dense residential area,9.18,556561,16,False,17.664,2,DenseResidential,MediumResidential|DenseResidential
+denseresidential_105.jpg,DenseResidential,DenseResidential,True,dense residential area,21.34,487948,16,False,14.531,3,DenseResidential,DenseResidential|DenseResidential
+denseresidential_392.jpg,DenseResidential,DenseResidential,True,dense residential area,7.55,476095,16,False,13.049,2,DenseResidential,DenseResidential|SparseResidential
+denseresidential_45.jpg,DenseResidential,DenseResidential,True,dense residential area,7.54,624711,16,False,1.065,1,DenseResidential,MediumResidential|SparseResidential
+denseresidential_99.jpg,DenseResidential,DenseResidential,True,dense residential area,9.59,360594,16,False,5.573,3,DenseResidential,DenseResidential|DenseResidential
+denseresidential_15.jpg,DenseResidential,DenseResidential,True,dense residential area,8.11,816163,16,False,15.934,2,DenseResidential,MediumResidential|DenseResidential
+denseresidential_71.jpg,DenseResidential,DenseResidential,True,dense residential area,8.18,648948,16,False,16.551,3,DenseResidential,DenseResidential|DenseResidential
+denseresidential_204.jpg,DenseResidential,MediumResidential,False,medium residential area,8.11,136900,17,False,15.9,1,MediumResidential,DenseResidential|SparseResidential
+denseresidential_365.jpg,DenseResidential,MediumResidential,False,medium residential area,7.78,521331,17,False,17.092,3,MediumResidential,MediumResidential|MediumResidential
+denseresidential_316.jpg,DenseResidential,MediumResidential,False,medium residential area,8.39,378824,17,False,16.547,2,MediumResidential,MediumResidential|SparseResidential
+desert_76.jpg,Desert,Desert,True,desert,7.48,82931,6,False,12.783,3,Desert,Desert|Desert
+desert_24.jpg,Desert,Desert,True,desert,8.04,97816,6,False,8.951,3,Desert,Desert|Desert
+desert_101.jpg,Desert,Desert,True,desert,12.04,167205,6,False,15.791,3,Desert,Desert|Desert
+desert_18.jpg,Desert,Desert,True,desert,11.8,77512,6,False,9.596,3,Desert,Desert|Desert
+desert_133.jpg,Desert,Desert,True,desert,15.74,259652,6,False,13.872,2,Desert,BareLand|Desert
+desert_273.jpg,Desert,Desert,True,desert,10.79,299277,6,False,0.779,1,BareLand,BareLand|BareLand
+desert_141.jpg,Desert,BareLand,False,bare land,7.54,304935,8,False,0.53,2,BareLand,Desert|BareLand
+desert_210.jpg,Desert,BareLand,False,bare land,11.11,218045,8,False,6.694,3,BareLand,BareLand|BareLand
+desert_30.jpg,Desert,Mountain,False,mountain,7.22,76070,8,False,17.764,3,Mountain,Mountain|Mountain
+desert_38.jpg,Desert,Desert,True,desert,8.08,92831,6,False,11.136,3,Desert,Desert|Desert
+farmland_131.jpg,Farmland,Farmland,True,farmland,7.31,115432,8,False,22.739,3,Farmland,Farmland|Farmland
+farmland_81.jpg,Farmland,Farmland,True,farmland,14.2,75643,8,False,20.967,3,Farmland,Farmland|Farmland
+farmland_215.jpg,Farmland,Farmland,True,farmland,9.71,81792,8,False,19.919,3,Farmland,Farmland|Farmland
+farmland_314.jpg,Farmland,Farmland,True,farmland,17.8,384340,8,False,25.266,3,Farmland,Farmland|Farmland
+farmland_1.jpg,Farmland,Farmland,True,farmland,7.64,79101,8,False,12.626,3,Farmland,Farmland|Farmland
+farmland_303.jpg,Farmland,Farmland,True,farmland,7.88,293782,8,False,14.737,3,Farmland,Farmland|Farmland
+farmland_166.jpg,Farmland,Farmland,True,farmland,8.36,75419,8,False,22.508,3,Farmland,Farmland|Farmland
+farmland_253.jpg,Farmland,Farmland,True,farmland,8.59,340093,8,False,23.53,3,Farmland,Farmland|Farmland
+farmland_278.jpg,Farmland,Farmland,True,farmland,25.72,226399,8,False,23.394,3,Farmland,Farmland|Farmland
+farmland_224.jpg,Farmland,Farmland,True,farmland,7.93,366325,8,False,5.303,3,Farmland,Farmland|Farmland
+forest_49.jpg,Forest,Forest,True,forest,10.48,152572,6,False,14.434,3,Forest,Forest|Forest
+forest_1.jpg,Forest,Forest,True,forest,12.99,83070,6,False,18.943,3,Forest,Forest|Forest
+forest_159.jpg,Forest,Forest,True,forest,10.41,369889,6,False,19.453,3,Forest,Forest|Forest
+forest_212.jpg,Forest,Forest,True,forest,8.67,458106,6,False,15.822,3,Forest,Forest|Forest
+forest_36.jpg,Forest,Forest,True,forest,7.73,120776,6,False,15.511,3,Forest,Forest|Forest
+forest_138.jpg,Forest,Forest,True,forest,10.22,181110,6,False,17.608,3,Forest,Forest|Forest
+forest_234.jpg,Forest,Forest,True,forest,11.05,347967,6,False,13.629,3,Forest,Forest|Forest
+forest_47.jpg,Forest,BareLand,False,bare land,7.14,138255,8,False,12.24,3,BareLand,BareLand|BareLand
+forest_7.jpg,Forest,Forest,True,forest,8.21,163825,6,False,15.176,2,Forest,Forest|Mountain
+forest_229.jpg,Forest,Forest,True,forest,7.19,361307,6,False,10.785,3,Forest,Forest|Forest
+industrial_61.jpg,Industrial,Industrial,True,industrial area,7.76,122466,10,False,22.244,3,Industrial,Industrial|Industrial
+industrial_332.jpg,Industrial,Industrial,True,industrial area,6.91,416729,10,False,14.081,3,Industrial,Industrial|Industrial
+industrial_294.jpg,Industrial,Industrial,True,industrial area,8.01,345581,10,False,18.906,3,Industrial,Industrial|Industrial
+industrial_90.jpg,Industrial,Industrial,True,industrial area,7.07,97887,10,False,0.695,1,Port,Port|Port
+industrial_325.jpg,Industrial,Industrial,True,industrial area,7.63,374027,10,False,4.496,3,Industrial,Industrial|Industrial
+industrial_66.jpg,Industrial,DenseResidential,False,dense residential area,7.91,133698,16,False,10.944,3,DenseResidential,DenseResidential|DenseResidential
+industrial_24.jpg,Industrial,Industrial,True,industrial area,13.8,383265,10,False,11.871,2,Industrial,Farmland|Industrial
+industrial_178.jpg,Industrial,Industrial,True,industrial area,7.78,159744,10,False,8.064,3,Industrial,Industrial|Industrial
+industrial_281.jpg,Industrial,Industrial,True,industrial area,16.7,143708,10,False,10.261,3,Industrial,Industrial|Industrial
+industrial_368.jpg,Industrial,Industrial,True,industrial area,6.98,181660,10,False,10.691,3,Industrial,Industrial|Industrial
+meadow_107.jpg,Meadow,Farmland,False,farmland,7.71,106645,8,False,17.27,3,Farmland,Farmland|Farmland
+meadow_8.jpg,Meadow,Farmland,False,farmland,7.52,115385,8,False,2.66,3,Farmland,Farmland|Farmland
+meadow_157.jpg,Meadow,Farmland,False,farmland,7.83,175163,8,False,14.893,3,Farmland,Farmland|Farmland
+meadow_233.jpg,Meadow,BareLand,False,bare land,7.64,213289,8,False,10.659,2,BareLand,Farmland|BareLand
+meadow_141.jpg,Meadow,Meadow,True,meadow,7.25,101489,6,False,6.689,2,Meadow,Meadow|Farmland
+meadow_113.jpg,Meadow,Farmland,False,farmland,7.65,115560,8,False,9.763,2,Farmland,BareLand|Farmland
+meadow_20.jpg,Meadow,Farmland,False,farmland,6.55,173755,8,False,23.071,3,Farmland,Farmland|Farmland
+meadow_100.jpg,Meadow,Forest,False,forest,7.09,101944,6,False,0.157,2,Forest,Farmland|Forest
+meadow_14.jpg,Meadow,Meadow,True,meadow,8.38,161445,6,False,4.821,1,Meadow,Forest|Farmland
+meadow_132.jpg,Meadow,Farmland,False,farmland,7.38,200163,8,False,22.207,3,Farmland,Farmland|Farmland
+mediumresidential_194.jpg,MediumResidential,SparseResidential,False,sparse residential area,19.1,745899,17,False,14.245,2,SparseResidential,SparseResidential|MediumResidential
+mediumresidential_252.jpg,MediumResidential,DenseResidential,False,dense residential area,9.69,709519,16,False,18.045,2,DenseResidential,MediumResidential|DenseResidential
+mediumresidential_262.jpg,MediumResidential,SparseResidential,False,sparse residential area,8.03,793710,17,False,5.841,2,SparseResidential,DenseResidential|SparseResidential
+mediumresidential_290.jpg,MediumResidential,SparseResidential,False,sparse residential area,7.82,384088,17,False,13.544,1,SparseResidential,DenseResidential|MediumResidential
+mediumresidential_282.jpg,MediumResidential,SparseResidential,False,sparse residential area,6.59,649814,17,False,18.431,2,SparseResidential,SparseResidential|MediumResidential
+mediumresidential_73.jpg,MediumResidential,MediumResidential,True,medium residential area,6.46,430715,17,False,17.601,1,MediumResidential,SparseResidential|DenseResidential
+mediumresidential_223.jpg,MediumResidential,Forest,False,forest,6.76,730372,6,False,6.322,1,Forest,DenseResidential|MediumResidential
+mediumresidential_272.jpg,MediumResidential,SparseResidential,False,sparse residential area,8.72,695939,17,False,0.89,1,SparseResidential,Forest|DenseResidential
+mediumresidential_23.jpg,MediumResidential,StorageTanks,False,storage tanks,11.35,220987,12,False,7.804,1,BareLand,BareLand|BareLand
+mediumresidential_146.jpg,MediumResidential,DenseResidential,False,dense residential area,10.31,469891,16,False,16.195,1,DenseResidential,SparseResidential|MediumResidential
+mountain_114.jpg,Mountain,Mountain,True,mountain,8.78,316610,8,False,12.835,3,Mountain,Mountain|Mountain
+mountain_188.jpg,Mountain,Mountain,True,mountain,9.63,80455,8,False,6.117,3,Mountain,Mountain|Mountain
+mountain_178.jpg,Mountain,Mountain,True,mountain,7.06,86425,8,False,19.765,3,Mountain,Mountain|Mountain
+mountain_302.jpg,Mountain,Mountain,True,mountain,7.01,109256,8,False,2.69,1,Forest,Forest|Forest
+mountain_248.jpg,Mountain,Desert,False,desert,7.24,105582,6,False,8.272,2,Desert,Mountain|Desert
+mountain_174.jpg,Mountain,Mountain,True,mountain,6.96,70957,8,False,17.532,3,Mountain,Mountain|Mountain
+mountain_168.jpg,Mountain,Forest,False,forest,6.74,86162,6,False,0.578,3,Forest,Forest|Forest
+mountain_79.jpg,Mountain,Mountain,True,mountain,6.71,445737,8,False,8.398,3,Mountain,Mountain|Mountain
+mountain_277.jpg,Mountain,Mountain,True,mountain,7.07,108038,8,False,17.316,3,Mountain,Mountain|Mountain
+mountain_238.jpg,Mountain,Mountain,True,mountain,7.92,109041,8,False,8.73,3,Mountain,Mountain|Mountain
+park_17.jpg,Park,Park,True,park,7.8,328409,4,False,7.963,3,Park,Park|Park
+park_41.jpg,Park,Resort,False,resort,7.28,371409,6,False,12.601,3,Resort,Resort|Resort
+park_298.jpg,Park,Park,True,park,7.06,476750,4,False,2.596,3,Park,Park|Park
+park_267.jpg,Park,DenseResidential,False,dense residential area,8.03,97206,16,False,10.307,2,DenseResidential,DenseResidential|Center
+park_134.jpg,Park,Park,True,park,7.36,324058,4,False,10.228,3,Park,Park|Park
+park_286.jpg,Park,Forest,False,forest,7.2,394478,6,False,8.411,2,Forest,Park|Forest
+park_176.jpg,Park,Park,True,park,7.26,278416,4,False,6.668,3,Park,Park|Park
+park_46.jpg,Park,Resort,False,resort,7.56,152727,6,False,5.688,3,Resort,Resort|Resort
+park_98.jpg,Park,Park,True,park,7.69,274358,4,False,4.403,1,Stadium,Stadium|Stadium
+park_26.jpg,Park,School,False,school,6.74,330211,6,False,0.808,2,School,School|Center
+parking_218.jpg,Parking,Parking,True,parking lot,7.48,241493,7,False,17.41,3,Parking,Parking|Parking
+parking_308.jpg,Parking,Parking,True,parking lot,7.63,317881,7,False,18.639,3,Parking,Parking|Parking
+parking_90.jpg,Parking,Parking,True,parking lot,7.97,358727,7,False,17.283,3,Parking,Parking|Parking
+parking_209.jpg,Parking,Parking,True,parking lot,8.09,324661,7,False,20.559,3,Parking,Parking|Parking
+parking_203.jpg,Parking,Parking,True,parking lot,7.88,235092,7,False,19.299,3,Parking,Parking|Parking
+parking_88.jpg,Parking,Parking,True,parking lot,7.26,397366,7,False,20.078,3,Parking,Parking|Parking
+parking_54.jpg,Parking,Parking,True,parking lot,7.71,367742,7,False,19.107,3,Parking,Parking|Parking
+parking_48.jpg,Parking,Parking,True,parking lot,7.09,371934,7,False,17.571,3,Parking,Parking|Parking
+parking_277.jpg,Parking,Parking,True,parking lot,6.77,360357,7,False,21.312,3,Parking,Parking|Parking
+parking_259.jpg,Parking,Parking,True,parking lot,7.13,335813,7,False,17.801,3,Parking,Parking|Parking
+playground_199.jpg,Playground,Stadium,False,stadium,8.14,219401,7,False,12.852,3,Stadium,Stadium|Stadium
+playground_162.jpg,Playground,Stadium,False,stadium,7.68,171964,7,False,17.483,3,Stadium,Stadium|Stadium
+playground_8.jpg,Playground,School,False,school,7.94,144100,6,False,8.507,1,Stadium,Stadium|Stadium
+playground_262.jpg,Playground,Stadium,False,stadium,7.14,185924,7,False,15.068,3,Stadium,Stadium|Stadium
+playground_190.jpg,Playground,Playground,True,playground,7.43,177718,10,False,0.899,1,Playground,BareLand|Stadium
+playground_108.jpg,Playground,School,False,school,7.52,147682,6,False,4.287,1,School,Stadium|Park
+playground_242.jpg,Playground,Stadium,False,stadium,7.44,174094,7,False,9.959,3,Stadium,Stadium|Stadium
+playground_153.jpg,Playground,Stadium,False,stadium,8.17,164198,7,False,12.407,3,Stadium,Stadium|Stadium
+playground_194.jpg,Playground,Stadium,False,stadium,7.31,194712,7,False,14.167,2,Stadium,Stadium|BaseballField
+playground_69.jpg,Playground,Stadium,False,stadium,8.55,130776,7,False,11.471,2,Stadium,BaseballField|Stadium
+pond_259.jpg,Pond,DenseResidential,False,dense residential area,8.03,126688,16,False,4.057,2,DenseResidential,MediumResidential|DenseResidential
+pond_31.jpg,Pond,Forest,False,forest,7.14,82939,6,False,12.333,3,Forest,Forest|Forest
+pond_109.jpg,Pond,MediumResidential,False,medium residential area,7.49,122868,17,False,9.652,1,Pond,Pond|Pond
+pond_385.jpg,Pond,Pond,True,pond,7.7,227744,4,False,20.638,3,Pond,Pond|Pond
+pond_322.jpg,Pond,Pond,True,pond,7.46,184873,4,False,15.016,3,Pond,Pond|Pond
+pond_167.jpg,Pond,Pond,True,pond,7.46,92180,4,False,8.955,3,Pond,Pond|Pond
+pond_258.jpg,Pond,Pond,True,pond,7.29,96096,4,False,9.643,3,Pond,Pond|Pond
+pond_120.jpg,Pond,DenseResidential,False,dense residential area,7.86,157032,16,False,1.6,1,Pond,Pond|Pond
+pond_399.jpg,Pond,Pond,True,pond,7.17,333425,4,False,21.562,3,Pond,Pond|Pond
+pond_256.jpg,Pond,Pond,True,pond,7.31,89220,4,False,14.292,3,Pond,Pond|Pond
+port_279.jpg,Port,Port,True,port,7.19,53370,4,False,13.402,3,Port,Port|Port
+port_1.jpg,Port,Port,True,port,7.29,235822,4,False,17.426,3,Port,Port|Port
+port_144.jpg,Port,Port,True,port,7.24,85556,4,False,17.372,3,Port,Port|Port
+port_259.jpg,Port,Port,True,port,7.12,73925,4,False,8.059,3,Port,Port|Port
+port_226.jpg,Port,Resort,False,resort,7.49,91802,6,False,18.488,3,Resort,Resort|Resort
+port_231.jpg,Port,Industrial,False,industrial area,7.79,73350,10,False,0.232,2,Industrial,Industrial|Port
+port_3.jpg,Port,Port,True,port,7.62,426535,4,False,16.885,3,Port,Port|Port
+port_15.jpg,Port,Port,True,port,7.99,533950,4,False,14.278,3,Port,Port|Port
+port_254.jpg,Port,Port,True,port,7.24,95472,4,False,18.389,3,Port,Port|Port
+port_51.jpg,Port,Port,True,port,7.19,101849,4,False,11.511,3,Port,Port|Port
+railwaystation_226.jpg,RailwayStation,Industrial,False,industrial area,7.29,148320,10,False,0.669,1,RailwayStation,RailwayStation|RailwayStation
+railwaystation_128.jpg,RailwayStation,RailwayStation,True,railway station,7.34,367756,14,False,2.336,3,RailwayStation,RailwayStation|RailwayStation
+railwaystation_247.jpg,RailwayStation,RailwayStation,True,railway station,7.09,417450,14,False,11.822,2,RailwayStation,RailwayStation|Industrial
+railwaystation_216.jpg,RailwayStation,RailwayStation,True,railway station,7.02,117774,14,False,5.977,2,RailwayStation,StorageTanks|RailwayStation
+railwaystation_116.jpg,RailwayStation,Industrial,False,industrial area,6.87,378270,10,False,14.06,3,Industrial,Industrial|Industrial
+railwaystation_152.jpg,RailwayStation,RailwayStation,True,railway station,7.64,238111,14,False,17.232,3,RailwayStation,RailwayStation|RailwayStation
+railwaystation_42.jpg,RailwayStation,RailwayStation,True,railway station,7.03,348192,14,False,12.93,3,RailwayStation,RailwayStation|RailwayStation
+railwaystation_137.jpg,RailwayStation,DenseResidential,False,dense residential area,6.83,280357,16,False,9.084,1,DenseResidential,Center|SparseResidential
+railwaystation_147.jpg,RailwayStation,RailwayStation,True,railway station,6.85,180517,14,False,18.189,3,RailwayStation,RailwayStation|RailwayStation
+railwaystation_6.jpg,RailwayStation,Stadium,False,stadium,7.4,388281,7,False,11.917,3,Stadium,Stadium|Stadium
+resort_38.jpg,Resort,Resort,True,resort,7.78,193705,6,False,13.262,3,Resort,Resort|Resort
+resort_67.jpg,Resort,Resort,True,resort,7.5,161602,6,False,19.825,2,Resort,MediumResidential|Resort
+resort_269.jpg,Resort,Resort,True,resort,7.62,261547,6,False,15.109,2,Resort,Resort|Forest
+resort_60.jpg,Resort,Resort,True,resort,7.06,188510,6,False,12.492,3,Resort,Resort|Resort
+resort_251.jpg,Resort,Resort,True,resort,7.07,350469,6,False,16.969,3,Resort,Resort|Resort
+resort_84.jpg,Resort,Resort,True,resort,7.16,177397,6,False,8.53,2,Resort,Resort|DenseResidential
+resort_135.jpg,Resort,Resort,True,resort,7.66,142512,6,False,11.681,3,Resort,Resort|Resort
+resort_46.jpg,Resort,Resort,True,resort,7.38,189904,6,False,9.042,3,Resort,Resort|Resort
+resort_287.jpg,Resort,Resort,True,resort,7.87,326205,6,False,11.065,3,Resort,Resort|Resort
+resort_88.jpg,Resort,DenseResidential,False,dense residential area,7.73,216851,16,False,8.207,1,DenseResidential,SparseResidential|Resort
+river_342.jpg,River,River,True,river,7.39,364395,5,False,5.353,3,River,River|River
+river_328.jpg,River,River,True,river,7.22,314676,5,False,9.496,2,River,River|Forest
+river_266.jpg,River,DenseResidential,False,dense residential area,7.24,100797,16,False,2.751,1,River,River|River
+river_364.jpg,River,River,True,river,6.93,429596,5,False,4.412,3,River,River|River
+river_241.jpg,River,Forest,False,forest,6.93,139035,6,False,2.376,1,River,River|River
+river_263.jpg,River,Forest,False,forest,6.8,323312,6,False,2.273,2,Forest,Center|Forest
+river_23.jpg,River,River,True,river,6.97,135186,5,False,1.819,3,River,River|River
+river_398.jpg,River,Forest,False,forest,6.52,389024,6,False,0.528,1,River,River|River
+river_368.jpg,River,Forest,False,forest,6.93,357991,6,False,5.146,1,Farmland,Farmland|Farmland
+river_39.jpg,River,River,True,river,7.09,144197,5,False,11.906,3,River,River|River
+school_38.jpg,School,Center,False,city center,7.08,172476,6,False,4.642,3,Center,Center|Center
+school_177.jpg,School,School,True,school,6.88,364380,6,False,9.075,3,School,School|School
+school_121.jpg,School,School,True,school,6.92,320240,6,False,7.712,3,School,School|School
+school_22.jpg,School,School,True,school,6.99,131947,6,False,12.613,3,School,School|School
+school_288.jpg,School,Stadium,False,stadium,6.91,314879,7,False,11.453,1,Square,Square|Square
+school_221.jpg,School,School,True,school,6.88,294193,6,False,15.387,3,School,School|School
+school_19.jpg,School,School,True,school,6.87,135980,6,False,6.853,2,School,Center|School
+school_107.jpg,School,School,True,school,7.06,142167,6,False,12.021,2,School,School|Forest
+school_26.jpg,School,School,True,school,7.74,128492,6,False,16.024,3,School,School|School
+school_65.jpg,School,Industrial,False,industrial area,8.33,166781,10,False,19.758,1,Industrial,School|Center
+sparseresidential_27.jpg,SparseResidential,Forest,False,forest,7.14,745286,6,False,19.031,3,Forest,Forest|Forest
+sparseresidential_159.jpg,SparseResidential,Forest,False,forest,7.09,762350,6,False,15.199,3,Forest,Forest|Forest
+sparseresidential_79.jpg,SparseResidential,Farmland,False,farmland,7.08,751417,8,False,20.028,2,Farmland,SparseResidential|Farmland
+sparseresidential_105.jpg,SparseResidential,Forest,False,forest,6.98,738411,6,False,13.163,3,Forest,Forest|Forest
+sparseresidential_131.jpg,SparseResidential,MediumResidential,False,medium residential area,7.09,670120,17,False,3.289,1,Farmland,Farmland|Farmland
+sparseresidential_53.jpg,SparseResidential,Farmland,False,farmland,7.02,738549,8,False,8.158,1,Farmland,SparseResidential|DenseResidential
+sparseresidential_175.jpg,SparseResidential,Forest,False,forest,7.02,773506,6,False,15.595,3,Forest,Forest|Forest
+sparseresidential_90.jpg,SparseResidential,Forest,False,forest,7.38,745103,6,False,11.056,3,Forest,Forest|Forest
+sparseresidential_144.jpg,SparseResidential,Church,False,church,7.76,712914,6,False,8.383,3,Church,Church|Church
+sparseresidential_80.jpg,SparseResidential,Farmland,False,farmland,8.07,736393,8,False,1.415,1,Church,Church|Church
+square_285.jpg,Square,Square,True,square,8.23,287149,6,False,0.849,1,Park,Park|Park
+square_43.jpg,Square,Square,True,square,7.69,413856,6,False,12.064,2,Square,Parking|Square
+square_6.jpg,Square,Park,False,park,7.24,372186,4,False,13.594,3,Park,Park|Park
+square_18.jpg,Square,Park,False,park,7.08,382451,4,False,8.757,3,Park,Park|Park
+square_155.jpg,Square,Parking,False,parking lot,7.06,315815,7,False,7.147,2,Parking,Square|Parking
+square_60.jpg,Square,Park,False,park,7.18,225173,4,False,0.826,3,Park,Park|Park
+square_275.jpg,Square,Square,True,square,6.91,277149,6,False,9.674,1,Center,Center|Center
+square_63.jpg,Square,Square,True,square,6.97,351588,6,False,9.035,3,Square,Square|Square
+square_94.jpg,Square,Square,True,square,7.09,377272,6,False,1.941,2,Square,Park|Square
+square_39.jpg,Square,Park,False,park,6.96,281113,4,False,2.923,2,Park,Park|Square
+stadium_226.jpg,Stadium,Stadium,True,stadium,6.8,183086,7,False,13.41,3,Stadium,Stadium|Stadium
+stadium_209.jpg,Stadium,Stadium,True,stadium,6.95,243141,7,False,14.839,3,Stadium,Stadium|Stadium
+stadium_269.jpg,Stadium,Stadium,True,stadium,7.09,392407,7,False,14.569,3,Stadium,Stadium|Stadium
+stadium_276.jpg,Stadium,Pond,False,pond,6.97,371688,4,False,18.373,3,Pond,Pond|Pond
+stadium_97.jpg,Stadium,Stadium,True,stadium,7.04,524051,7,False,12.869,3,Stadium,Stadium|Stadium
+stadium_222.jpg,Stadium,Stadium,True,stadium,7.11,324204,7,False,15.17,3,Stadium,Stadium|Stadium
+stadium_94.jpg,Stadium,Stadium,True,stadium,7.1,325128,7,False,16.85,3,Stadium,Stadium|Stadium
+stadium_218.jpg,Stadium,Stadium,True,stadium,7.09,204141,7,False,15.137,3,Stadium,Stadium|Stadium
+stadium_125.jpg,Stadium,Stadium,True,stadium,7.23,465198,7,False,16.939,3,Stadium,Stadium|Stadium
+stadium_270.jpg,Stadium,Stadium,True,stadium,7.11,343070,7,False,15.076,3,Stadium,Stadium|Stadium
+storagetanks_8.jpg,StorageTanks,StorageTanks,True,storage tanks,7.04,409222,12,False,7.949,3,StorageTanks,StorageTanks|StorageTanks
+storagetanks_34.jpg,StorageTanks,StorageTanks,True,storage tanks,7.07,230190,12,False,12.363,3,StorageTanks,StorageTanks|StorageTanks
+storagetanks_37.jpg,StorageTanks,StorageTanks,True,storage tanks,6.57,391169,12,False,11.288,3,StorageTanks,StorageTanks|StorageTanks
+storagetanks_82.jpg,StorageTanks,StorageTanks,True,storage tanks,6.99,366310,12,False,1.638,2,StorageTanks,Industrial|StorageTanks
+storagetanks_209.jpg,StorageTanks,StorageTanks,True,storage tanks,7.03,371417,12,False,14.21,3,StorageTanks,StorageTanks|StorageTanks
+storagetanks_51.jpg,StorageTanks,StorageTanks,True,storage tanks,7.07,358249,12,False,8.415,2,StorageTanks,StorageTanks|Industrial
+storagetanks_131.jpg,StorageTanks,Industrial,False,industrial area,6.99,438500,10,False,9.269,3,Industrial,Industrial|Industrial
+storagetanks_43.jpg,StorageTanks,StorageTanks,True,storage tanks,7.07,378130,12,False,7.671,3,StorageTanks,StorageTanks|StorageTanks
+storagetanks_66.jpg,StorageTanks,StorageTanks,True,storage tanks,7.06,338209,12,False,13.12,3,StorageTanks,StorageTanks|StorageTanks
+storagetanks_73.jpg,StorageTanks,StorageTanks,True,storage tanks,6.81,351571,12,False,7.817,2,StorageTanks,Industrial|StorageTanks
+viaduct_142.jpg,Viaduct,Viaduct,True,viaduct,6.93,244836,7,False,17.108,3,Viaduct,Viaduct|Viaduct
+viaduct_202.jpg,Viaduct,Viaduct,True,viaduct,6.8,169037,7,False,9.903,2,Viaduct,Bridge|Viaduct
+viaduct_301.jpg,Viaduct,Viaduct,True,viaduct,7.09,321892,7,False,7.459,3,Viaduct,Viaduct|Viaduct
+viaduct_388.jpg,Viaduct,Viaduct,True,"viaduct
+river
+forest
+bridge
+pond",7.46,288730,7,True,14.015,3,Viaduct,Viaduct|Viaduct
+viaduct_183.jpg,Viaduct,Parking,False,parking lot,7.22,174610,7,False,19.773,3,Parking,Parking|Parking
+viaduct_138.jpg,Viaduct,Viaduct,True,viaduct,7.06,248126,7,False,18.324,1,Viaduct,Square|Parking
+viaduct_181.jpg,Viaduct,Forest,False,forest,7.06,199886,6,False,7.924,1,Viaduct,Viaduct|Viaduct
+viaduct_416.jpg,Viaduct,Forest,False,forest,7.1,406360,6,False,4.084,2,Forest,Forest|Viaduct
+viaduct_245.jpg,Viaduct,Farmland,False,farmland,7.09,217751,8,False,18.323,2,Farmland,Farmland|Forest
+viaduct_124.jpg,Viaduct,Viaduct,True,viaduct,7.08,233145,7,False,14.711,2,Viaduct,Industrial|Viaduct

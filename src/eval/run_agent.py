@@ -4,9 +4,10 @@ Run from the orbit-agent folder:
     python -m src.eval.run_agent
     python -m src.eval.run_agent --rates 0.5 1 2
 
-Uses saved model answers (no model calls, so it takes seconds):
-- the "not sure" test on the 300 NEW photos, if it has been run (needed for agent v2), else
-- the AID baseline on the first 300 photos.
+Uses saved model answers (no model calls, so it takes seconds). Default, best first:
+- the FINAL test photos (21-30 per class), once that run is complete
+- the tuning photos (11-20), used to learn agent v3's chances
+- the AID baseline on the first 300 photos
 
 Scoring, per photo:
 - full photo sent      -> correct (people on the ground can see what it is)
@@ -25,7 +26,7 @@ from pathlib import Path
 from src.agent.decide import INTERESTING, POLICIES, Decision, ModelView
 from src.data.aid import AID_DIR, LABELS
 from src.eval.metrics import useful_per_mb
-from src.model.confidence import is_unsure
+from src.model.confidence import class_trust, fit_right_chance, is_unsure, right_chance
 from src.model.vlm import labels_mentioned
 from src.orbit.contact_windows import load_satellite
 from src.orbit.replay import build_replay
@@ -41,10 +42,25 @@ def newest_aid_answers() -> Path:
     return max(files, key=lambda f: (sum(1 for _ in open(f)), f.name))
 
 
+TUNING = ROOT / "experiments" / "confidence_aid_test_gemma3-4b_r3_n10.csv"       # photos 11-20
+FINAL = ROOT / "experiments" / "confidence_aid_test_gemma3-4b_r3_n10_skip20.csv"  # photos 21-30
+
+
+def _rows(path: Path) -> list[dict]:
+    with open(path) as f:
+        return list(csv.DictReader(f))
+
+
 def default_answers() -> Path:
-    """The full "not sure" test on new photos if it exists, else the first-300 baseline."""
-    tests = sorted((ROOT / "experiments").glob("confidence_aid_test_*_n10.csv"))
-    return tests[-1] if tests else newest_aid_answers()
+    """Final test photos if that run is complete, else tuning photos, else the first baseline."""
+    if FINAL.exists() and len(_rows(FINAL)) >= 300:
+        return FINAL
+    return TUNING if TUNING.exists() else newest_aid_answers()
+
+
+def photo_set_name(path: Path) -> str:
+    return {FINAL: "FINAL TEST photos 21-30", TUNING: "tuning photos 11-20 (v3 learned here)"}.get(
+        path.resolve(), "first 300 photos")
 
 
 def load_views(path: Path) -> tuple[dict[str, ModelView], list[tuple[Path, str]]]:
@@ -52,16 +68,27 @@ def load_views(path: Path) -> tuple[dict[str, ModelView], list[tuple[Path, str]]
 
     Returns (views by file name, photo pool for the replay).
     """
+    # Agent v3's chances: B learned on the first 300 photos, weights learned on tuning photos
+    trust = class_trust(newest_aid_answers())
+    w_lite = w_full = None
+    if TUNING.exists():
+        tuning = _rows(TUNING)
+        w_lite = fit_right_chance(tuning, trust, use_agreement=False)
+        w_full = fit_right_chance(tuning, trust, use_agreement=True)
+
     views, pool = {}, []
-    with open(path) as f:
-        for row in csv.DictReader(f):
-            unsure = len(labels_mentioned(row["answer"], LABELS)) != 1
-            doubt = unsure
-            if "agree" in row:  # "not sure" test file: use the full agent v2 rule
-                repeats = 1 + len(row["other_guesses"].split("|")) if row["other_guesses"] else 1
-                doubt = is_unsure(unsure, int(row["agree"]), repeats, float(row["margin"]))
-            views[row["file"]] = ModelView(row["guess"], unsure, doubt)
-            pool.append((AID_DIR / row["truth"] / row["file"], row["truth"]))
+    for row in _rows(path):
+        unsure = len(labels_mentioned(row["answer"], LABELS)) != 1
+        view = ModelView(row["guess"], unsure, doubt=unsure)
+        if w_lite:
+            view.p_lite = view.p_full = right_chance(row, trust, w_lite)
+        if "agree" in row:  # "not sure" test file: full v2 rule, and v3 with agreement
+            repeats = 1 + len(row["other_guesses"].split("|")) if row["other_guesses"] else 1
+            view.doubt = is_unsure(unsure, int(row["agree"]), repeats, float(row["margin"]))
+            if w_full:
+                view.p_full = right_chance(row, trust, w_full)
+        views[row["file"]] = view
+        pool.append((AID_DIR / row["truth"] / row["file"], row["truth"]))
     return views, pool
 
 
@@ -93,24 +120,34 @@ def main() -> None:
                                           "on new photos if done, else the AID baseline)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--tle", help="use a saved TLE file (for repeatable runs)")
+    parser.add_argument("--sizes", choices=["equal", "jpeg"], default="equal",
+                        help="equal = every photo the average size, like raw satellite tiles "
+                             "(fair, default); jpeg = real file sizes")
     args = parser.parse_args()
 
     answers = Path(args.answers) if args.answers else default_answers()
     views, pool = load_views(answers)
     start = datetime.fromisoformat(args.start).replace(tzinfo=timezone.utc)
     sat = load_satellite(tle_path=args.tle)
+    photo_bytes = None
+    if args.sizes == "equal":
+        photo_bytes = sum(p.stat().st_size for p, _ in pool) // len(pool)
 
     unsure = sum(v.unsure for v in views.values())
     doubt = sum(v.doubt for v in views.values())
-    print(f"\nModel answers: {answers.name} ({len(views)} photos; not sure: "
-          f"{unsure} by v1 rule, {doubt} by v2 rule)")
+    v3_unsure = sum(v.p_full < 0.5 for v in views.values())
+    print(f"\nModel answers: {answers.name} = {photo_set_name(answers)}")
+    print(f"{len(views)} photos. Not sure: {unsure} by v1 rule, {doubt} by v2 rule, "
+          f"{v3_unsure} by v3 (chance right < 50%).")
     print(f"Replay: {sat.name} over {args.station.title()}, {args.hours:g} h from {args.start} UTC, "
           f"photo every {args.every} s in daylight. Unsent photos are dropped.")
+    print("Photo sizes: " + (f"all {photo_bytes / 1000:.0f} KB (equal, like raw tiles)"
+                             if photo_bytes else "real JPEG sizes"))
 
     rows = []
     for rate in args.rates:
         windows, _ = build_replay(sat, args.station, start, args.hours, pool,
-                                  args.every, rate, args.seed)
+                                  args.every, rate, args.seed, photo_bytes=photo_bytes)
         photos = sum(len(w.photos) for w in windows)
         need = sum(w.waiting_bytes for w in windows) / 1e6
         budget = sum(w.budget_bytes for w in windows) / 1e6
@@ -136,7 +173,9 @@ def main() -> None:
                          "interesting_total": interesting,
                          "correct_per_mb": round(s["per_mb"], 2)})
 
-    out = ROOT / "experiments" / f"agents_{args.station}_{datetime.now():%Y%m%d_%H%M}.csv"
+    which = "final" if answers.resolve() == FINAL else "tuning" if answers.resolve() == TUNING else "first"
+    out = ROOT / "experiments" / (f"agents_{args.station}_{which}_{args.sizes}_"
+                                  f"{datetime.now():%Y%m%d_%H%M}.csv")
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer.writeheader()

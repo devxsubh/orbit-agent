@@ -12,6 +12,7 @@ to the test set. The margin threshold (8) comes from looking at 16 photos of the
 from __future__ import annotations
 
 import csv
+import math
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -94,3 +95,52 @@ def class_trust(calibration_csv: Path) -> dict[str, float]:
 def is_unsure(several: bool, agree: int, repeats: int, margin: float) -> bool:
     """Agent v2 rule (fixed before testing): unsure if ANY of A, C, D says so."""
     return several or agree < repeats or margin < MARGIN_SURE
+
+
+# ---- Agent v3: the chance that a label is right ----
+# Instead of a yes/no "unsure" rule, v3 estimates p = chance the model's label is right:
+#     p = sigmoid(w0 + w1 * logit(B trust) [+ w2 * (all asks agree)])
+# The weights are learned on the TUNING photos (11-20), never on the final test photos (21-30).
+
+
+def _logit(p: float) -> float:
+    p = min(max(p, 1e-4), 1 - 1e-4)
+    return math.log(p / (1 - p))
+
+
+def _sigmoid(x: float) -> float:
+    return 1 / (1 + math.exp(-x))
+
+
+def asks_made(row: dict) -> int:
+    """How many times this photo was asked (1 + the other guesses saved in the CSV)."""
+    return 1 + len(row["other_guesses"].split("|")) if row.get("other_guesses") else 1
+
+
+def features(row: dict, trust: dict[str, float], use_agreement: bool) -> list[float]:
+    x = [1.0, _logit(trust[row["guess"]])]
+    if use_agreement:
+        x.append(1.0 if int(row["agree"]) == asks_made(row) else 0.0)
+    return x
+
+
+def fit_right_chance(rows: list[dict], trust: dict[str, float], use_agreement: bool,
+                     steps: int = 3000, learning_rate: float = 0.5) -> list[float]:
+    """Learn the weights (plain logistic regression, gradient descent) from tuning photos."""
+    xs = [features(r, trust, use_agreement) for r in rows]
+    ys = [1.0 if r["guess"] == r["truth"] else 0.0 for r in rows]
+    w = [0.0] * len(xs[0])
+    for _ in range(steps):
+        grad = [0.0] * len(w)
+        for x, y in zip(xs, ys):
+            error = _sigmoid(sum(wi * xi for wi, xi in zip(w, x))) - y
+            for i, xi in enumerate(x):
+                grad[i] += error * xi / len(xs)
+        w = [wi - learning_rate * g for wi, g in zip(w, grad)]
+    return w
+
+
+def right_chance(row: dict, trust: dict[str, float], weights: list[float]) -> float:
+    """p = chance the model's first label for this photo is right."""
+    x = features(row, trust, use_agreement=len(weights) == 3)
+    return _sigmoid(sum(wi * xi for wi, xi in zip(weights, x)))

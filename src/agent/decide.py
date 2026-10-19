@@ -16,6 +16,14 @@ v2 is the same, but:
 - a not-sure photo that gets no full photo is sent as an "unsure: forest?" label,
   so the ground is warned instead of misled (scored as no info, not wrong).
 
+v3 replaces the yes/no "not sure" rule with p = the chance the label is right
+(learned on tuning photos, see src/model/confidence.py). For each photo:
+- label value: a plain label is worth p - (1 - p) (right minus wrong), an "unsure" label 0.
+  So the label is marked "unsure" only when it's more likely wrong than right (p < 0.5).
+- full photo value: 1 (always correct). The gain of sending it = 1 - label value.
+- spend the budget on the biggest gain per byte first.
+v3-lite uses only the free signal (B); v3 also uses agreement over 3 asks (D).
+
 Also here: two simple policies to compare against (send everything raw / caption everything).
 """
 from __future__ import annotations
@@ -51,6 +59,8 @@ class ModelView:
     guess: str           # its best label ("unknown" if none)
     unsure: bool         # v1 signal: it gave several answers or none
     doubt: bool = False  # v2 signal: any of several answers / changing answers / small margin
+    p_lite: float = 0.5  # v3-lite: chance the label is right, from B only
+    p_full: float = 0.5  # v3: chance the label is right, from B + D
 
 
 @dataclass
@@ -123,6 +133,45 @@ def plan_agent_v2(window: Window, views: dict[str, ModelView]) -> list[Choice]:
     return _label_then_upgrade(window, views, priority, warn_unsure=True)
 
 
+def _plan_by_value(window: Window, views: dict[str, ModelView], chance: str) -> list[Choice]:
+    """Agent v3: label every photo (plain or "unsure"), then buy the most value per byte."""
+    choices, gain = [], {}
+    budget = window.budget_bytes
+    for photo in window.photos:
+        view = views[photo.path.name]
+        p = getattr(view, chance)
+        if p >= 0.5:
+            decision, label, label_value = Decision.DESCRIBE, view.guess, 2 * p - 1
+        else:
+            decision, label, label_value = Decision.DESCRIBE_UNSURE, f"unsure: {view.guess}?", 0.0
+        cost = describe_bytes(photo, label)
+        if cost <= budget:
+            choice = Choice(photo, decision, label, cost)
+            budget -= cost
+            gain[id(choice)] = (1 - label_value) / photo.size_bytes  # value per byte of a full photo
+        else:
+            choice = Choice(photo, Decision.DROPPED, "", 0)
+        choices.append(choice)
+
+    labelled = [c for c in choices if c.decision != Decision.DROPPED]
+    for choice in sorted(labelled, key=lambda c: -gain[id(c)]):
+        extra = choice.photo.size_bytes - choice.bytes_sent
+        if extra <= budget:
+            budget -= extra
+            choice.decision, choice.bytes_sent = Decision.SEND_FULL, choice.photo.size_bytes
+    return choices
+
+
+def plan_agent_v3_lite(window: Window, views: dict[str, ModelView]) -> list[Choice]:
+    """Agent v3-lite: chance-based, free signal only (1 model call per photo)."""
+    return _plan_by_value(window, views, "p_lite")
+
+
+def plan_agent_v3(window: Window, views: dict[str, ModelView]) -> list[Choice]:
+    """Agent v3: chance-based, free signal + agreement (3 model calls per photo)."""
+    return _plan_by_value(window, views, "p_full")
+
+
 def plan_raw(window: Window, views: dict[str, ModelView] | None = None) -> list[Choice]:
     """Baseline: no onboard AI. Send full photos in the order taken until the pass is full."""
     choices, budget = [], window.budget_bytes
@@ -150,4 +199,5 @@ def plan_caption(window: Window, views: dict[str, ModelView]) -> list[Choice]:
 
 
 POLICIES = {"send all raw": plan_raw, "caption all": plan_caption,
-            "agent v1": plan_agent, "agent v2": plan_agent_v2}
+            "agent v1": plan_agent, "agent v2": plan_agent_v2,
+            "agent v3-lite": plan_agent_v3_lite, "agent v3": plan_agent_v3}

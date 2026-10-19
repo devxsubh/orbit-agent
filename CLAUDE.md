@@ -89,6 +89,7 @@ smart compression (FOOL paper).
 | `src/agent/decide.py` | Agent v1 + v2 (plain rules): label every photo, then full photos by priority. v2 uses the better "not sure" rule and sends "unsure: X?" labels (DESCRIBE_UNSURE). Also baselines `plan_raw`, `plan_caption` | **done, works** (SKIP / SEND_CROP not used yet) |
 | `src/eval/run_agent.py` | Runs all 4 policies (raw, caption, agent v1, agent v2) on the replay at several `--rates`, uses saved answers (no model calls). Prefers the full "not sure" test CSV if it exists. Saves `experiments/agents_*.csv` | **done, works** |
 | `src/model/confidence.py` | "Not sure" signals: A several answers, B confused classes (from first 300), C answer margin (logprobs), D agreement over 3 shuffled asks. `is_unsure()` = agent v2 rule (A or D or margin < 8), fixed before testing | **done, works** |
+| `src/demo/export.py` + `demo/index.html` | Demo: export runs replay + agent once → `demo/data.js` + `demo/thumbs/` (gitignored); index.html plays it back (map, photo card, queue, downlink, score). Checked with headless Chrome screenshots | **done, works** |
 | `src/eval/confidence_test.py` | Runs the signals on 300 NEW AID photos (11-20/class), resumable; prints AUROC + wrong caught at 10/20/30% flagged; saves CSV + chart. `--evaluate-only` | **done, works** (quick 30-photo run done) |
 
 ## How to run
@@ -109,6 +110,9 @@ python -m src.orbit.replay --start 2026-10-19T00:00      # photo replay: queue +
 python -m src.data.aid --skip 10                         # download the 300 NEW test photos (once, done)
 python -m src.eval.confidence_test                       # "not sure" signals on 300 new photos (~2 h, resumable)
 python -m src.eval.run_agent                             # raw vs caption-all vs agent v1 vs v2 at 0.25-4 Mbps (seconds)
+python -m src.eval.confidence_test --skip 20             # FINAL test photos 21-30 (~2 h)
+python -m src.eval.run_agent --sizes jpeg               # use real JPEG sizes (default: equal sizes)
+python -m src.demo.export && open demo/index.html       # demo page
 python -m src.model.vlm path/to/photo.jpg                # describe one photo
 python check_setup.py                                    # health check
 ```
@@ -155,6 +159,19 @@ python check_setup.py                                    # health check
   Replay (new photos): 1 Mbps v1 85% correct / 158 wrong, v2 82% / 106 wrong (+90 unsure);
   2 Mbps v2 best on both (96% / 44 wrong); 0.25 Mbps v2 too careful (54% vs v1 72%, but 140 vs 310 wrong).
   Raw at 1 Mbps 59%. Test photos 11-20 are now "used": a v3 rule must be judged on photos 21-30.
+- **Photo sets:** 1-10/class = first baseline (B learned here), 11-20 = tuning (v3 weights learned here),
+  21-30 = FINAL test (`..._n10_skip20.csv`), never used for building.
+- **Agent v3 (19 Oct):** p(right) = sigmoid(w0 + w1*logit(B) [+ w2*all-agree]), fit on tuning.
+  Plain label if p>=0.5 else "unsure"; full photos by value-per-byte (1 - max(2p-1,0)). v3-lite = B only.
+  **Found: with real JPEG sizes v3 partly wins by picking small (simple) photos** → `--sizes equal`
+  is now the default (raw tiles are equal size). Tuning, equal sizes: 1 Mbps v1 86%/150 wrong,
+  v3 93%/73 wrong; 0.25 Mbps v1 72%/304, v3 73%/171.
+- **FINAL TEST (photos 21-30, 19 Oct): the paper's main numbers.** Accuracy 63%. AUROC B 0.77, combined 0.71,
+  D 0.68, C 0.63, A 0.50. Agents, correct/wrong (equal sizes): 1 Mbps raw 60%/0, caption 63%/404,
+  v1 84%/173, v2 89%/85, v3-lite 91%/99, **v3 92%/90**; 0.5 Mbps v1 74%/282, v3 79%/164;
+  2 Mbps v1 95%/51, v3 99%/6; 0.25 Mbps v1 70%/331 vs v3 68%/192 (trade-off). v3-lite ≈ v3 with
+  1 call instead of 3. Chances calibrated on final photos (~75% → 77% right). Demo exported from final photos.
+- **Work is on git branch `agent-v2`** (main has only the first commit).
 
 ## Key decisions
 - Satellites: Sentinel-2A (NORAD 40697), Sentinel-2B (42063). Default ground station: Delhi.
