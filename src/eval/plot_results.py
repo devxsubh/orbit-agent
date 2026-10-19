@@ -1,4 +1,4 @@
-"""Draws the main result chart for the README (black and white).
+"""Draws the main result chart for the README (dark, same colours as the demo page).
 
 Left: share of photos whose information reached the ground correctly.
 Right: wrong labels sent down. Both at each downlink speed.
@@ -19,12 +19,12 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CSV = ROOT / "experiments" / "agents_delhi_final_equal_20261019_1229.csv"
 DEFAULT_OUT = ROOT / "docs" / "results.png"
 
-# Policy name in the CSV -> (label, line style, marker, grey level)
+# Policy name in the CSV -> (label, line style, marker, colour)
 POLICIES = {
-    "send all raw": ("Send all raw", ":", "s", "#8a8a8a"),
-    "caption all": ("Caption every photo", "--", "^", "#8a8a8a"),
-    "agent v1": ("Agent v1 (rules)", "-", "o", "#bdbdbd"),
-    "agent v3": ("Agent v3 (chance-based)", "-", "o", "#ffffff"),
+    "send all raw": ("Send all raw", ":", "s", "#8b8b94"),
+    "caption all": ("Caption every photo", "--", "^", "#a78bfa"),
+    "agent v1": ("Agent v1 (rules)", "-", "o", "#4da3ff"),
+    "agent v3": ("Agent v3 (chance-based)", "-", "o", "#34d399"),
 }
 
 
@@ -56,10 +56,10 @@ def main() -> None:
     fig, (left, right) = plt.subplots(1, 2, figsize=(12, 4.6))
 
     rates = sorted({rate for points in rows.values() for rate, _, _ in points})
-    for policy, (name, style, marker, grey) in POLICIES.items():
+    for policy, (name, style, marker, colour) in POLICIES.items():
         points = sorted(rows.get(policy, []))
         x = [p[0] for p in points]
-        left.plot(x, [p[1] for p in points], style, marker=marker, color=grey, label=name,
+        left.plot(x, [p[1] for p in points], style, marker=marker, color=colour, label=name,
                   linewidth=2.6 if policy == "agent v3" else 1.6, markersize=6)
 
     left.set_xscale("log", base=2)
@@ -72,12 +72,12 @@ def main() -> None:
     left.legend(frameon=False, loc="lower right", fontsize=10)
 
     # Wrong labels: caption-all vs agent v1 vs agent v3 (raw sends none)
-    bars = [("caption all", "#5a5a5a"), ("agent v1", "#9a9a9a"), ("agent v3", "#ffffff")]
+    bars = [(policy, POLICIES[policy][3]) for policy in ("caption all", "agent v1", "agent v3")]
     width = 0.26
-    for i, (policy, grey) in enumerate(bars):
+    for i, (policy, colour) in enumerate(bars):
         wrong = dict((p[0], p[2]) for p in rows.get(policy, []))
         xs = [j + (i - 1) * width for j in range(len(rates))]
-        right.bar(xs, [wrong.get(r, 0) for r in rates], width, color=grey, label=POLICIES[policy][0])
+        right.bar(xs, [wrong.get(r, 0) for r in rates], width, color=colour, label=POLICIES[policy][0])
     right.set_xticks(range(len(rates)), [f"{r:g}" for r in rates])
     right.set_xlabel("Downlink speed (Mbps)")
     right.set_ylabel("Wrong labels sent down")

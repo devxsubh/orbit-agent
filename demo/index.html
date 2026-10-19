@@ -5,17 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>orbit-agent demo</title>
 <style>
-  /* Black and white theme. Shapes (not colours) tell things apart:
-     filled dot = model is sure, hollow ring = model is not sure. */
+  /* Dark black/grey base. Colour only where it means something, the same everywhere:
+     blue = satellite + downlink, orange = ground station, green = sure / correct,
+     amber = not sure, red = wrong. Shapes repeat it: filled dot = sure, ring = not sure. */
   :root {
-    --bg: #000; --surface: #0a0a0a; --surface-2: #151515;
-    --border: #232323; --border-2: #3a3a3a;
-    --text: #fafafa; --text-2: #a3a3a3; --muted: #666;
-    --sat: #fff;        /* satellite */
-    --station: #fff;    /* ground station */
-    --sure: #f5f5f5;    /* sure labels */
-    --unsure: #7a7a7a;  /* unsure labels */
-    --ocean: #000; --land: #181818; --coast: #2c2c2c; --grid: #0f0f0f;
+    --bg: #050505; --surface: #0c0c0d; --surface-2: #17171a;
+    --border: #232327; --border-2: #36363c;
+    --text: #f4f4f5; --text-2: #a1a1aa; --muted: #66666e;
+    --sat: #4da3ff;      /* satellite, downlink, full photos */
+    --station: #ff9a3c;  /* ground station + contact zone */
+    --sure: #34d399;     /* sure labels, correct info */
+    --unsure: #fbbf24;   /* not-sure labels */
+    --wrong: #f87171;    /* wrong labels */
+    --raw: #8b8b94;      /* "send all raw" baseline */
+    --ocean: #050505; --land: #1a1a1d; --coast: #2e2e33; --grid: #101012;
     --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
@@ -23,11 +26,12 @@
     font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
   .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
+  /* ---- Header ---- */
   header { display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
-    padding: 14px 24px; border-bottom: 1px solid var(--border); background: var(--bg); }
+    padding: 14px 24px; border-bottom: 1px solid var(--border); }
   .brand h1 { margin: 0; font: 600 15px/1.2 var(--mono); letter-spacing: 2px; text-transform: uppercase; }
   .brand h1::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 10px;
-    background: var(--text); border-radius: 50%; vertical-align: 1px; }
+    background: var(--sat); border-radius: 50%; vertical-align: 1px; box-shadow: 0 0 10px var(--sat); }
   .brand p { margin: 4px 0 0; color: var(--text-2); font-size: 12.5px; }
   .clock { margin-left: auto; text-align: right; }
   .clock .time { font-size: 22px; font-weight: 500; letter-spacing: .5px; }
@@ -35,79 +39,118 @@
   .status { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
     font: 600 11.5px var(--mono); letter-spacing: 1px; text-transform: uppercase;
     border: 1px solid var(--border-2); color: var(--text-2); white-space: nowrap; }
-  .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--muted); }
-  .status.live { background: var(--text); border-color: var(--text); color: #000; }
-  .status.live::before { background: #000; border-color: #000; animation: blink 1s steps(2) infinite; }
-  @keyframes blink { 50% { opacity: 0; } }
+  .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .status.live { border-color: var(--sat); color: var(--sat); background: rgba(77,163,255,.1); }
+  .status.live::before { background: var(--sat); box-shadow: 0 0 8px var(--sat); animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
   .controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  button, select { font: 500 12.5px var(--mono); color: var(--text); background: var(--bg);
+  button, select { font: 500 12.5px var(--mono); color: var(--text); background: var(--surface);
     border: 1px solid var(--border-2); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
-  button:hover, select:hover { border-color: var(--text); }
+  button:hover, select:hover { border-color: var(--text-2); }
   button.primary { background: var(--text); border-color: var(--text); color: #000; min-width: 80px; font-weight: 700; }
-  button.primary:hover { background: #d4d4d4; }
+  button.primary:hover { background: #d4d4d8; }
   label.check { display: flex; gap: 6px; align-items: center; color: var(--text-2); font-size: 12.5px; }
-  input[type=checkbox] { accent-color: #fff; }
+  input[type=checkbox] { accent-color: var(--sat); }
 
-  main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; padding: 18px 24px; align-items: start; }
+  /* ---- Pipeline: which step is happening now ---- */
+  .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 14px 24px 0; }
+  .step { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--muted); transition: all .25s; min-width: 0; }
+  .step .n { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+    font: 700 11px var(--mono); border: 1px solid var(--border-2); }
+  .step b { display: block; font-size: 13px; font-weight: 600; color: var(--text-2); }
+  .step span { display: block; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .step.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 9%, var(--surface)); color: var(--text-2); }
+  .step.on .n { background: var(--c); border-color: var(--c); color: #000; box-shadow: 0 0 12px color-mix(in srgb, var(--c) 60%, transparent); }
+  .step.on b { color: var(--text); }
+
+  /* ---- Layout ---- */
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 370px; gap: 16px; padding: 14px 24px 20px; align-items: start; }
   .about { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
   .about b { color: var(--text-2); font-weight: 600; }
   .map-wrap { position: relative; background: var(--surface); border: 1px solid var(--border);
     border-radius: 10px; padding: 14px; min-width: 0; }
-  canvas#map { width: 100%; display: block; border-radius: 4px; border: 1px solid var(--border); }
+  canvas#map { width: 100%; display: block; border-radius: 6px; border: 1px solid var(--border); }
   .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 12px; color: var(--text-2); font-size: 12.5px; }
   .legend span { display: inline-flex; align-items: center; gap: 7px; }
   .mk { width: 10px; height: 10px; display: inline-block; flex: none; }
-  .mk.sat { border-radius: 50%; background: var(--sat); box-shadow: 0 0 0 3px rgba(255,255,255,.18); }
+  .mk.sat { border-radius: 50%; background: var(--sat); box-shadow: 0 0 0 3px rgba(77,163,255,.25); }
   .mk.station { background: var(--station); transform: rotate(45deg) scale(.85); }
-  .mk.zone { border-radius: 50%; border: 1px dashed var(--text-2); width: 14px; height: 10px; }
-  .mk.sure { border-radius: 50%; background: var(--sure); width: 7px; height: 7px; }
-  .mk.unsure { border-radius: 50%; border: 1.5px solid var(--unsure); width: 8px; height: 8px; }
+  .mk.zone { border-radius: 50%; border: 1px dashed var(--station); background: rgba(255,154,60,.12); width: 14px; height: 10px; }
+  .mk.sure { border-radius: 50%; background: var(--sure); width: 8px; height: 8px; }
+  .mk.unsure { border-radius: 50%; border: 1.5px solid var(--unsure); width: 9px; height: 9px; }
   .timeline { margin-top: 12px; position: relative; }
-  .timeline input { width: 100%; accent-color: #fff; }
+  .timeline input { width: 100%; accent-color: var(--sat); }
   .pass-marks { position: relative; height: 6px; margin: 0 8px; }
-  .pass-marks i { position: absolute; top: 0; height: 6px; min-width: 3px; background: var(--text); border-radius: 1px; }
+  .pass-marks i { position: absolute; top: 0; height: 6px; min-width: 3px; background: var(--station); border-radius: 1px; }
   .timeline .ends { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2px 8px;
     color: var(--muted); font: 11px var(--mono); }
 
+  /* ---- Cards ---- */
   aside { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
-  .card h2 { margin: 0 0 12px; font: 600 11px var(--mono); color: var(--muted);
-    text-transform: uppercase; letter-spacing: 1.5px; }
+  .card h2 { display: flex; justify-content: space-between; margin: 0 0 12px; font: 600 11px var(--mono);
+    color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
   .photo-row { display: flex; gap: 14px; }
   .photo-row img { width: 112px; height: 112px; border-radius: 6px; object-fit: cover;
-    background: var(--surface-2); flex: none; border: 1px solid var(--border-2); }
-  .photo-info { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+    background: var(--surface-2); flex: none; border: 2px solid var(--border-2); }
+  .photo-row img.sure { border-color: var(--sure); }
+  .photo-row img.unsure { border-color: var(--unsure); border-style: dashed; }
+  .photo-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; }
   .says { font-size: 17px; font-weight: 600; letter-spacing: -.2px; }
-  .bar { height: 4px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
-  .bar > div { height: 100%; border-radius: 2px; }
+  .bar { position: relative; height: 6px; background: var(--surface-2); border-radius: 3px; }
+  .bar > div { height: 100%; border-radius: 3px; transition: width .2s; }
+  .bar .cut { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--text-2); }
+  .bar-scale { display: flex; justify-content: space-between; font: 10px var(--mono); color: var(--muted); }
   .small { font-size: 12.5px; color: var(--text-2); }
   .small b { color: var(--text); font-weight: 600; }
   .chip { display: inline-block; padding: 2px 9px; border-radius: 4px; font: 700 10.5px var(--mono);
-    letter-spacing: 1px; text-transform: uppercase; border: 1px solid; width: fit-content; }
-  .chip.sure { color: #000; border-color: var(--sure); background: var(--sure); }
-  .chip.unsure { color: var(--text-2); border-color: var(--unsure); border-style: dashed; background: transparent; }
-  .decision { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
-  .truth { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    letter-spacing: 1px; text-transform: uppercase; border: 1px solid; width: fit-content; white-space: nowrap; }
+  .chip.sure    { color: var(--sure);   border-color: var(--sure);   background: rgba(52,211,153,.12); }
+  .chip.unsure  { color: var(--unsure); border-color: var(--unsure); background: rgba(251,191,36,.12); border-style: dashed; }
+  .chip.full    { color: var(--sat);    border-color: var(--sat);    background: rgba(77,163,255,.12); }
+  .chip.label   { color: var(--sure);   border-color: var(--sure);   background: rgba(52,211,153,.12); }
+  .chip.dropped { color: var(--wrong);  border-color: var(--wrong);  background: rgba(248,113,113,.10); }
+  .chip.wait    { color: var(--text-2); border-color: var(--border-2); background: transparent; }
+  .decision { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .truth { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .truth .ok { color: var(--sure); font-weight: 700; }
+  .truth .no { color: var(--wrong); font-weight: 700; }
 
   .big { font-size: 30px; font-weight: 500; letter-spacing: -.5px; }
-  .queue-line { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-  .fit-bar { position: relative; height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin: 10px 0 6px; }
-  .fit-bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--text); border-radius: 3px; }
+  .queue-line { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .fit-bar { position: relative; height: 8px; background: rgba(248,113,113,.18); border-radius: 4px; overflow: hidden; margin: 10px 0 6px; }
+  .fit-bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--sat); border-radius: 4px; transition: width .2s; }
+  .fit-legend { display: flex; gap: 14px; font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+  .fit-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: 0; }
 
+  /* Score: raw vs agent bars */
+  .cmp { display: grid; grid-template-columns: 92px 1fr 72px; gap: 8px 10px; align-items: center; }
+  .cmp .who { font-size: 12.5px; color: var(--text-2); }
+  .cmp .who.agent { color: var(--text); font-weight: 600; }
+  .cmp .track { height: 10px; background: var(--surface-2); border-radius: 5px; overflow: hidden; }
+  .cmp .track div { height: 100%; border-radius: 5px; transition: width .2s; }
+  .cmp .val { text-align: right; font-size: 13px; }
+  .cmp .val.agent { color: var(--sure); font-weight: 700; }
+  .sub-h { margin: 14px 0 6px; font: 600 10.5px var(--mono); color: var(--muted); letter-spacing: 1.2px; text-transform: uppercase; }
   table.score { width: 100%; border-collapse: collapse; }
-  table.score th { text-align: right; font: 600 11px var(--mono); color: var(--muted); padding: 0 0 8px;
+  table.score th { text-align: right; font: 600 10.5px var(--mono); color: var(--muted); padding: 0 0 6px;
     text-transform: uppercase; letter-spacing: .8px; }
-  table.score th:last-child { color: var(--text); }
   table.score th:first-child, table.score td:first-child { text-align: left; }
-  table.score td { padding: 7px 0; border-top: 1px solid var(--border); text-align: right; color: var(--text-2); }
-  table.score td:first-child { color: var(--text-2); }
+  table.score td { padding: 6px 0; border-top: 1px solid var(--border); text-align: right; color: var(--text-2); }
   table.score td.agent { font-weight: 700; color: var(--text); }
+  table.score td.agent.bad { color: var(--wrong); }
+  table.score td.agent.warn { color: var(--unsure); }
+  table.score td.agent.blue { color: var(--sat); }
+  table.score td.agent.zero { color: var(--muted); }
   .note { margin-top: 10px; color: var(--muted); font-size: 11.5px; }
 
-  .downlink { margin-top: 12px; display: none; }
+  .downlink { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); display: none; }
   .downlink.on { display: block; }
   .strip { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-top: 8px; }
-  .strip img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 3px; background: var(--surface-2); }
+  .strip img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 3px; background: var(--surface-2);
+    outline: 1px solid rgba(77,163,255,.6); outline-offset: -1px; }
 
   .missing { max-width: 560px; margin: 80px auto; padding: 24px; text-align: center; }
   code { font-family: var(--mono); background: var(--surface-2); padding: 2px 6px; border-radius: 4px; }
@@ -115,6 +158,7 @@
   @media (max-width: 900px) {
     main { grid-template-columns: 1fr; padding: 12px 16px; }
     header { padding: 12px 16px; }
+    .pipeline { grid-template-columns: repeat(2, 1fr); padding: 12px 16px 0; }
     .clock { margin-left: 0; text-align: left; }
   }
 </style>
@@ -144,16 +188,23 @@
   </div>
 </header>
 
+<div class="pipeline" id="pipeline">
+  <div class="step" style="--c: var(--sat)"><i class="n">1</i><div><b>Capture</b><span>A photo every 30 s in daylight</span></div></div>
+  <div class="step" style="--c: var(--sure)"><i class="n">2</i><div><b>Label</b><span>Gemma 3 (4B) names what it sees</span></div></div>
+  <div class="step" style="--c: var(--unsure)"><i class="n">3</i><div><b>Decide</b><span>How sure? Label, "unsure" or full photo</span></div></div>
+  <div class="step" style="--c: var(--station)"><i class="n">4</i><div><b>Downlink</b><span>Send the best mix within the budget</span></div></div>
+</div>
+
 <main id="app">
   <section class="map-wrap">
     <canvas id="map" aria-label="World map with the satellite's path"></canvas>
     <div class="timeline">
       <div class="pass-marks" id="pass-marks"></div>
       <input type="range" id="scrub" min="0" max="86400" step="30" value="0" aria-label="Time">
-      <div class="ends"><span id="t-start">--</span><span>White marks = passes over the ground station</span><span id="t-end">--</span></div>
+      <div class="ends"><span id="t-start">--</span><span>Orange marks = passes over the ground station</span><span id="t-end">--</span></div>
     </div>
     <div class="legend">
-      <span><i class="mk sat"></i>Satellite</span>
+      <span><i class="mk sat"></i>Satellite + path</span>
       <span><i class="mk station"></i>Ground station</span>
       <span><i class="mk zone"></i>Contact zone</span>
       <span><i class="mk sure"></i>Photo: model is sure</span>
@@ -164,18 +215,18 @@
 
   <aside>
     <div class="card">
-      <h2>Latest photo onboard</h2>
+      <h2>Latest photo onboard <span id="ph-time" class="num">--</span></h2>
       <div class="photo-row">
         <img id="ph-img" alt="">
         <div class="photo-info">
           <div class="small">Model says</div>
           <div id="ph-says" class="says">--</div>
-          <div class="small">Chance it's right: <b id="ph-chance" class="num">--</b></div>
-          <div class="bar"><div id="ph-bar"></div></div>
-          <span id="ph-chip" class="chip sure">--</span>
+          <div class="small">Chance it's right: <b id="ph-chance" class="num">--</b> <span id="ph-chip" class="chip sure">--</span></div>
+          <div class="bar"><div id="ph-bar"></div><i class="cut" title="50%: below this, the label is marked unsure"></i></div>
+          <div class="bar-scale"><span>0</span><span>50%</span><span>100</span></div>
         </div>
       </div>
-      <div class="decision small">At the next pass: <b id="ph-decision">--</b></div>
+      <div class="decision small">At the next pass: <span id="ph-decision" class="chip wait">--</span></div>
       <div id="ph-truth" class="truth">--</div>
     </div>
 
@@ -185,21 +236,27 @@
       <div class="small" id="q-next">--</div>
       <div class="fit-bar"><div class="fill" id="q-fit"></div></div>
       <div class="small" id="q-fit-text">--</div>
+      <div class="fit-legend"><span><i style="background:var(--sat)"></i>Fits as full photos</span><span><i style="background:rgba(248,113,113,.45)"></i>Doesn't fit</span></div>
       <div class="downlink" id="downlink">
-        <div class="small"><b>Sending now:</b> <span id="dl-text">--</span></div>
+        <div class="small"><b style="color:var(--sat)">Sending now:</b> <span id="dl-text">--</span></div>
         <div class="strip" id="dl-strip"></div>
       </div>
     </div>
 
     <div class="card">
       <h2>Reached the ground so far</h2>
+      <div class="sub-h">Correct info</div>
+      <div class="cmp">
+        <span class="who">Send all raw</span><div class="track"><div id="b-raw" style="background:var(--raw)"></div></div><span class="val num" id="s-raw-correct">0</span>
+        <span class="who agent" id="agent-name">Agent</span><div class="track"><div id="b-ag" style="background:var(--sure)"></div></div><span class="val num agent" id="s-ag-correct">0</span>
+      </div>
+      <div class="sub-h">Details</div>
       <table class="score">
-        <thead><tr><th></th><th>Send all raw</th><th id="agent-name">Agent</th></tr></thead>
+        <thead><tr><th></th><th>Raw</th><th id="agent-name-2">Agent</th></tr></thead>
         <tbody>
-          <tr><td>Correct info</td><td class="num" id="s-raw-correct">0</td><td class="num agent" id="s-ag-correct">0</td></tr>
-          <tr><td>Wrong labels</td><td class="num" id="s-raw-wrong">0</td><td class="num agent" id="s-ag-wrong">0</td></tr>
-          <tr><td>"Unsure" labels</td><td class="num">0</td><td class="num agent" id="s-ag-unsure">0</td></tr>
-          <tr><td>Full photos</td><td class="num" id="s-raw-full">0</td><td class="num agent" id="s-ag-full">0</td></tr>
+          <tr><td>Wrong labels</td><td class="num" id="s-raw-wrong">0</td><td class="num agent bad" id="s-ag-wrong">0</td></tr>
+          <tr><td>"Unsure" labels</td><td class="num">0</td><td class="num agent warn" id="s-ag-unsure">0</td></tr>
+          <tr><td>Full photos</td><td class="num" id="s-raw-full">0</td><td class="num agent blue" id="s-ag-full">0</td></tr>
         </tbody>
       </table>
       <div class="note" id="s-note">--</div>
@@ -226,11 +283,14 @@ const passes = D.passes;
 const DAY = D.hours * 3600;
 const START = new Date(D.start_utc).getTime();
 const label = name => D.labels[name] || name;
-const DECISION_TEXT = {
-  F: "send the full photo", L: "send the label only", U: 'send an "unsure" label',
-  D: "dropped (doesn't fit)", "": "waits for tomorrow's pass",
+// Agent decision code -> [chip text, chip style]
+const DECISION = {
+  F: ["Full photo", "full"], L: ["Label only", "label"], U: ["Unsure label", "unsure"],
+  D: ["Dropped: doesn't fit", "dropped"], "": ["Waits for tomorrow", "wait"],
 };
-document.getElementById("agent-name").textContent = D.agent.replace("agent", "Agent");
+const agentName = D.agent.replace("agent", "Agent");
+document.getElementById("agent-name").textContent = agentName;
+document.getElementById("agent-name-2").textContent = agentName.replace("Agent ", "");
 document.getElementById("about").innerHTML =
   `<b>What's real:</b> the orbit (${D.satellite}, real orbit data), pass times over ${D.station}, ` +
   `and the downlink budget (${D.rate_mbps} Mbps). <b>What's a stand-in:</b> each photo is an AID ` +
@@ -267,6 +327,8 @@ const X = lon => (lon + 180) / 360 * W;
 const Y = lat => (90 - lat) / 180 * H;
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const MONO = '600 11px ui-monospace, "SF Mono", Menlo, monospace';
+// rgba() from a "#rrggbb" colour variable
+const rgba = (name, a) => { const h = css(name).slice(1); return `rgba(${[0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16))},${a})`; };
 
 function drawBase() {
   base.width = W * DPR; base.height = H * DPR;
@@ -328,45 +390,49 @@ function render() {
   const zone = 18.75, sx = X(D.station_lon), sy = Y(D.station_lat);
   ctx.beginPath();
   ctx.ellipse(sx, sy, zone / Math.cos(D.station_lat * Math.PI / 180) / 360 * W, zone / 180 * H, 0, 0, 2 * Math.PI);
-  ctx.fillStyle = live ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.035)"; ctx.fill();
-  ctx.strokeStyle = live ? "rgba(255,255,255,.8)" : "rgba(255,255,255,.35)";
+  ctx.fillStyle = rgba("--station", live ? 0.2 : 0.07); ctx.fill();
+  ctx.strokeStyle = rgba("--station", live ? 0.9 : 0.5);
   ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]);
 
-  // Photos taken in the last 3 hours: filled = sure, hollow ring = not sure
+  // Photos taken in the last 3 hours: green dot = sure, amber ring = not sure
   const taken = photos.filter(p => p.t <= t && p.t > t - 3 * 3600);
   for (const p of taken) {
     const age = (t - p.t) / (3 * 3600);
-    ctx.globalAlpha = 0.9 - 0.65 * age;
-    ctx.beginPath(); ctx.arc(X(p.lon), Y(p.lat), 2.2, 0, 2 * Math.PI);
+    ctx.globalAlpha = 0.95 - 0.65 * age;
+    ctx.beginPath(); ctx.arc(X(p.lon), Y(p.lat), 2.4, 0, 2 * Math.PI);
     if (p.chance >= 50) { ctx.fillStyle = css("--sure"); ctx.fill(); }
-    else { ctx.strokeStyle = css("--unsure"); ctx.lineWidth = 1.2; ctx.stroke(); }
+    else { ctx.strokeStyle = css("--unsure"); ctx.lineWidth = 1.3; ctx.stroke(); }
   }
   ctx.globalAlpha = 1;
 
   // Path: next 100 min dashed, last 100 min solid
-  trackLine(t, t + 6000, "rgba(255,255,255,.28)", 1.2, [4, 4]);
-  trackLine(t - 6000, t, "rgba(255,255,255,.85)", 1.8);
+  trackLine(t, t + 6000, rgba("--sat", 0.35), 1.2, [4, 4]);
+  trackLine(t - 6000, t, rgba("--sat", 0.9), 1.8);
 
   const [lat, lon] = satPosition(t);
   if (live) {
     ctx.strokeStyle = css("--sat"); ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
-    ctx.beginPath(); ctx.moveTo(X(lon), Y(lat)); ctx.lineTo(sx, sy); ctx.stroke(); ctx.setLineDash([]);
+    ctx.lineDashOffset = -performance.now() / 40;  // dashes flow down to the station
+    ctx.beginPath(); ctx.moveTo(X(lon), Y(lat)); ctx.lineTo(sx, sy); ctx.stroke();
+    ctx.setLineDash([]); ctx.lineDashOffset = 0;
   }
 
-  // Ground station (white diamond)
+  // Ground station (orange diamond)
   ctx.fillStyle = css("--station"); ctx.strokeStyle = css("--bg"); ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(sx, sy - 6); ctx.lineTo(sx + 6, sy); ctx.lineTo(sx, sy + 6); ctx.lineTo(sx - 6, sy);
   ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.font = MONO; ctx.fillStyle = css("--text");
+  ctx.font = MONO; ctx.fillStyle = css("--station");
   ctx.textAlign = "right"; ctx.fillText(D.station.toUpperCase(), sx - 11, sy + 4); ctx.textAlign = "left";
 
-  // Satellite (with a pulsing ring)
+  // Satellite (blue, with a glow and a pulsing ring)
   const pulse = 9 + 3 * Math.sin(performance.now() / 250);
-  ctx.strokeStyle = "rgba(255,255,255,.45)"; ctx.lineWidth = 1;
+  ctx.strokeStyle = rgba("--sat", 0.5); ctx.lineWidth = 1;
   ctx.beginPath(); ctx.arc(X(lon), Y(lat), pulse, 0, 2 * Math.PI); ctx.stroke();
+  ctx.shadowColor = css("--sat"); ctx.shadowBlur = 12;
   ctx.fillStyle = css("--sat");
   ctx.beginPath(); ctx.arc(X(lon), Y(lat), 5, 0, 2 * Math.PI); ctx.fill();
-  ctx.strokeStyle = css("--bg"); ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
   // Name on the left when the satellite is near the right edge, so it isn't cut off
   const nearEdge = X(lon) > W - 100;
   ctx.textAlign = nearEdge ? "right" : "left";
@@ -376,6 +442,7 @@ function render() {
 
 // ---- Side panel ----
 let shownPhoto = null, shownStrip = "";
+const steps = [...document.querySelectorAll("#pipeline .step")];
 
 function updatePanel() {
   const live = currentPass();
@@ -389,22 +456,34 @@ function updatePanel() {
   // Latest photo
   let last = null;
   for (const p of photos) { if (p.t > t) break; last = p; }
+
+  // Pipeline: steps 1-3 while photos are being taken, step 4 during a pass
+  const capturing = last && t - last.t < 60;
+  steps.forEach((s, i) => s.classList.toggle("on", live >= 0 ? i === 3 : capturing && i < 3));
+
   if (last !== shownPhoto) {
     shownPhoto = last;
     if (last) {
-      $("ph-img").src = "thumbs/" + D.images[last.img];
-      $("ph-img").alt = "Photo: " + label(last.truth);
+      const sure = last.chance >= 50;
+      const img = $("ph-img");
+      img.src = "thumbs/" + D.images[last.img];
+      img.alt = "Photo: " + label(last.truth);
+      img.className = sure ? "sure" : "unsure";
+      $("ph-time").textContent = clockText(last.t);
       $("ph-says").textContent = label(last.guess);
       $("ph-chance").textContent = last.chance + "%";
-      const bar = $("ph-bar"), sure = last.chance >= 50;
+      const bar = $("ph-bar");
       bar.style.width = last.chance + "%";
       bar.style.background = sure ? "var(--sure)" : "var(--unsure)";
       const chip = $("ph-chip");
       chip.textContent = sure ? "Sure" : "Not sure";
       chip.className = "chip " + (sure ? "sure" : "unsure");
-      $("ph-decision").textContent = DECISION_TEXT[last.agent];
+      const [text, style] = DECISION[last.agent];
+      $("ph-decision").textContent = text;
+      $("ph-decision").className = "chip " + style;
       const ok = last.truth === last.guess;
-      $("ph-truth").textContent = `Truth: ${label(last.truth)} ${ok ? "✓" : "✗"}  (for checking only; the satellite doesn't know this)`;
+      $("ph-truth").innerHTML = `Truth: ${label(last.truth)} <span class="${ok ? "ok" : "no"}">${ok ? "✓ right" : "✗ wrong"}</span>` +
+        ` · for checking only, the satellite doesn't know this`;
     } else {
       $("ph-says").textContent = "No photos yet";
     }
@@ -424,9 +503,9 @@ function updatePanel() {
       : `Next pass: ${clockText(p.start)} IST (in ${Math.round((p.start - t) / 60)} min, ${Math.round((p.end - p.start) / 60)} min long)`;
     const share = mb ? Math.min(1, p.budget_mb / mb) : 1;
     $("q-fit").style.width = (share * 100) + "%";
-    $("q-fit-text").textContent = mb
-      ? `This pass can send ${p.budget_mb} MB: ${Math.round(share * 100)}% of the waiting photos fit.`
-      : `This pass can send ${p.budget_mb} MB.`;
+    $("q-fit-text").innerHTML = mb
+      ? `This pass can send <b>${p.budget_mb} MB</b>: <b>${Math.round(share * 100)}%</b> of the waiting photos fit.`
+      : `This pass can send <b>${p.budget_mb} MB</b>.`;
   } else {
     const waiting = photos.filter(ph => ph.window === -1 && ph.t <= t).length;
     $("q-count").textContent = waiting.toLocaleString();
@@ -444,7 +523,7 @@ function updatePanel() {
     const full = photos.filter(ph => ph.window === live && ph.agent === "F");
     const sent = Math.ceil(progress * full.length);
     $("dl-text").textContent = `${sent} of ${full.length} full photos, plus short labels for the rest`;
-    const recent = full.slice(Math.max(0, sent - 16), sent);
+    const recent = full.slice(Math.max(0, sent - 8), sent);
     const key = live + ":" + sent;
     if (key !== shownStrip) {
       shownStrip = key;
@@ -463,17 +542,22 @@ function updatePanel() {
     if (f > 0) photosSent += f * photos.filter(ph => ph.window === passes.indexOf(p)).length;
   }
   const n = Math.round(photosSent) || 0;
-  const pct = v => n ? ` (${Math.round(v / n * 100)}%)` : "";
+  const share = v => n ? v / n * 100 : 0;
   const r = Math.round;
-  $("s-raw-correct").textContent = r(sum.raw_correct).toLocaleString() + pct(sum.raw_correct);
-  $("s-ag-correct").textContent = r(sum.agent_correct).toLocaleString() + pct(sum.agent_correct);
+  $("b-raw").style.width = share(sum.raw_correct) + "%";
+  $("b-ag").style.width = share(sum.agent_correct) + "%";
+  $("s-raw-correct").textContent = n ? r(share(sum.raw_correct)) + "%" : "--";
+  $("s-ag-correct").textContent = n ? r(share(sum.agent_correct)) + "%" : "--";
   $("s-raw-wrong").textContent = r(sum.raw_wrong);
   $("s-ag-wrong").textContent = r(sum.agent_wrong);
   $("s-ag-unsure").textContent = r(sum.agent_unsure);
   $("s-raw-full").textContent = r(sum.raw_full).toLocaleString();
   $("s-ag-full").textContent = r(sum.agent_full).toLocaleString();
+  // Colour a number only when it is above zero
+  for (const id of ["s-ag-wrong", "s-ag-unsure", "s-ag-full"]) $(id).classList.toggle("zero", $(id).textContent === "0");
   $("s-note").textContent = n
-    ? `Out of ${n.toLocaleString()} photos taken before these passes. Same downlink budget for both.`
+    ? `Out of ${n.toLocaleString()} photos taken before these passes (raw ${r(sum.raw_correct)}, ` +
+      `agent ${r(sum.agent_correct)} correct). Same downlink budget for both.`
     : "Nothing sent yet. Results appear during each pass.";
 }
 
