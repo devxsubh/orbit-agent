@@ -2,394 +2,181 @@
 
 **An AI agent that runs on a satellite and decides what is worth sending down to Earth.**
 
+Gemma 3 (4B) vision-language model · real orbit data · Python · laptop now, Jetson Orin later
+
+![Demo: the satellite passes over Delhi and sends down what the agent chose](docs/demo_pass.png)
+
+## Main result
+
+> With the same downlink budget (1 Mbps), the onboard agent gets **92%** of the information
+> to the ground correctly. Sending raw photos gets **60%**.
+> It also sends **about half the wrong labels** of a simple rule-based agent (90 vs 173).
+
+![Correct info and wrong labels at each downlink speed](docs/results.png)
+
+Tested on **photos never used while building the agent** (see [Fair testing](#fair-testing)).
+
 ## The problem
-Satellites take far more photos than they can send to Earth.
-They only get a few minutes of connection per pass.
-So most data is wasted or arrives late.
+Satellites take far more photos than they can send to Earth. They can only talk to a ground
+station for a few minutes per pass. Sentinel-2A can talk to Delhi only **1.4% of the time**
+(2 passes a day, about 10 minutes each). So most photos are dropped or arrive late.
 
 ## The idea
-Put a small AI model on the satellite. For each photo, an agent decides:
+Put a small AI model on the satellite. For each photo it gives a short label, like "airport" or
+"farmland". Labels are tiny (about 50 bytes vs 280 KB for a photo), so all of them fit.
+The agent then decides what else to send:
 
-- **Skip** it (clouds, nothing useful)
-- **Describe** it in a short text
-- **Send** a crop or the full image
-- **Not sure?** Send the full image instead of guessing
+- **Sure about the label?** The label is enough.
+- **Not sure?** Mark the label "unsure", so nobody on the ground trusts a guess.
+- **Budget left?** Send full photos where they add the most, starting with the ones the model is least sure about.
 
-## Research question
-> With a fixed amount of data we're allowed to send down, how much useful
-> information can an onboard agent deliver, compared with sending everything raw?
+## How it works
 
-## How we test it (a satellite on your desk)
-- Your laptop (later a Jetson Orin Nano) acts as the satellite
-- Free Sentinel-2 photos are replayed as if the satellite is flying over Earth
-- Real orbit data decides when the satellite can "talk" to the ground
-- We measure: useful info reached the ground ÷ data sent
-
-## Folders
-| Folder | What goes here |
-|---|---|
-| `papers/` | Starter papers. Start with `papers/README.md` |
-| `notes/` | Your notes, one file per paper |
-| `data/` | Satellite images (not saved in git) |
-| `src/orbit/` | Where the satellite is and when it can talk to Earth |
-| `src/model/` | Runs the AI model (Gemma 3 via Ollama) |
-| `src/agent/` | The decision loop (LangGraph) |
-| `src/eval/` | Scores the results |
-| `experiments/` | Results of each run |
-
-## Get started
-```bash
-./setup.sh          # makes the Python environment, installs packages, downloads papers
-python check_setup.py   # checks everything works
+```
+ Real orbit data ──> Photo queue ──> Gemma 3 (4B) ──> Chance it's right ──> Agent ──> Ground pass
+   (TLE, Delhi)      (every 30 s)     labels it        (free signal +       decides     (budget =
+                                                        3-ask agreement)    what goes    pass time
+                                                                            down         x speed)
 ```
 
-## Plan
-| Week | Goal |
-|---|---|
-| 1–2 | Read papers 01, 02, 04. Orbit simulator: contact windows from real satellite data |
-| 3–4 | Run Gemma 3 on satellite photos. Baseline accuracy on EuroSAT / AID |
-| 5–7 | Build the agent: skip / describe / send / not sure |
-| 8–9 | Experiments vs baselines (send everything, cloud filter only, caption everything) |
-| 10 | Write the paper + demo video |
+1. **Orbit** (`src/orbit/`): real orbit data for Sentinel-2A gives the exact times the satellite can talk to Delhi.
+2. **Photo replay** (`src/orbit/replay.py`): a photo every 30 s in daylight gives 1,088 photos (304 MB) per day.
+   At 1 Mbps, raw sending fits only 60% of them.
+3. **Model** (`src/model/vlm.py`): Gemma 3 4B (Ollama, 4-bit, on a MacBook) labels each photo
+   with one of 30 AID classes. About 7.5 s per photo, no training.
+4. **"Not sure" check** (`src/model/confidence.py`): the agent estimates the chance each label is right.
+   It uses a free signal (classes the model often mixes up) plus whether 3 shuffled asks agree.
+5. **Agent v3** (`src/agent/decide.py`): plain label if the chance is at least 50%, else an "unsure" label.
+   Leftover budget goes to full photos, best value per byte first.
+6. **Score** (`src/eval/`): correct info, wrong labels and MB sent, always reported together.
 
-Demo target: end of week 4.
+## Final results
 
-## Results so far
+Same day of orbit (1,088 photos), same budget for every policy. Each cell: **correct info / wrong labels**.
 
-### Orbit simulator (18 Oct 2026)
-- Sentinel-2A passes over Delhi **2 times a day**, about **10.4 min** each.
-- About **7.7 GB per pass** at 100 Mbps.
-- The satellite can talk to Delhi only **1.4%** of the time (Svalbard: about 10%).
-
-### EuroSAT baseline v0 (18 Oct 2026)
-Setup: `gemma3:4b` (Ollama, MacBook 8 GB), no training, 100 photos (10 per class, seed 42),
-photos upscaled 64→448 px, numbered-list prompt, temperature 0.
-File: `experiments/baseline_eurosat_20261018_1505.csv`
-
-| Measure | Result |
-|---|---|
-| Accuracy (10 classes) | **26%** (random = 10%) |
-| Accuracy (3 groups: green / water / built-up) | **66%** |
-| Speed | **6.1 s per photo** (first photo is slower, about 12 s, model loading) |
-| Data size | photo 3.4 KB vs label 8 bytes (about 450x smaller) |
-
-Per class (out of 10):
-
-| Class | Correct | | Class | Correct |
-|---|---|---|---|---|
-| Industrial | 7 | | Residential | 2 |
-| Forest | 4 | | River | 2 |
-| Highway | 4 | | AnnualCrop | 1 |
-| SeaLake | 4 | | Pasture | 0 |
-| HerbaceousVegetation | 2 | | PermanentCrop | 0 |
-
-Most common mix-ups: AnnualCrop → Forest (8), Forest → SeaLake (6), Pasture → Forest (6),
-River → SeaLake (6), HerbaceousVegetation → Forest (5), PermanentCrop → Forest (5).
-
-**What we learned**
-- **The model is biased toward two answers.** It said "Forest" (option 2) 40 times and
-  "SeaLake" (option 10) 20 times. Many mistakes come from this bias, not from what's in the photo.
-- **4 photos got no answer.** On plain blue water photos the model said "none of the options fit"
-  and called them space or atmosphere. Our parser marks these as `unknown`.
-- **Fine green classes are hard** at 64x64 (crops, pasture, orchards, grassland). Big groups are
-  much easier (66%). For the agent, "is this worth sending?" may matter more than the exact class.
-- **Far below NAVI's 88.16%**, but that was on AID, which has much sharper photos. Not a fair comparison yet.
-- **Speed is fine for the mission.** At about 6 s per photo, the laptop can check about 600 photos
-  per hour between ground passes.
-- An earlier quick run (30 photos) gave 20%: `experiments/baseline_eurosat_20261018_1449.csv`.
-
-### Prompt test (18 Oct 2026)
-Same 100 photos, `gemma3:4b`, 448 px. Only the prompt changes.
-
-| Prompt | What it does | Accuracy | 3 groups | Speed | Most common answer |
-|---|---|---|---|---|---|
-| v0 | numbered list, "reply with the number" | 26% | 66% | 6.1 s | Forest (40x) |
-| **v1** | class names, shuffled per photo | **29%** | **70%** | 6.1 s | Forest (45x) |
-| v2 | v1 + what each class looks like | 22% | 62% | 7.0 s | AnnualCrop (39x) |
-
-Files: `experiments/baseline_eurosat_gemma3-4b_v1_448px_20261018_1528.csv`,
-`experiments/baseline_eurosat_gemma3-4b_v2_448px_20261018_1540.csv`
-
-**What we learned**
-- **Prompts barely matter.** With 100 photos, a gap of a few points is within chance
-  (roughly ±9 points). v1 is the best and simplest, so we keep it as the default.
-- **v1 fixed the number-related problems.** "SeaLake" answers dropped from 20 to 7, and
-  there were no more "none of the options" replies.
-- **The "Forest" bias is real.** It isn't caused by the numbers. The model calls most blurry
-  green photos "forest".
-- **Descriptions made it worse.** With v2, the model called 0 of 10 water photos "sea or lake"
-  (it said farmland, grassland, etc.). The long text seems to pull attention away from the image.
-- **So the limit is the image and the model, not the wording.** The next tests should change those.
-
-### Image size test (18 Oct 2026)
-Same 100 photos, `gemma3:4b`, prompt v1. Only the upscale size changes.
-
-| Size | Accuracy | 3 groups | Speed |
-|---|---|---|---|
-| 224 px | 32% | 71% | 6.1 s |
-| 448 px | 29% | 70% | 6.1 s |
-| 896 px | 30% | 70% | 6.8 s |
-
-**What we learned**
-- **Size doesn't matter.** The three runs gave the same answer on 87–88 of 100 photos.
-  The small gaps are chance. Gemma 3 resizes every photo to 896 px inside the model anyway.
-- We keep 448 px as the default.
-- **Every tweak so far lands between 22% and 32%.** The real limit is the tiny 64x64 photos
-  and/or the 4B model. Fine green classes (grassland, pasture, orchards) are almost never right.
-
-### AID quick test (18 Oct 2026), first look only
-AID = the dataset NAVI used: 600x600 px Google Earth photos, 30 classes (random guessing = 3%).
-`gemma3:4b`, prompt v1, **30 photos (1 per class)**.
-File: `experiments/baseline_aid_gemma3-4b_v1_448px_20261018_1855.csv`
-
-| Measure | Result |
-|---|---|
-| Accuracy (30 classes) | **73%** (22 of 30) |
-| Speed | 8.1 s per photo |
-
-- **Sharp photos change everything:** 73% on AID vs about 30% on EuroSAT, with the same model
-  and prompt. So the small model is fine. The 64x64 photos were the main problem.
-- Mistakes are between close classes: medium vs sparse residential, commercial vs city center,
-  playground vs stadium, square vs park.
-- 30 photos is too few to compare with NAVI's 88.16%. The full run (300 photos) comes next.
-
-### AID full baseline (18 Oct 2026)
-`gemma3:4b`, prompt v1, 448 px, **300 photos (10 per class, seed 42)**.
-File: `experiments/baseline_aid_gemma3-4b_v1_448px_20261018_2302.csv`
-
-| Measure | Result |
-|---|---|
-| Accuracy (30 classes) | **61%** (182 of 300; likely range about 55–67%) |
-| Random guessing | 3% |
-| NAVI-Orbital (in orbit, same dataset) | 88.16% |
-| Speed | 7.5 s per photo |
-
-Per class (out of 10):
-
-| Easy (8–10) | Medium (5–7) | Hard (0–4) |
-|---|---|---|
-| Airport 10, Farmland 10, Parking 10, Port 10, Stadium 10, Forest 9, Mountain 9, BaseballField 8, Beach 8, Bridge 8, Viaduct 8 | DenseResidential 7, Industrial 7, Pond 7, BareLand 6, Desert 6, River 6, StorageTanks 6, Church 5, Resort 5, School 5 | Park 4, RailwayStation 4, Square 4, Meadow 3, MediumResidential 3, Center 2, Commercial 1, SparseResidential 1, Playground 0 |
-
-Most common mix-ups: Playground → Stadium (9), SparseResidential → Forest (9),
-Meadow → Farmland (6), Square → Park (6), BareLand ↔ Desert (4 each way),
-MediumResidential → SparseResidential (4), RailwayStation → Industrial (4), StorageTanks → Industrial (4).
-
-**What we learned**
-- **61% vs NAVI's 88.16%.** The gap is real, but we don't know the cause yet. Before
-  comparing, check in paper 04 which Gemma 3 size, prompt and test split NAVI used.
-- **The quick test (73%) was lucky.** Those first 30 photos were easier. On them, the full run
-  gave the same 30 answers, so results are repeatable.
-- **Most mistakes are between close classes** (playground/stadium, bare land/desert,
-  meadow/farmland). For "is this worth sending?", many of these mistakes may not matter.
-- **SparseResidential → Forest (9 of 10):** houses hidden under trees. A real risk for the agent:
-  it could skip photos that show buildings.
-- **Sometimes the model lists several answers** (5 of 300, e.g. "parking lot / viaduct / forest").
-  That's a sign it isn't sure. **Useful for the agent's "not sure → send full image" rule.**
-
-### Photo replay (18 Oct 2026)
-`python -m src.orbit.replay --start 2026-10-19T00:00`: Sentinel-2A, Delhi, 24 h,
-a photo every 30 s in daylight, 1 Mbps downlink, stand-in photos from AID.
-
-| Pass (IST) | Minutes | Photos waiting | Waiting | Can send | Fits |
-|---|---|---|---|---|---|
-| 19 Oct 10:56 | 10.4 | 329 | 91 MB | 78 MB | 85% |
-| 19 Oct 22:07 | 10.1 | 658 | 190 MB | 76 MB | 40% |
-| 19 Oct 23:49 | 4.2 | 101 | 26 MB | 31 MB | 100% |
-
-- **Sending raw, only 58% of the data fits.** The agent has to choose the rest.
-- **Why 1 Mbps:** AID photos are small JPEGs (about 0.3 MB). At 100 Mbps everything fits
-  and there is nothing to decide. The downlink speed sets how tight the budget is,
-  so experiments will try several speeds.
-- **Limit:** time, position and budget are real, but each photo is a random AID photo,
-  not the real view at that place.
-
-### Agent v1 vs baselines (18 Oct 2026)
-`python -m src.eval.run_agent`: same replay (1,088 photos, 754 show human activity), model
-answers from the AID baseline run, unsent photos dropped.
-
-**Agent v1 rules** (`src/agent/decide.py`): send a short label for every photo (about 50 bytes),
-then spend what's left on full photos: model unsure first, then human activity, then the rest.
-**Scoring:** full photo = correct; label = correct only if right; wrong label = "wrong info".
-
-| Downlink | Policy | MB sent | Correct info | Wrong labels | Human-activity photos correct |
-|---|---|---|---|---|---|
-| 0.25 Mbps | send all raw | 46 | 15% | 0 | 16% |
-| | caption all | 0.05 | 61% | 429 | 57% |
-| | **agent v1** | 46 | **67%** | 360 | **66%** |
-| 1 Mbps | send all raw | 179 | 60% | 0 | 59% |
-| | caption all | 0.05 | 61% | 429 | 57% |
-| | **agent v1** | 179 | **82%** | 193 | **84%** |
-| 2 Mbps | send all raw | 269 | 89% | 0 | 88% |
-| | **agent v1** | 269 | **93%** | 71 | **96%** |
-| 4 Mbps | all policies (everything fits) | 308 | 100% | 0 | 100% |
-
-**What we learned**
-- **The agent wins when the budget is tight.** At 1 Mbps: 82% correct vs 60% for raw,
-  with the same MB. At 0.25 Mbps: 67% vs 15%.
-- **When everything fits (4 Mbps), the agent adds nothing.** The idea only helps when the downlink is the bottleneck.
-- **"Correct per MB" alone is misleading.** Caption-all scores about 13,700 per MB because it sends
-  almost nothing, yet it sends 429 wrong labels. We must report correct info, wrong info
-  *and* MB together.
-- **Wrong labels are the agent's weak spot** (193 at 1 Mbps). This is the trust problem from the
-  survey. Next: smarter "not sure" detection, so fewer wrong labels go down.
-- Only 5 of 300 model answers were "unsure" (several answers), so that rule barely mattered yet.
-
-## Next step: better baseline (about 2–3 days)
-Change one thing at a time, on the same 100 photos, so we know what helped.
-
-1. ~~**Remove the answer bias:** class names, shuffled.~~ Done: v1 = 29%.
-2. ~~**Better class descriptions.**~~ Done: v2 = 22%, worse.
-3. ~~**Image size.**~~ Done: 224 / 448 / 896 px all about 30%, no real difference.
-4. **Other model:** `gemma3n:e4b` (fits in 8 GB). `gemma3:12b` is too big for this Mac.
-5. ~~**AID dataset.**~~ Done: 61% on 300 photos (NAVI: 88.16%).
-6. **Better report:** a mix-up chart (confusion matrix) and group accuracy saved with each run.
-
-## Agent v3: chance-based decisions (19 Oct 2026)
-Instead of a yes/no "not sure" rule, v3 estimates **the chance each label is right** (p),
-from the free signal B (+ agreement D in full v3). It learns this on the tuning photos (11–20).
-- Label: plain if p ≥ 50%, else marked "unsure" (a label more likely wrong than right is worth less than nothing).
-- Then full photos go to where they add the most value per byte.
-- **v3-lite** = free signal only (1 model call per photo). **v3** = + agreement (3 calls).
-
-**Photo sizes matter.** With real JPEG sizes, v3 partly won by choosing photos that compress well
-(simple scenes). Real satellite tiles are all the same size. So experiments now give every photo
-the same size by default (`--sizes equal`). Earlier tables above used real JPEG sizes.
-
-Tuning photos 11–20, equal sizes (v3 learned on these, so this is NOT the final result):
-
-| Downlink | Policy | Correct info | Wrong labels |
-|---|---|---|---|
-| 0.25 Mbps | agent v1 | 72% | 304 |
-| | agent v3 | 73% | 171 |
-| 1 Mbps | agent v1 | 86% | 150 |
-| | agent v3 | 93% | 73 |
-
-### Final test (19 Oct 2026): photos 21–30, never used while building
-Files: `experiments/confidence_aid_test_gemma3-4b_r3_n10_skip20.csv` (+ `.png`),
-`experiments/agents_delhi_final_equal_20261019_1229.csv`. Model accuracy on these photos: 63%.
-
-**"Not sure" signals hold up on new photos:** B (free) 0.77, combined 0.71, D 0.68, C 0.63, A 0.50.
-
-**Main result**: same replay (1,088 photos, equal sizes), correct info / wrong labels:
-
-| Downlink | Send all raw | Caption all | Agent v1 | Agent v2 | Agent v3-lite (1 call) | **Agent v3** (3 calls) |
+| Downlink | Send all raw | Caption every photo | Agent v1 (rules) | Agent v2 | Agent v3-lite (1 call) | **Agent v3** (3 calls) |
 |---|---|---|---|---|---|---|
 | 0.25 Mbps | 15% / 0 | 63% / 404 | **70%** / 331 | 58% / 132 | 65% / 204 | 68% / 192 |
 | 0.5 Mbps | 30% / 0 | 63% / 404 | 74% / 282 | 72% / 129 | 78% / 167 | **79%** / 164 |
-| 1 Mbps | 60% / 0 | 63% / 404 | 84% / 173 | 89% / 85 | 91% / 99 | **92%** / 90 |
-| 2 Mbps | 89% / 0 | 63% / 404 | 95% / 51 | 97% / 29 | 99% / 7 | **99%** / 6 |
+| **1 Mbps** | **60% / 0** | 63% / 404 | 84% / 173 | 89% / 85 | 91% / 99 | **92% / 90** |
+| 2 Mbps | 89% / 0 | 63% / 404 | 95% / 51 | 97% / 29 | 99% / 7 | **99% / 6** |
 | 4 Mbps | 100% / 0 | 63% / 404 | 100% / 0 | 100% / 0 | 100% / 0 | 100% / 0 |
 
-**What we learned**
-- **At 1 Mbps, agent v3 delivers 92% correct info vs 60% for sending raw,** with the same MB, and
-  about half the wrong labels of v1 (90 vs 173).
-- **v3-lite is almost as good with no extra model calls** (91% vs 92% at 1 Mbps). The free signal
-  does most of the work. That matters on a satellite with little power.
-- **When the budget is very tight (0.25 Mbps), there's a trade-off:** v1 delivers a bit more correct info
-  (70% vs 68%), v3 sends 42% fewer wrong labels (192 vs 331). Which is better depends on how costly a wrong label is.
-- **The chances are honest on new photos:** when v3 says about 75%, 77% are right; about 94%, 91% are right.
-- When everything fits (4 Mbps), all policies are equal. The agent only helps when the downlink is the bottleneck.
+File: `experiments/agents_delhi_final_equal_20261019_1229.csv`
+
+**How well can the agent tell when the model is wrong?** (300 final test photos; the model got 63% right)
+
+| Signal | Score (AUROC: 0.5 = guessing, 1 = perfect) | Wrong answers caught when flagging 10% / 20% / 30% | Extra cost |
+|---|---|---|---|
+| **B. Classes the model often confuses** | **0.77** | 20% / 34% / 50% | **none** |
+| D. Agreement over 3 shuffled asks | 0.68 | 20% / 34% / 48% | 2 more model calls |
+| C. Answer margin (token probability) | 0.63 | 15% / 31% / 42% | none |
+| A. Model lists several answers | 0.50 | 8% / 18% / 26% | none |
+
+File: `experiments/confidence_aid_test_gemma3-4b_r3_n10_skip20.csv` (+ `.png` chart)
+
+## What we learned
+- **The agent helps most when the downlink is tight.** At 1 Mbps: 92% correct info vs 60% for raw.
+  When everything fits (4 Mbps), all policies are equal.
+- **Knowing when to say "not sure" is what makes v3 better.** It sends about half the wrong labels of
+  v1 and still gets more correct info through.
+- **The best "not sure" signal is free.** "Is this a class the model often gets wrong?" needs no extra
+  model call. v3-lite (free signal only) is almost as good as v3 (91% vs 92% at 1 Mbps).
+  That matters on a satellite with little power.
+- **The model is overconfident.** Its token probability is about 100% even when it's wrong, so that
+  signal is weak. Asking 3 times and checking agreement works better.
+- **The chances are honest.** When v3 says about 75%, 77% of those labels are right; at about 94%, 91% are right.
+- **At very tight budgets there is a trade-off.** At 0.25 Mbps, v1 gets a bit more correct info
+  (70% vs 68%), but v3 sends 42% fewer wrong labels. Which is better depends on how costly a wrong label is.
+- **"Correct per MB" alone is misleading.** Captioning every photo scores very high per MB because it
+  sends almost nothing, but 404 of its labels are wrong. So we always report correct, wrong and MB together.
+
+## Fair testing
+The AID photos are split into three sets that never mix:
+
+| Photos (per class) | Used for |
+|---|---|
+| 1–10 | First baseline. Signal B learns which classes the model confuses here |
+| 11–20 | Tuning: agent v3 learns its weights here |
+| **21–30** | **Final test.** Only used once, for the results above |
+
+All photos get the same size (`--sizes equal`), because real satellite tiles are all the same size.
+With real JPEG sizes, the agent could look better just by picking photos that compress well.
+
+## Honest limits
+- **Photos are stand-ins.** Time, position and budget are real, but each photo is a random AID aerial
+  photo, not the real Sentinel-2 view at that spot.
+- **Model accuracy is 61–65%** on AID's 30 classes, vs 88.16% for NASA JPL's NAVI-Orbital
+  (Gemma 3 in orbit). Their model size, prompt and test split still need checking before comparing.
+- **Laptop, not flight hardware.** Speed and power on a Jetson Orin are not measured yet.
+- **Scoring assumes a full photo always counts as correct** (people on the ground can look at it).
+- **One satellite, one ground station, one day.** Skipping cloudy photos and sending crops are not built yet.
 
 ## Demo
-A web page that plays back one day of the satellite: orbit, photos, the agent's choices and each
-downlink pass, with "send all raw" vs the agent side by side.
+A web page that plays back one day of the satellite: the orbit, each photo and the agent's choice,
+the queue waiting onboard, each downlink pass, and the running score (raw vs agent v3).
+It uses the final test photos.
+
 ```bash
 python -m src.demo.export      # makes demo/data.js and demo/thumbs/ (photos)
-open demo/index.html           # opens in your browser; no server needed
+open demo/index.html           # opens in the browser, no server needed
 ```
-Tips for recording: press Space to play/pause; "Next pass" jumps ahead; passes slow down automatically.
+
+Space = play/pause. "Next pass" jumps ahead. Passes slow down automatically.
 `index.html?t=60000` opens at a set time (seconds after the start).
 
-## Next step: better "not sure" detection (planned 18 Oct 2026)
-Goal: fewer wrong labels sent down, without losing correct info.
+![End of the day: agent v3 92% vs raw 60%](docs/demo_end.png)
 
-1. **Fair test set:** 300 *new* AID photos (photos 11–20 per class). The first 300 are only
-   used to learn rules, never to report results.
-2. **Four "not sure" signals:**
-   A. several answers (current) · B. often-confused classes (learned from the first 300) ·
-   C. token probability of the answer (same call, free) · D. ask 3 times with shuffled options, check agreement.
-3. **Judge them:** share of wrong labels caught when flagging 10 / 20 / 30% of photos, plus a chart.
-4. **Agent v2:** least-trusted photos get full photos first. With no budget left, send the label
-   marked "unsure", **scored as no info** (neither correct nor wrong).
-5. Re-run raw vs caption-all vs agent v1 vs agent v2 at every downlink speed.
+## Run it yourself
+Tested on macOS (Apple Silicon, 8 GB). Needs Python 3.10+, and [Ollama](https://ollama.com) with a Gemma 3 model (`ollama pull gemma3:4b`).
 
-**Status (19 Oct 2026): built and tested. Waiting for the full run (300 new photos, about 2 hours):**
 ```bash
-python -m src.eval.confidence_test      # safe to stop and restart: done photos are kept
-python -m src.eval.run_agent            # then: all 4 policies, uses the new answers automatically
+./setup.sh                              # makes .venv, installs packages, downloads papers
+source .venv/bin/activate
+python check_setup.py                   # health check
+
+python -m src.orbit.contact_windows     # passes over Delhi in the next 24 h, + map
+python -m src.data.aid                  # download AID photos 1-10 per class (85 MB)
+python -m src.data.aid --skip 20        # download the final test photos 21-30
+python -m src.eval.confidence_test --skip 20   # model + "not sure" signals (~2 h, resumable)
+python -m src.eval.run_agent            # all policies at 0.25-4 Mbps (seconds, no model calls)
+python -m src.eval.plot_results         # redraws docs/results.png
 ```
 
-**Quick test (30 new photos, 10 wrong): too few to judge, early signs only**
-File: `experiments/confidence_aid_test_gemma3-4b_r3_n1.csv` (+ `.png` chart)
+More commands (EuroSAT, prompts, image sizes, replay options) are in [docs/experiment_log.md](docs/experiment_log.md).
 
-| Signal | Ranking (0.5 = useless, 1 = best) | Wrong caught when flagging 20% |
-|---|---|---|
-| A. Several answers | 0.47 | 20% |
-| B. Confused classes | 0.74 | 30% |
-| C. Answer margin | 0.46 | 20% |
-| D. Agreement (3 asks) | 0.69 | 30% |
-| A + D + C combined | 0.58 | 20% |
-
-- The model is very overconfident: most answers have about 100% token probability, even
-  wrong ones. So the margin signal (C) looks weak so far.
-- The agent v2 rule (fixed before testing) flags 53% of photos and catches 7 of 10 wrong answers.
-  That's a lot of flags.
-- In the replay at 1 Mbps, agent v2 sent **88 wrong labels vs 204 for agent v1**, but also had
-  less correct info (75% vs 81%). **A trade-off: more trust, less coverage.**
-- Asking 3 times and taking the majority vote did not improve accuracy (63% vs 67%).
-- We do **not** change the rule based on these 30 photos. Wait for the full 300.
-
-### "Not sure" full test (19 Oct 2026): 300 new photos
-File: `experiments/confidence_aid_test_gemma3-4b_r3_n10.csv` (+ `.png` chart).
-Accuracy on the new photos: **65%** (194/300), close to the first set's 61%.
-
-| Signal | Ranking (0.5 = useless, 1 = best) | Wrong caught at 10% / 20% / 30% flagged | Extra cost |
-|---|---|---|---|
-| A. Several answers | 0.50 | 10% / 21% / 26% | none |
-| **B. Confused classes** | **0.79** | **23% / 37% / 53%** | **none** |
-| C. Answer margin | 0.58 | 11% / 25% / 37% | none |
-| D. Agreement (3 asks) | 0.70 | 22% / 39% / 54% | 2 more model calls |
-| A + D + C combined | 0.69 | 17% / 38% / 54% | 2 more model calls |
-
-- **The best signal is free.** B ("is this a class the model often gets wrong?") needs no extra
-  model call. It only uses what we learned from the first 300 photos. Good news for a satellite with little power.
-- **Asking 3 times (D) works too:** when all 3 answers agree, 77% are right. When they don't, only about 32% are.
-- **Token probability (C) is weak** (0.58): the model is about 100% sure even when it's wrong.
-  "Several answers" (A) is useless (0.50); it happened only 7 times.
-- **The agent v2 rule left out the best signal (B)** and included the weak one (C). It flags 45%
-  of photos and catches 62% of wrong answers.
-
-**Agents on the replay** (`experiments/agents_delhi_20261019_1031.csv`; 1,088 photos from the new set)
-
-| Downlink | Policy | Correct info | Wrong labels | Unsure labels | Human-activity correct |
-|---|---|---|---|---|---|
-| 0.25 Mbps | send all raw | 14% | 0 | 0 | 15% |
-| | caption all | 67% | 358 | 0 | 66% |
-| | agent v1 | **72%** | 310 | 0 | 72% |
-| | agent v2 | 54% | **140** | 360 | 56% |
-| 1 Mbps | send all raw | 59% | 0 | 0 | 58% |
-| | agent v1 | **85%** | 158 | 0 | 88% |
-| | agent v2 | 82% | **106** | 90 | **90%** |
-| 2 Mbps | send all raw | 87% | 0 | 0 | 86% |
-| | agent v1 | 94% | 61 | 0 | 97% |
-| | agent v2 | **96%** | **44** | 0 | **97%** |
-
-- **At 1–2 Mbps, agent v2 is the best balance:** a third fewer wrong labels than v1, about the same
-  correct info, and the most human-activity photos right.
-- **At 0.25 Mbps, v2 is too careful:** it halves the wrong labels but loses a lot of correct info,
-  because the budget is too small to send the unsure photos in full.
-- **Both agents beat "send all raw" by a wide margin** whenever the downlink is tight.
+## Project layout
+| Path | What it is |
+|---|---|
+| `src/orbit/` | Orbit simulator (passes, budget per pass) and the photo replay |
+| `src/data/` | Downloads AID (Hugging Face) and EuroSAT (Zenodo) |
+| `src/model/` | Talks to Gemma 3 via Ollama, and the "not sure" signals |
+| `src/agent/` | The agents (v1, v2, v3) and the baselines |
+| `src/eval/` | Baseline tests, agent runs, scoring, charts |
+| `src/demo/` + `demo/` | Demo export and the playback page |
+| `experiments/` | Every run's results (CSV + charts) |
+| `docs/` | README images and the full experiment log |
+| `papers/`, `notes/` | Reading list and paper notes |
 
 ## Status
-- [x] Project set up
-- [ ] Papers 01, 02, 04 read
-- [x] Orbit simulator (`python -m src.orbit.contact_windows`)
-- [x] Model running locally (`python -m src.eval.baseline_eurosat`): baseline v0 = 26%
-- [x] Better baseline: prompt (v1 best), image size (no effect), AID (61%)
-- [ ] Second model (optional)
-- [x] Photo replay along the real orbit (`python -m src.orbit.replay`)
-- [x] Agent v1, plain rules (`python -m src.eval.run_agent`): 82% vs 60% raw at 1 Mbps
-- [x] "Not sure" signals + agents v2, v3 (final test: v3 92% vs raw 60% at 1 Mbps)
-- [x] Demo page (`demo/index.html`)
-- [ ] Experiments
+- [x] Orbit simulator with real orbit data
+- [x] Model running locally: EuroSAT (about 30%, photos too small) and AID (61–65%)
+- [x] Photo replay along the real orbit
+- [x] Agent v1 (rules), v2 and v3 ("not sure"-aware)
+- [x] Final test on unseen photos: **v3 92% vs raw 60% at 1 Mbps**
+- [x] Demo page
+- [ ] Check NAVI's setup (paper 04) to compare accuracy fairly
+- [ ] Skip cloudy photos, send crops
+- [ ] Run on a Jetson Orin Nano (speed and power)
+- [ ] Demo video
 - [ ] Paper draft
+
+## Built on
+- **NAVI-Orbital** (NASA JPL, arXiv 2606.18271): the first vision-language model run fully in orbit
+  (Gemma 3 on a Jetson Orin, April 2026). This project asks the next question: *what should it send down?*
+- **Kodan** (ASPLOS 2023): onboard processing cut downlink by about 89–97%.
+- **On-Orbit Space AI survey** (arXiv 2604.16518): names trust in orbit and "what to send down" as open problems.
+- Datasets: **AID** (30 classes, 600x600 px aerial photos) and **EuroSAT** (Sentinel-2, 64x64 px).
+
+Full reading list: [papers/README.md](papers/README.md).
+Full history of every experiment: [docs/experiment_log.md](docs/experiment_log.md).

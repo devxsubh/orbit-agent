@@ -5,91 +5,112 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>orbit-agent demo</title>
 <style>
+  /* Black and white theme. Shapes (not colours) tell things apart:
+     filled dot = model is sure, hollow ring = model is not sure. */
   :root {
-    --bg: #121211; --surface: #1a1a19; --surface-2: #232321; --border: #33332f;
-    --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e86;
-    --blue: #3987e5;    /* satellite, full photos */
-    --orange: #d95926;  /* ground station, wrong labels */
-    --aqua: #199e70;    /* sure labels, correct info */
-    --yellow: #c98500;  /* unsure labels */
-    --ocean: #161615; --land: #2c2c29; --grid: #23231f;
+    --bg: #000; --surface: #0a0a0a; --surface-2: #151515;
+    --border: #232323; --border-2: #3a3a3a;
+    --text: #fafafa; --text-2: #a3a3a3; --muted: #666;
+    --sat: #fff;        /* satellite */
+    --station: #fff;    /* ground station */
+    --sure: #f5f5f5;    /* sure labels */
+    --unsure: #7a7a7a;  /* unsure labels */
+    --ocean: #000; --land: #181818; --coast: #2c2c2c; --grid: #0f0f0f;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--text);
-    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  .num { font-variant-numeric: tabular-nums; }
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
-  header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-    padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
-  .brand h1 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: .2px; }
-  .brand p { margin: 2px 0 0; color: var(--text-2); font-size: 12.5px; }
+  header { display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    padding: 14px 24px; border-bottom: 1px solid var(--border); background: var(--bg); }
+  .brand h1 { margin: 0; font: 600 15px/1.2 var(--mono); letter-spacing: 2px; text-transform: uppercase; }
+  .brand h1::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 10px;
+    background: var(--text); border-radius: 50%; vertical-align: 1px; }
+  .brand p { margin: 4px 0 0; color: var(--text-2); font-size: 12.5px; }
   .clock { margin-left: auto; text-align: right; }
-  .clock .time { font-size: 20px; font-weight: 600; }
-  .clock .sub { font-size: 12px; color: var(--text-2); }
-  .status { padding: 5px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
-    border: 1px solid var(--border); color: var(--text-2); white-space: nowrap; }
-  .status.live { background: rgba(57,135,229,.16); border-color: var(--blue); color: #a9cdf5; }
+  .clock .time { font-size: 22px; font-weight: 500; letter-spacing: .5px; }
+  .clock .sub { font: 11.5px var(--mono); color: var(--muted); letter-spacing: .3px; }
+  .status { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+    font: 600 11.5px var(--mono); letter-spacing: 1px; text-transform: uppercase;
+    border: 1px solid var(--border-2); color: var(--text-2); white-space: nowrap; }
+  .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--muted); }
+  .status.live { background: var(--text); border-color: var(--text); color: #000; }
+  .status.live::before { background: #000; border-color: #000; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
   .controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  button, select { font: inherit; color: var(--text); background: var(--surface-2);
-    border: 1px solid var(--border); border-radius: 8px; padding: 6px 11px; cursor: pointer; }
-  button:hover, select:hover { border-color: var(--muted); }
-  button.primary { background: var(--blue); border-color: var(--blue); color: #fff; min-width: 76px; }
+  button, select { font: 500 12.5px var(--mono); color: var(--text); background: var(--bg);
+    border: 1px solid var(--border-2); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+  button:hover, select:hover { border-color: var(--text); }
+  button.primary { background: var(--text); border-color: var(--text); color: #000; min-width: 80px; font-weight: 700; }
+  button.primary:hover { background: #d4d4d4; }
   label.check { display: flex; gap: 6px; align-items: center; color: var(--text-2); font-size: 12.5px; }
+  input[type=checkbox] { accent-color: #fff; }
 
-  main { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 16px; padding: 16px 20px; align-items: start; }
-  .about { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; padding: 18px 24px; align-items: start; }
+  .about { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
   .about b { color: var(--text-2); font-weight: 600; }
   .map-wrap { position: relative; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 12px; min-width: 0; }
-  canvas#map { width: 100%; display: block; border-radius: 6px; }
-  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; color: var(--text-2); font-size: 12.5px; }
-  .legend span { display: inline-flex; align-items: center; gap: 6px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-  .timeline { margin-top: 10px; position: relative; }
-  .timeline input { width: 100%; accent-color: var(--blue); }
-  .pass-marks { position: relative; height: 8px; margin: 0 8px; }
-  .pass-marks i { position: absolute; top: 0; height: 8px; min-width: 3px; background: var(--blue);
-    border-radius: 2px; opacity: .8; }
-  .timeline .ends { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2px 8px; color: var(--muted); font-size: 11.5px; }
+    border-radius: 10px; padding: 14px; min-width: 0; }
+  canvas#map { width: 100%; display: block; border-radius: 4px; border: 1px solid var(--border); }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 12px; color: var(--text-2); font-size: 12.5px; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .mk { width: 10px; height: 10px; display: inline-block; flex: none; }
+  .mk.sat { border-radius: 50%; background: var(--sat); box-shadow: 0 0 0 3px rgba(255,255,255,.18); }
+  .mk.station { background: var(--station); transform: rotate(45deg) scale(.85); }
+  .mk.zone { border-radius: 50%; border: 1px dashed var(--text-2); width: 14px; height: 10px; }
+  .mk.sure { border-radius: 50%; background: var(--sure); width: 7px; height: 7px; }
+  .mk.unsure { border-radius: 50%; border: 1.5px solid var(--unsure); width: 8px; height: 8px; }
+  .timeline { margin-top: 12px; position: relative; }
+  .timeline input { width: 100%; accent-color: #fff; }
+  .pass-marks { position: relative; height: 6px; margin: 0 8px; }
+  .pass-marks i { position: absolute; top: 0; height: 6px; min-width: 3px; background: var(--text); border-radius: 1px; }
+  .timeline .ends { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2px 8px;
+    color: var(--muted); font: 11px var(--mono); }
 
   aside { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
-  .card h2 { margin: 0 0 10px; font-size: 12px; font-weight: 600; color: var(--text-2);
-    text-transform: uppercase; letter-spacing: .6px; }
-  .photo-row { display: flex; gap: 12px; }
-  .photo-row img { width: 112px; height: 112px; border-radius: 8px; object-fit: cover;
-    background: var(--surface-2); flex: none; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .card h2 { margin: 0 0 12px; font: 600 11px var(--mono); color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1.5px; }
+  .photo-row { display: flex; gap: 14px; }
+  .photo-row img { width: 112px; height: 112px; border-radius: 6px; object-fit: cover;
+    background: var(--surface-2); flex: none; border: 1px solid var(--border-2); }
   .photo-info { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-  .says { font-size: 16px; font-weight: 600; }
-  .bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
-  .bar > div { height: 100%; border-radius: 3px; }
+  .says { font-size: 17px; font-weight: 600; letter-spacing: -.2px; }
+  .bar { height: 4px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+  .bar > div { height: 100%; border-radius: 2px; }
   .small { font-size: 12.5px; color: var(--text-2); }
-  .chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
-    border: 1px solid; width: fit-content; }
-  .chip.sure { color: #7fd6b4; border-color: var(--aqua); background: rgba(25,158,112,.14); }
-  .chip.unsure { color: #f0c66b; border-color: var(--yellow); background: rgba(201,133,0,.14); }
-  .decision { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .small b { color: var(--text); font-weight: 600; }
+  .chip { display: inline-block; padding: 2px 9px; border-radius: 4px; font: 700 10.5px var(--mono);
+    letter-spacing: 1px; text-transform: uppercase; border: 1px solid; width: fit-content; }
+  .chip.sure { color: #000; border-color: var(--sure); background: var(--sure); }
+  .chip.unsure { color: var(--text-2); border-color: var(--unsure); border-style: dashed; background: transparent; }
+  .decision { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
   .truth { color: var(--muted); font-size: 12px; margin-top: 4px; }
 
-  .big { font-size: 26px; font-weight: 650; }
+  .big { font-size: 30px; font-weight: 500; letter-spacing: -.5px; }
   .queue-line { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-  .fit-bar { position: relative; height: 10px; background: var(--surface-2); border-radius: 5px; overflow: hidden; margin: 8px 0 6px; }
-  .fit-bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--blue); border-radius: 5px; }
+  .fit-bar { position: relative; height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin: 10px 0 6px; }
+  .fit-bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--text); border-radius: 3px; }
 
   table.score { width: 100%; border-collapse: collapse; }
-  table.score th { text-align: right; font-size: 12px; color: var(--text-2); font-weight: 600; padding: 0 0 6px; }
+  table.score th { text-align: right; font: 600 11px var(--mono); color: var(--muted); padding: 0 0 8px;
+    text-transform: uppercase; letter-spacing: .8px; }
+  table.score th:last-child { color: var(--text); }
   table.score th:first-child, table.score td:first-child { text-align: left; }
-  table.score td { padding: 5px 0; border-top: 1px solid var(--border); text-align: right; }
-  table.score td.agent { font-weight: 650; }
-  .note { margin-top: 8px; color: var(--muted); font-size: 11.5px; }
+  table.score td { padding: 7px 0; border-top: 1px solid var(--border); text-align: right; color: var(--text-2); }
+  table.score td:first-child { color: var(--text-2); }
+  table.score td.agent { font-weight: 700; color: var(--text); }
+  .note { margin-top: 10px; color: var(--muted); font-size: 11.5px; }
 
-  .downlink { margin-top: 10px; display: none; }
+  .downlink { margin-top: 12px; display: none; }
   .downlink.on { display: block; }
-  .strip { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-top: 6px; }
-  .strip img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; background: var(--surface-2); }
+  .strip { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-top: 8px; }
+  .strip img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 3px; background: var(--surface-2); }
 
   .missing { max-width: 560px; margin: 80px auto; padding: 24px; text-align: center; }
-  code { background: var(--surface-2); padding: 2px 6px; border-radius: 4px; }
+  code { font-family: var(--mono); background: var(--surface-2); padding: 2px 6px; border-radius: 4px; }
 
   @media (max-width: 900px) {
     main { grid-template-columns: 1fr; padding: 12px 16px; }
@@ -129,13 +150,14 @@
     <div class="timeline">
       <div class="pass-marks" id="pass-marks"></div>
       <input type="range" id="scrub" min="0" max="86400" step="30" value="0" aria-label="Time">
-      <div class="ends"><span id="t-start">--</span><span>Blue marks = passes over the ground station</span><span id="t-end">--</span></div>
+      <div class="ends"><span id="t-start">--</span><span>White marks = passes over the ground station</span><span id="t-end">--</span></div>
     </div>
     <div class="legend">
-      <span><i class="dot" style="background:var(--blue)"></i>Satellite</span>
-      <span><i class="dot" style="background:var(--orange)"></i>Ground station + contact zone</span>
-      <span><i class="dot" style="background:var(--aqua)"></i>Photo: model is sure</span>
-      <span><i class="dot" style="background:var(--yellow)"></i>Photo: model is not sure</span>
+      <span><i class="mk sat"></i>Satellite</span>
+      <span><i class="mk station"></i>Ground station</span>
+      <span><i class="mk zone"></i>Contact zone</span>
+      <span><i class="mk sure"></i>Photo: model is sure</span>
+      <span><i class="mk unsure"></i>Photo: model is not sure</span>
     </div>
     <div class="about" id="about"></div>
   </section>
@@ -164,7 +186,7 @@
       <div class="fit-bar"><div class="fill" id="q-fit"></div></div>
       <div class="small" id="q-fit-text">--</div>
       <div class="downlink" id="downlink">
-        <div class="small"><b style="color:var(--text)">Sending now:</b> <span id="dl-text">--</span></div>
+        <div class="small"><b>Sending now:</b> <span id="dl-text">--</span></div>
         <div class="strip" id="dl-strip"></div>
       </div>
     </div>
@@ -244,6 +266,7 @@ let W = 0, H = 0, DPR = 1;
 const X = lon => (lon + 180) / 360 * W;
 const Y = lat => (90 - lat) / 180 * H;
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const MONO = '600 11px ui-monospace, "SF Mono", Menlo, monospace';
 
 function drawBase() {
   base.width = W * DPR; base.height = H * DPR;
@@ -252,7 +275,7 @@ function drawBase() {
   bctx.strokeStyle = css("--grid"); bctx.lineWidth = 1;
   for (let lon = -180; lon <= 180; lon += 30) { bctx.beginPath(); bctx.moveTo(X(lon), 0); bctx.lineTo(X(lon), H); bctx.stroke(); }
   for (let lat = -90; lat <= 90; lat += 30) { bctx.beginPath(); bctx.moveTo(0, Y(lat)); bctx.lineTo(W, Y(lat)); bctx.stroke(); }
-  bctx.fillStyle = css("--land");
+  bctx.fillStyle = css("--land"); bctx.strokeStyle = css("--coast"); bctx.lineWidth = 0.8;
   for (const ring of D.land) {
     bctx.beginPath();
     ring.forEach(([lon, lat], i) => {
@@ -263,7 +286,7 @@ function drawBase() {
       }
       i ? bctx.lineTo(X(lon), Y(lat)) : bctx.moveTo(X(lon), Y(lat));
     });
-    bctx.closePath(); bctx.fill();
+    bctx.closePath(); bctx.fill(); bctx.stroke();
   }
 }
 
@@ -305,44 +328,50 @@ function render() {
   const zone = 18.75, sx = X(D.station_lon), sy = Y(D.station_lat);
   ctx.beginPath();
   ctx.ellipse(sx, sy, zone / Math.cos(D.station_lat * Math.PI / 180) / 360 * W, zone / 180 * H, 0, 0, 2 * Math.PI);
-  ctx.fillStyle = live ? "rgba(217,89,38,.20)" : "rgba(217,89,38,.08)"; ctx.fill();
-  ctx.strokeStyle = "rgba(217,89,38,.55)"; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = live ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.035)"; ctx.fill();
+  ctx.strokeStyle = live ? "rgba(255,255,255,.8)" : "rgba(255,255,255,.35)";
+  ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]);
 
-  // Photos taken in the last 3 hours
+  // Photos taken in the last 3 hours: filled = sure, hollow ring = not sure
   const taken = photos.filter(p => p.t <= t && p.t > t - 3 * 3600);
   for (const p of taken) {
     const age = (t - p.t) / (3 * 3600);
-    ctx.globalAlpha = 0.85 - 0.6 * age;
-    ctx.fillStyle = p.chance >= 50 ? css("--aqua") : css("--yellow");
-    ctx.beginPath(); ctx.arc(X(p.lon), Y(p.lat), 2.2, 0, 2 * Math.PI); ctx.fill();
+    ctx.globalAlpha = 0.9 - 0.65 * age;
+    ctx.beginPath(); ctx.arc(X(p.lon), Y(p.lat), 2.2, 0, 2 * Math.PI);
+    if (p.chance >= 50) { ctx.fillStyle = css("--sure"); ctx.fill(); }
+    else { ctx.strokeStyle = css("--unsure"); ctx.lineWidth = 1.2; ctx.stroke(); }
   }
   ctx.globalAlpha = 1;
 
   // Path: next 100 min dashed, last 100 min solid
-  trackLine(t, t + 6000, "rgba(57,135,229,.35)", 1.5, [4, 4]);
-  trackLine(t - 6000, t, "rgba(57,135,229,.85)", 2);
+  trackLine(t, t + 6000, "rgba(255,255,255,.28)", 1.2, [4, 4]);
+  trackLine(t - 6000, t, "rgba(255,255,255,.85)", 1.8);
 
   const [lat, lon] = satPosition(t);
   if (live) {
-    ctx.strokeStyle = css("--blue"); ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = css("--sat"); ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
     ctx.beginPath(); ctx.moveTo(X(lon), Y(lat)); ctx.lineTo(sx, sy); ctx.stroke(); ctx.setLineDash([]);
   }
 
-  // Ground station
-  ctx.fillStyle = css("--orange");
-  ctx.beginPath(); ctx.arc(sx, sy, 5, 0, 2 * Math.PI); ctx.fill();
-  ctx.strokeStyle = css("--surface"); ctx.lineWidth = 2; ctx.stroke();
-  ctx.font = "600 12px system-ui, sans-serif"; ctx.fillStyle = css("--text");
-  ctx.textAlign = "right"; ctx.fillText(D.station, sx - 9, sy + 4); ctx.textAlign = "left";
+  // Ground station (white diamond)
+  ctx.fillStyle = css("--station"); ctx.strokeStyle = css("--bg"); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(sx, sy - 6); ctx.lineTo(sx + 6, sy); ctx.lineTo(sx, sy + 6); ctx.lineTo(sx - 6, sy);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.font = MONO; ctx.fillStyle = css("--text");
+  ctx.textAlign = "right"; ctx.fillText(D.station.toUpperCase(), sx - 11, sy + 4); ctx.textAlign = "left";
 
-  // Satellite (with a soft glow)
+  // Satellite (with a pulsing ring)
   const pulse = 9 + 3 * Math.sin(performance.now() / 250);
-  ctx.fillStyle = "rgba(57,135,229,.25)";
-  ctx.beginPath(); ctx.arc(X(lon), Y(lat), pulse, 0, 2 * Math.PI); ctx.fill();
-  ctx.fillStyle = css("--blue");
-  ctx.beginPath(); ctx.arc(X(lon), Y(lat), 5.5, 0, 2 * Math.PI); ctx.fill();
-  ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
-  ctx.fillStyle = css("--text"); ctx.fillText(D.satellite, X(lon) + 10, Y(lat) - 9);
+  ctx.strokeStyle = "rgba(255,255,255,.45)"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(X(lon), Y(lat), pulse, 0, 2 * Math.PI); ctx.stroke();
+  ctx.fillStyle = css("--sat");
+  ctx.beginPath(); ctx.arc(X(lon), Y(lat), 5, 0, 2 * Math.PI); ctx.fill();
+  ctx.strokeStyle = css("--bg"); ctx.lineWidth = 1.5; ctx.stroke();
+  // Name on the left when the satellite is near the right edge, so it isn't cut off
+  const nearEdge = X(lon) > W - 100;
+  ctx.textAlign = nearEdge ? "right" : "left";
+  ctx.fillStyle = css("--text"); ctx.fillText(D.satellite, X(lon) + (nearEdge ? -12 : 12), Y(lat) - 10);
+  ctx.textAlign = "left";
 }
 
 // ---- Side panel ----
@@ -354,8 +383,7 @@ function updatePanel() {
   status.textContent = live >= 0 ? `Talking to ${D.station}` : "Out of contact";
   status.classList.toggle("live", live >= 0);
   $("time").textContent = clockText(t) + " IST";
-  $("clock-sub").textContent = fmt(t, { day: "numeric", month: "short" }) +
-    ` · ${D.satellite} · downlink ${D.rate_mbps} Mbps`;
+  $("clock-sub").textContent = fmt(t, { day: "numeric", month: "short" }) + ` · ${D.rate_mbps} Mbps`;
   scrub.value = t;
 
   // Latest photo
@@ -370,7 +398,7 @@ function updatePanel() {
       $("ph-chance").textContent = last.chance + "%";
       const bar = $("ph-bar"), sure = last.chance >= 50;
       bar.style.width = last.chance + "%";
-      bar.style.background = sure ? "var(--aqua)" : "var(--yellow)";
+      bar.style.background = sure ? "var(--sure)" : "var(--unsure)";
       const chip = $("ph-chip");
       chip.textContent = sure ? "Sure" : "Not sure";
       chip.className = "chip " + (sure ? "sure" : "unsure");
