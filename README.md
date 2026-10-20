@@ -150,6 +150,12 @@ The AID photos are split into three sets that never mix:
 | **21–30** | **Final test.** Only used once per model, for the results above |
 | 31+ | Training photos for the v4 head only (Gemma never used them) |
 
+**Overfitting check** (`python -m src.eval.overfit_check`): on 900 AID and 1,000 Sentinel-2 photos that
+no model, setting or decision ever touched, agent v4's head scores the same as on the final test
+(AID 94.4% vs 94.3%, Sentinel-2 92.5% vs 92.7%). Two honest caveats: the AID number moves between about
+94% and 96% with tiny details (95% range ±2.5 points), and EuroSAT may be inflated because neighbouring tiles
+of the same scene can land in both training and test (without near-twins: 88.4%).
+
 All photos get the same size (`--sizes equal`), because real satellite tiles are all the same size.
 With real JPEG sizes, the agent could look better just by picking photos that compress well.
 
@@ -160,8 +166,9 @@ With real JPEG sizes, the agent could look better just by picking photos that co
 - **Agent v4 learned from labelled AID photos; Gemma saw none.** v4 is "supervised", v1-v3 are
   "zero-shot", so compare them with that in mind. On real Sentinel-2 photos (EuroSAT) the AID head drops
   to 33%; it needs about 1,000 labelled photos from the same kind of camera to reach 92.8%.
-- **Gemma's accuracy is 61–65%** on AID's 30 classes, vs 88.16% for NASA JPL's NAVI-Orbital
-  (Gemma 3 in orbit). Their model size, prompt and test split still need checking before comparing.
+- **Gemma's accuracy is 61–65%** on AID's 30 classes, vs 88.16% for NASA JPL's NAVI-Orbital. NAVI cut AID
+  to 18 classes; scored that way, our Gemma gets 76.5%. The rest of the gap fits their 18-option prompt,
+  higher-resolution input and retries.
 - **Laptop, not flight hardware.** Speeds are from a MacBook M2 and a Kaggle T4. Speed and power
   on a Jetson Orin are not measured yet.
 - **Scoring assumes a full photo always counts as correct** (people on the ground can look at it).

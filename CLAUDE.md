@@ -99,6 +99,7 @@ smart compression (FOOL paper).
 | `src/model/cnn.py` | Tiny CNN baseline (MobileNetV3-Small, ImageNet start, all weights trained, flips/rot90, 20 epochs, best epoch + temperature on tuning). Same photo sets as the heads; CSV in head format -> `run_agent --head` / `sentinel_test --head-csv` | **done, works** (Kaggle T4, 7 min) |
 | `src/eval/label_curve.py` + `src/eval/plot_label_curve.py` | Accuracy vs training photos per class (5/10/20/50/100, 3 seeds) for frozen head vs tiny CNN on AID and EuroSAT -> `experiments/label_curve_*.csv`, chart `docs/label_curve.png` (head yellow, CNN magenta, Gemma grey dashed) | **done, works** (Kaggle) |
 | `src/eval/replay_bars.py` | Replay error bars: 7 days (19-25 Oct) x 3 stations x 3 seeds (42-44), AID (all agents + v4 head + v4 CNN) and EuroSAT (raw, v4 head, v4 CNN), 0.25-2 Mbps; mean ± std table, CSV, `--plot` -> `docs/replay_bars.png` | **done, works** (40 s) |
+| `src/eval/overfit_check.py` | Overfitting checks for the small head: train/tuning/final/FRESH accuracy with bootstrap ranges, near-duplicate (cosine > 0.95) check, replay with fresh photos. FRESH = AID 131-160/class, EuroSAT next 100/class | **done, works** |
 | `paper/outline.md` | Paper outline for IGARSS 2027 (4 pages, deadline ~10 Jan 2027): titles, sections with page budget, Tables 1-2 + Figures (results.png, label_curve.png) with numbers and source files, TODO list (Jetson first), timeline | draft |
 | `src/cloud/kaggle_run.py` + `kaggle/` | Runs `head.py` on a free Kaggle T4 from the terminal: writes `kaggle/orbit-agent-head.ipynb` (clones the repo from GitHub, so push first), pushes, waits, copies CSVs to `experiments/` and embeddings to `data/processed/` | **done, works** (full run 20 Oct, 72 min on a T4) |
 
@@ -213,6 +214,11 @@ python check_setup.py                                    # health check
   Paper message: frozen head for the start of a mission (few labels, 30 KB update), tiny CNN once labels are many.
 - **Replay error bars (20 Oct):** Delhi 1 Mbps, 21 runs: raw 58.0±5.3%, v3 91.1±3.0% / 83±14 wrong, CNN 98.6±0.7% / 14±6,
   head 100.0±0.0% / 0. Policy order never changes. Svalbard (12 passes/day) raw 83% -> agent matters most at Delhi/Bengaluru.
+- **Overfitting check (20 Oct):** FRESH never-used photos: AID 94.4% (final 94.3%), EuroSAT 92.5% (92.7%) -> no overfitting
+  to final. AID head number moves 94.3-95.7% (C=1000 vs 3000 nearly tied on tuning) -> report ~95% ±2.5.
+  EuroSAT: 723/1000 final photos have a near-twin in training; without them 88.4% -> possible spatial leakage;
+  fix = spatial split (EuroSAT GeoTIFF has coords). NAVI 88.16% = AID cut to 18 classes; our Gemma re-scored = 76.5%.
+  Closest work: Telepix embedding-uplink kNN triage (arXiv 2604.03301, ICLR 2026 ML4RS workshop; no budget, no calibration).
 - **README, chart and demo show agent v4 (small head) since 20 Oct.** Screenshots made with headless Chrome:
   `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --window-size=1440,900
   --virtual-time-budget=5000 --screenshot=out.png "file://$PWD/demo/index.html?t=19900"` (t=86400 = end of day).

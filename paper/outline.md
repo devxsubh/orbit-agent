@@ -39,6 +39,9 @@ Every number below comes from a file in `experiments/` and is explained in `docs
 
 ## 2. Related work (about 0.4 page)
 - Onboard VLMs / foundation models: NAVI-Orbital (arXiv 2606.18271), DPhi Space, ImageSat Gemma-3n.
+- Closest recent work: embedding-only uplink + onboard kNN triage (Sim, Telepix, ICLR 2026 ML4RS workshop,
+  arXiv 2604.03301): no downlink budget, no calibration ("future work"). SHRUG-FM (arXiv 2511.10370):
+  abstention for EO foundation models, not onboard. Calibrated selective classification (Fisch et al. 2022).
 - Onboard prioritisation: 6U CubeSat CNN triage (arXiv 2408.14865), segmentation-based prioritisation
   (Remote Sensing 2024, 16(10):1729), HYPSO-1 onboard classification, onboard vessel detection (arXiv 2610.12182),
   Kodan (ASPLOS 2023), orbital edge computing (Denby & Lucia 2020).
@@ -105,6 +108,8 @@ Option: Figure 1 = `docs/results.png` (all rates) instead of the table if space 
 - Photos are stand-ins (not the true view at each spot); a full photo always counts as correct;
   photos repeat in the replay (300 / 1,000 final photos over 1,088 slots).
 - Head and CNN are supervised, Gemma is zero-shot: different settings, say so.
+- Overfitting check (`src/eval/overfit_check.py`): fresh never-used photos give the same accuracy
+  (AID 94.4% vs final 94.3%; Sentinel-2 92.5% vs 92.7%). EuroSAT may still be inflated by neighbouring tiles.
 - One satellite. Done: 7 days x 3 stations x 3 photo orders (error bars in Table 1).
 - No cloud handling or crops yet.
 
@@ -118,7 +123,11 @@ Option: Figure 1 = `docs/results.png` (all rates) instead of the table if space 
 ## TODO list before submitting (in order)
 1. **Jetson Orin Nano**: latency, power, energy per photo for Gemma, SigLIP heads and the CNN.
 2. ~~Error bars for the replay~~ **done** (20 Oct): `src/eval/replay_bars.py`, `docs/replay_bars.png`.
-3. **Check NAVI-Orbital's setup** (paper 04) to compare Gemma's 63% with their 88.16% fairly.
+3. ~~Check NAVI-Orbital's setup~~ **done**: they cut AID to 18 classes; our Gemma re-scored that way = 76.5%
+   (rest of gap: 18-option prompt, pan-and-scan, retries). Say this in Section 4.
+3b. **Spatially separate Sentinel-2 test** (EuroSAT GeoTIFF has coordinates): 72% of EuroSAT final photos
+   have a near-twin in training; without them the head gets 88.4% instead of 92.7%.
+3c. Report accuracies as ranges (bootstrap 95%), e.g. AID head "about 95% (±2.5)", not "95.7%".
 4. Score as a formula; agent as pseudo-code (5 lines).
 5. FOOL baseline or a clear reason to skip it.
 6. Get the IEEE IGARSS LaTeX template; write sections 3-4 first, then 1, 2, 5, 6, abstract last.

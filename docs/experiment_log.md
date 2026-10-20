@@ -553,3 +553,43 @@ CNN 99.6 ± 0.2% / 4 ± 2.
   (polar, 12 passes a day) gets 4x the contact time, so raw sending already reaches 83% at 1 Mbps and the gain shrinks.
 - Raw sending varies most (± 5% at Delhi): its result depends on pass lengths, which change day to day.
   The agents are steadier because labels always fit.
+
+## Overfitting check and NAVI comparison, 20 Oct 2026
+
+`python -m src.eval.overfit_check` (small head, SigLIP-base). FRESH = photos no model, setting or decision
+ever touched: AID photos 131-160 per class (900), EuroSAT the next 100 per class (1,000).
+
+| Set | AID (20 training photos/class) | Sentinel-2 / EuroSAT (100/class) |
+|---|---|---|
+| Training | 100.0% | 100.0% |
+| Tuning | 96.0% (93.7-98.0) | 93.8% (91.6-95.8) |
+| FINAL | 94.3% (91.7-96.7) | 92.7% (91.0-94.2) |
+| **FRESH, never used** | **94.4% (92.9-95.8)** | **92.5% (90.9-94.1)** |
+| Final photos with a near-twin (cosine > 0.95) in training | 25 of 300 | 723 of 1,000 |
+| FINAL without those photos | 93.8% | 88.4% |
+(95% bootstrap ranges in brackets. Gemma 3 on the AID final photos: 63.0%, range 57.7-68.3%.)
+
+Replay with FRESH photos only (Delhi, 7 days x 3 photo orders), agent v4 vs raw:
+AID 0.25 Mbps 98.7% / 13 wrong vs 18.4%; 1 Mbps 99.9% / 1 wrong vs 58.0%.
+Sentinel-2 0.25 Mbps 97.8% / 22 wrong; 1 Mbps 99.8% / 2 wrong.
+
+- **No overfitting to the final test photos:** fresh photos give the same accuracy (AID 94.4% vs 94.3%,
+  Sentinel-2 92.5% vs 92.7%). Training accuracy is 100% (the head memorises its few training photos), but
+  that doesn't carry over as a gap: tuning, final and fresh agree.
+- **The AID number moves with tiny details:** with identical embeddings (cosine 1.000) the setting picker
+  chooses C=1000 or C=3000 (tuning log-loss 0.140 vs 0.142), giving 94.3-95.7% on the final photos. Report
+  "about 95% (95% range ±2.5)", not "95.7%".
+- **EuroSAT may be inflated by neighbouring tiles** ("spatial leakage", a known EuroSAT problem; one preprint
+  reports 3.5-21 points). 72% of final photos have a near-twin in training (similarity is high for all EuroSAT
+  photos: 0.959 median, same as training-to-training 0.957). Without twins: 88.4%. The fresh set is drawn the
+  same way, so it can't rule this out. Fix for the paper: a spatially separate split (needs the GeoTIFF
+  version of EuroSAT, which has coordinates) or another Sentinel-2 dataset with locations.
+- AID shows no such sign (twins 25/300, accuracy without them 93.8%).
+
+**NAVI-Orbital's 88.16% is on AID cut to 18 classes** (arXiv 2606.18271, Sec. IV-B): 3 residential classes
+merged; Meadow -> Agricultural; BareLand -> Desert; Park -> Forest; Viaduct -> Bridge (their table also has a
+Highway Interchange class, so this is unclear); Stadium -> Venue; 7 classes removed (Baseball, Church, School,
+Center, Resort, Square, Playground). They also prompt with the 18 names, use pan-and-scan high resolution,
+temperature 0.2 and up to 10 retries. Our final photos re-scored with their 18 classes (our predictions mapped,
+removed classes dropped, 230 photos): **Gemma 76.5%** (30 classes: 63.0%), small head 96.5%, tiny CNN 88.3%.
+The rest of the gap to 88% fits their 18-option prompt and higher-resolution input.
