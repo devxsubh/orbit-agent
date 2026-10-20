@@ -523,3 +523,33 @@ File: `experiments/label_curve_20261020_0752.csv`, chart: `docs/label_curve.png`
 - **For the paper:** a new satellite or camera starts with few labelled photos. The frozen head is the right
   tool then (and needs only a 30 KB update); once a few thousand labels exist, a tiny CNN is cheaper to run
   for the same accuracy. Both beat Gemma 3 with no training at every size.
+
+## Replay error bars: 7 days x 3 stations x 3 photo orders, 20 Oct 2026
+
+`python -m src.eval.replay_bars --plot` (saved answers, no model calls, 40 s). Days 19-25 Oct 2026,
+stations Delhi / Bengaluru / Svalbard, photo orders (seeds) 42-44 = 21 runs per station, policy and rate.
+File: `experiments/replay_bars_20261020_1413.csv`, chart: `docs/replay_bars.png`.
+Check: Delhi, 19 Oct, seed 42 gives exactly the main-results numbers.
+
+**AID final photos, 1 Mbps: correct info / wrong labels, mean ± spread (standard deviation)**
+
+| Policy | Delhi | Bengaluru | Svalbard |
+|---|---|---|---|
+| Send all raw | 58.0 ± 5.3% / 0 | 55.5 ± 3.9% / 0 | 83.0 ± 2.2% / 0 |
+| Caption all (Gemma) | 63.4 ± 0.7% / 372 ± 17 | 63.4 ± 0.7% / 378 ± 19 | 63.0 ± 0.7% / 462 ± 16 |
+| Agent v1 | 84.3 ± 2.0% / 159 ± 16 | 83.4 ± 1.5% / 172 ± 15 | 94.2 ± 1.1% / 73 ± 15 |
+| Agent v3 | 91.1 ± 3.0% / 83 ± 14 | 90.9 ± 1.4% / 93 ± 13 | 95.7 ± 1.8% / 45 ± 10 |
+| Agent v4, tiny CNN | 98.6 ± 0.7% / 14 ± 6 | 98.6 ± 0.2% / 14 ± 2 | 99.2 ± 0.7% / 10 ± 10 |
+| **Agent v4, frozen head** | **100.0 ± 0.0% / 0 ± 0** | **100.0 ± 0.0% / 0 ± 0** | **100.0 ± 0.0% / 0 ± 0** |
+
+At 0.25 Mbps (Delhi): raw 18.4 ± 3.6%, v3 68.7 ± 2.1% / 167 ± 16, CNN 92.2 ± 0.9% / 76 ± 6,
+head 99.3 ± 0.4% / 8 ± 4. Sentinel-2 photos, 1 Mbps (Delhi): raw 58.0 ± 5.3%, head 99.8 ± 0.3% / 2 ± 3,
+CNN 99.6 ± 0.2% / 4 ± 2.
+
+- **The one-day results are typical.** Raw 60% and v3 92% / 90 wrong (19 Oct) sit inside the spread.
+- **The order of the policies never changes** across days, stations or photo orders: head > CNN > v3 > v1 > raw
+  (AID); head ≈ CNN on Sentinel-2.
+- **The agent matters most for low-latitude stations like Delhi and Bengaluru** (3 passes a day). Svalbard
+  (polar, 12 passes a day) gets 4x the contact time, so raw sending already reaches 83% at 1 Mbps and the gain shrinks.
+- Raw sending varies most (± 5% at Delhi): its result depends on pass lengths, which change day to day.
+  The agents are steadier because labels always fit.

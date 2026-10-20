@@ -70,15 +70,17 @@ Every number below comes from a file in `experiments/` and is explained in `docs
 - AID: photos 1-10/class first baseline, 11-20 tuning, **21-30 final test (used once)**, 31+ training (heads/CNN only).
 - EuroSAT (real Sentinel-2): 1,000 final (incl. Gemma's 100), 500 tuning, up to 100/class training.
 
-### Table 1: main replay result (AID, 1 Mbps; one row per policy)
+### Table 1: main replay result (AID, 1 Mbps, Delhi; mean ± std over 7 days x 3 photo orders)
 | Policy | Correct info | Wrong labels |
 |---|---|---|
-| Send all raw | 60% | 0 |
-| Caption every photo (Gemma, NAVI-style) | 63% | 404 |
-| Agent v3 (Gemma + chances) | 92% | 90 |
-| Agent v4, tiny CNN (600 labels) | 99% | 12 |
-| **Agent v4, frozen head (600 labels)** | **100%** | **0** |
-Files: `agents_delhi_final_equal_20261019_1229.csv`, `..._20261020_0947.csv`, `..._20261020_1207.csv`.
+| Send all raw | 58.0 ± 5.3% | 0 |
+| Caption every photo (Gemma, NAVI-style) | 63.4 ± 0.7% | 372 ± 17 |
+| Agent v3 (Gemma + chances) | 91.1 ± 3.0% | 83 ± 14 |
+| Agent v4, tiny CNN (600 labels) | 98.6 ± 0.7% | 14 ± 6 |
+| **Agent v4, frozen head (600 labels)** | **100.0 ± 0.0%** | **0 ± 0** |
+File: `replay_bars_20261020_1413.csv` (also Bengaluru and Svalbard; the policy order never changes).
+Text: at Svalbard (12 passes/day) raw already gets 83%, so the agent matters most at low-latitude stations.
+Option: Figure = `docs/replay_bars.png` (error bands, 3 stations).
 Option: Figure 1 = `docs/results.png` (all rates) instead of the table if space allows.
 
 ### Table 2: labellers (accuracy, calibration error, size, compute)
@@ -103,7 +105,7 @@ Option: Figure 1 = `docs/results.png` (all rates) instead of the table if space 
 - Photos are stand-ins (not the true view at each spot); a full photo always counts as correct;
   photos repeat in the replay (300 / 1,000 final photos over 1,088 slots).
 - Head and CNN are supervised, Gemma is zero-shot: different settings, say so.
-- One satellite, one ground station, one day. **TODO:** more days, stations and seeds -> error bars on Table 1.
+- One satellite. Done: 7 days x 3 stations x 3 photo orders (error bars in Table 1).
 - No cloud handling or crops yet.
 
 ## 6. Conclusion (3-4 sentences)
@@ -115,7 +117,7 @@ Option: Figure 1 = `docs/results.png` (all rates) instead of the table if space 
 
 ## TODO list before submitting (in order)
 1. **Jetson Orin Nano**: latency, power, energy per photo for Gemma, SigLIP heads and the CNN.
-2. **Error bars for the replay**: several days, 2-3 ground stations (Delhi, Svalbard, Bengaluru), several seeds.
+2. ~~Error bars for the replay~~ **done** (20 Oct): `src/eval/replay_bars.py`, `docs/replay_bars.png`.
 3. **Check NAVI-Orbital's setup** (paper 04) to compare Gemma's 63% with their 88.16% fairly.
 4. Score as a formula; agent as pseudo-code (5 lines).
 5. FOOL baseline or a clear reason to skip it.

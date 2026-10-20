@@ -72,6 +72,13 @@ Same day of orbit (1,088 photos), same budget for every policy. Each cell: **cor
 Files: `experiments/agents_delhi_final_equal_20261019_1229.csv` (v1-v3),
 `experiments/agents_delhi_final_equal_20261020_0947.csv` (v4, small head)
 
+**Does this hold on other days and stations?** Yes. Over 7 days x 3 ground stations x 3 photo orders
+(21 runs per station), at 1 Mbps over Delhi: raw 58.0 ± 5.3%, agent v3 91.1 ± 3.0% (83 ± 14 wrong),
+frozen head 100.0 ± 0.0% (0 wrong). The order of the policies never changes. At Svalbard (polar, 12 passes
+a day) raw already gets 83%, so the agent helps most at low-latitude stations like Delhi and Bengaluru.
+
+![Error bars over 7 days, 3 stations and 3 photo orders](docs/replay_bars.png)
+
 **Two decision heads** (same 300 final test photos):
 
 | Head | Image model | Training photos | Labelled right | Calibration error (0 = perfect) | Speed | Replay at 1 Mbps |
@@ -158,7 +165,8 @@ With real JPEG sizes, the agent could look better just by picking photos that co
 - **Laptop, not flight hardware.** Speeds are from a MacBook M2 and a Kaggle T4. Speed and power
   on a Jetson Orin are not measured yet.
 - **Scoring assumes a full photo always counts as correct** (people on the ground can look at it).
-- **One satellite, one ground station, one day.** Skipping cloudy photos and sending crops are not built yet.
+- **One satellite.** Results hold over 7 days, 3 ground stations and 3 photo orders (error bars above).
+  Skipping cloudy photos and sending crops are not built yet.
 
 ## Demo
 A web page that plays back one day of the satellite, using **real Sentinel-2 photos** (the EuroSAT
@@ -209,6 +217,7 @@ python -m src.model.head --backbone siglip-base --train-per-class 20   # agent v
 python -m src.cloud.kaggle_run          # or: big head on a free Kaggle GPU (push your code first)
 python -m src.eval.run_agent            # all policies at 0.25-4 Mbps (seconds, no model calls)
 python -m src.eval.sentinel_test        # agent v4 on real Sentinel-2 photos (EuroSAT, ~10 min)
+python -m src.eval.replay_bars --plot   # error bars: 7 days x 3 stations x 3 photo orders (40 s)
 python -m src.eval.plot_results         # redraws docs/results.png
 ```
 
