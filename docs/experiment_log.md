@@ -457,3 +457,41 @@ Embeddings made on Kaggle (T4, half precision, **48 ms per photo**), then
   camera or mission could be sent UP to the satellite in seconds; the frozen image model never changes.
 - Lost and remakeable: the 9,700-photo AID embeddings of the big model (`data/processed/embeddings_aid_siglip.npz`)
   were overwritten by this run's 900-photo file (runner bug, now fixed: it merges). The result CSVs are in git.
+
+## Baseline: tiny CNN trained end to end (MobileNetV3-Small), 20 Oct 2026
+
+`python -m src.cloud.kaggle_run --command "src.model.cnn"` (T4, 7 min). ImageNet start, every weight trained,
+flips + quarter turns, 20 epochs, best epoch and a temperature (chance adjustment) picked on tuning photos.
+Same training / tuning / final photos as the decision heads.
+
+| | Tiny CNN (1.5M weights, ~3 MB) | Small head (SigLIP-base ~90M, frozen + 30 KB head) | Big head (400M) |
+|---|---|---|---|
+| AID, 20 training photos/class: right | 85.0% | **95.7%** | (98.3% with 9,100 photos) |
+| AID calibration error | 0.049 | 0.036 | 0.021 |
+| Sentinel-2, 100 training photos/class: right | 94.6% | 92.8% | **94.8%** |
+| Sentinel-2 calibration error | 0.016 | 0.014 | 0.014 |
+| Compute per photo (published figures, approx.) | ~0.06 GFLOPs | ~17.6 GFLOPs | roughly 15-20x the small head |
+
+Replay, correct info / wrong labels:
+
+| | 0.25 Mbps | 0.5 Mbps | 1 Mbps |
+|---|---|---|---|
+| AID, agent v4 with CNN | 92% / 91 | 96% / 40 | 99% / 12 |
+| AID, agent v4 with small head | 100% / 3 | 100% / 0 | 100% / 0 |
+| Sentinel-2 (1,000 photos), CNN | 98% / 19 | 99% / 9 | 100% / 3 |
+| Sentinel-2 (1,000 photos), small head | 98% / 17 | 100% / 4 | 100% / 0 |
+
+Files: `experiments/cnn_*_mobilenet_v3_small_*_final.csv`, `experiments/agents_delhi_final_equal_20261020_1207.csv`,
+`experiments/sentinel_test3_replay_cnn_eurosat_mobilenet_v3_small_n100_20261020_1207.csv`
+
+- **With few labelled photos, the frozen head wins clearly** (AID, 20/class: 95.7% vs 85.0%, and 3 vs 91 wrong
+  labels at 0.25 Mbps).
+- **With 100 photos per class, the CNN catches up** (Sentinel-2: 94.6% vs 92.8%) at about 1/300 of the compute.
+  For a power-limited satellite that is a strong point for the CNN.
+- So the honest story is a trade-off: the frozen head needs fewer labels and one shared model (swap a 30 KB head
+  per mission); the CNN is far cheaper per photo but needs more labels and a full 3 MB retrain per mission.
+- Caveat: on Sentinel-2 the CNN was still improving at epoch 20 (tuning log-loss 0.177 and falling), so it may
+  do a bit better with more epochs. Speeds are not compared: the timings above include opening the photos and
+  were on different machines. Real numbers need the Jetson.
+- Next for the paper: accuracy vs number of training photos (5/10/20/50/100 per class) for both, to find
+  where the CNN catches up.

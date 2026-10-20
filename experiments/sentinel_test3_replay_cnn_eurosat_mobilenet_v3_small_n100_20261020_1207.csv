@@ -1,0 +1,31 @@
+pool,rate_mbps,policy,photos,mb_sent,correct,wrong_labels,unsure_labels
+Gemma's 100 photos,0.25,send all raw,1088,45.64,163,0,0
+Gemma's 100 photos,0.25,caption all,1088,0.05,312,776,0
+Gemma's 100 photos,0.25,agent v1,1088,45.68,401,687,0
+Gemma's 100 photos,0.25,agent v4,1088,45.68,1066,22,0
+Gemma's 100 photos,0.5,send all raw,1088,91.84,328,0,0
+Gemma's 100 photos,0.5,caption all,1088,0.05,312,776,0
+Gemma's 100 photos,0.5,agent v1,1088,91.87,531,557,0
+Gemma's 100 photos,0.5,agent v4,1088,91.87,1078,10,0
+Gemma's 100 photos,1,send all raw,1088,181.44,648,0,0
+Gemma's 100 photos,1,caption all,1088,0.05,312,776,0
+Gemma's 100 photos,1,agent v1,1088,181.46,755,333,0
+Gemma's 100 photos,1,agent v4,1088,181.46,1088,0,0
+Gemma's 100 photos,2,send all raw,1088,271.6,970,0,0
+Gemma's 100 photos,2,caption all,1088,0.05,312,776,0
+Gemma's 100 photos,2,agent v1,1088,271.61,1002,86,0
+Gemma's 100 photos,2,agent v4,1088,271.61,1088,0,0
+Gemma's 100 photos,4,send all raw,1088,304.64,1088,0,0
+Gemma's 100 photos,4,caption all,1088,0.05,312,776,0
+Gemma's 100 photos,4,agent v1,1088,304.64,1088,0,0
+Gemma's 100 photos,4,agent v4,1088,304.64,1088,0,0
+"all 1,000 final photos",0.25,send all raw,1088,45.64,163,0,0
+"all 1,000 final photos",0.25,agent v4,1088,45.68,1069,19,0
+"all 1,000 final photos",0.5,send all raw,1088,91.84,328,0,0
+"all 1,000 final photos",0.5,agent v4,1088,91.87,1079,9,0
+"all 1,000 final photos",1,send all raw,1088,181.44,648,0,0
+"all 1,000 final photos",1,agent v4,1088,181.46,1085,3,0
+"all 1,000 final photos",2,send all raw,1088,271.6,970,0,0
+"all 1,000 final photos",2,agent v4,1088,271.61,1088,0,0
+"all 1,000 final photos",4,send all raw,1088,304.64,1088,0,0
+"all 1,000 final photos",4,agent v4,1088,304.64,1088,0,0

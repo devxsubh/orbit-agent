@@ -78,6 +78,7 @@ Files: `experiments/agents_delhi_final_equal_20261019_1229.csv` (v1-v3),
 |---|---|---|---|---|---|---|
 | **Small** (used above and in the demo) | SigLIP-base, 90M | 600 | 95.7% | 0.036 | 26 ms/photo (MacBook M2) | 100% / 0 wrong |
 | Big | SigLIP so400m, 400M | 9,100 | **98.3%** | 0.021 | 420 ms/photo (Kaggle T4) | 100% / 3 wrong |
+| *Tiny CNN, MobileNetV3-Small (baseline)* | *1.5M, all trained* | *600* | *85.0%* | *0.049* | *~1/300 of the small head's compute* | *99% / 12 wrong* |
 | *Gemma 3 4B, for comparison* | | *0* | *63%* | | *7,500 ms/photo (MacBook)* | *92% / 90 wrong* |
 
 The big head was trained on a free Kaggle GPU (`python -m src.cloud.kaggle_run`).
@@ -100,6 +101,10 @@ File: `experiments/confidence_aid_test_gemma3-4b_r3_n10_skip20.csv` (+ `.png` ch
   "bare land". Retraining just the small classifier on 1,000 Sentinel-2 photos (same frozen image model)
   gives **92.8%**, and agent v4 then gets 100% of the info down at 1 Mbps vs 69% for Gemma's agent v1.
   The big image model (400M) gets 94.8% there: 2 points more for about 15-20x the compute.
+- **A tiny CNN is the real competitor when there are enough labels.** MobileNetV3-Small (1.5M weights,
+  trained end to end) gets 85.0% on AID with 20 photos per class (head: 95.7%), but 94.6% on Sentinel-2
+  with 100 per class (head: 92.8%), at about 1/300 of the compute. The frozen head wins on label
+  efficiency and on swapping missions with a 30 KB update; the CNN wins on compute.
   Details: [experiment log](docs/experiment_log.md#agent-v4-on-real-sentinel-2-photos-eurosat-20-oct-2026).
 - **A trained decision head beats a big model with no training.** Agent v4's head gets 95.7% right
   vs Gemma's 63%, about 300x faster, and its chances are honest. All 13 photos it got wrong were among
