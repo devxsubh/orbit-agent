@@ -221,7 +221,7 @@
 
 <div class="steps" id="steps">
   <div class="step" style="--c: var(--text)"><i>1</i><div><b>Take a photo</b><span>every 30 s in daylight</span></div></div>
-  <div class="step" style="--c: var(--text)"><i>2</i><div><b>Label it</b><span>Gemma 3 (4B), on board</span></div></div>
+  <div class="step" style="--c: var(--text)"><i>2</i><div><b>Label it</b><span id="step-model">Gemma 3 (4B), on board</span></div></div>
   <div class="step"><i>3</i><div><b>Sure or not?</b><span>chance the label is right</span></div></div>
   <div class="step" style="--c: var(--sat)"><i>4</i><div><b>Send down</b><span>labels + the most useful full photos</span></div></div>
 </div>
@@ -341,6 +341,7 @@ const DECISION = {
 
 // ---- Fixed text ----
 $("agent-name").textContent = agentName;
+if (D.model) $("step-model").textContent = D.model;
 $("agent-col").textContent = agentName.replace("Agent ", "");
 $("score-rate").textContent = `same ${D.rate_mbps} Mbps downlink`;
 $("lg-station").textContent = D.station + " ground station";
@@ -349,7 +350,7 @@ $("about").innerHTML =
   `<b>What's real:</b> the orbit (${D.satellite}, real orbit data), pass times over ${D.station}, ` +
   `and the downlink budget (${D.rate_mbps} Mbps). <b>What's a stand-in:</b> each photo is an AID ` +
   `aerial photo (${D.photo_kb} KB each), not the real view at that spot. The model's answers are real ` +
-  `(gemma3:4b on a laptop, ${D.photo_set}).`;
+  `(${D.model_about || "gemma3:4b on a laptop"}, ${D.photo_set}).`;
 // Hide the "not sure" score row when the agent never sent a not-sure label (e.g. budget covers them all)
 const anyUnsure = passes.some(p => p.agent_unsure + p.raw_unsure > 0);
 $("row-uns").hidden = !anyUnsure;

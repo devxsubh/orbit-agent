@@ -16,16 +16,21 @@ matplotlib.use("Agg")  # no window, just save the file
 import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CSV = ROOT / "experiments" / "agents_delhi_final_equal_20261019_1229.csv"
+# Final test photos, agent v4 with the small head (siglip-base, 600 training photos)
+DEFAULT_CSV = ROOT / "experiments" / "agents_delhi_final_equal_20261020_0947.csv"
 DEFAULT_OUT = ROOT / "docs" / "results.png"
 
 # Policy name in the CSV -> (label, line style, marker, colour)
+# Colours: grey = no AI; the rest in a fixed order that stays readable for colour-blind
+# viewers (checked with the dataviz palette validator on the black background).
 POLICIES = {
     "send all raw": ("Send all raw", ":", "s", "#8b8b94"),
-    "caption all": ("Caption every photo", "--", "^", "#a78bfa"),
-    "agent v1": ("Agent v1 (rules)", "-", "o", "#4da3ff"),
-    "agent v3": ("Agent v3 (chance-based)", "-", "o", "#34d399"),
+    "caption all": ("Caption every photo (Gemma)", "--", "^", "#3987e5"),
+    "agent v1": ("Agent v1 (rules, Gemma)", "-", "o", "#d95926"),
+    "agent v3": ("Agent v3 (chances, Gemma)", "-", "D", "#199e70"),
+    "agent v4": ("Agent v4 (decision head)", "-", "o", "#c98500"),
 }
+MAIN = "agent v4"  # drawn thicker
 
 
 def load(path: Path) -> dict:
@@ -60,7 +65,7 @@ def main() -> None:
         points = sorted(rows.get(policy, []))
         x = [p[0] for p in points]
         left.plot(x, [p[1] for p in points], style, marker=marker, color=colour, label=name,
-                  linewidth=2.6 if policy == "agent v3" else 1.6, markersize=6)
+                  linewidth=2.8 if policy == MAIN else 1.6, markersize=6)
 
     left.set_xscale("log", base=2)
     left.set_xticks(rates, [f"{r:g}" for r in rates])
@@ -71,13 +76,18 @@ def main() -> None:
     left.grid(True)
     left.legend(frameon=False, loc="lower right", fontsize=10)
 
-    # Wrong labels: caption-all vs agent v1 vs agent v3 (raw sends none)
-    bars = [(policy, POLICIES[policy][3]) for policy in ("caption all", "agent v1", "agent v3")]
-    width = 0.26
+    # Wrong labels sent down (raw sends none, so it has no bar)
+    bars = [(policy, POLICIES[policy][3]) for policy in POLICIES if policy != "send all raw"]
+    width = 0.2
     for i, (policy, colour) in enumerate(bars):
         wrong = dict((p[0], p[2]) for p in rows.get(policy, []))
-        xs = [j + (i - 1) * width for j in range(len(rates))]
-        right.bar(xs, [wrong.get(r, 0) for r in rates], width, color=colour, label=POLICIES[policy][0])
+        xs = [j + (i - (len(bars) - 1) / 2) * width for j in range(len(rates))]
+        heights = [wrong.get(r, 0) for r in rates]
+        right.bar(xs, heights, width, color=colour, label=POLICIES[policy][0])
+        if policy == MAIN:  # its bars are about 0, so write the numbers to show they're not missing
+            for x, h in zip(xs, heights):
+                right.text(x, h + 8, str(h), ha="center", va="bottom", fontsize=10, color="white",
+                           fontweight="bold")
     right.set_xticks(range(len(rates)), [f"{r:g}" for r in rates])
     right.set_xlabel("Downlink speed (Mbps)")
     right.set_ylabel("Wrong labels sent down")

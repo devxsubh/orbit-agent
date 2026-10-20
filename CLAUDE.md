@@ -89,9 +89,9 @@ smart compression (FOOL paper).
 | `src/agent/decide.py` | Agent v1 + v2 (plain rules): label every photo, then full photos by priority. v2 uses the better "not sure" rule and sends "unsure: X?" labels (DESCRIBE_UNSURE). Also baselines `plan_raw`, `plan_caption` | **done, works** (SKIP / SEND_CROP not used yet) |
 | `src/eval/run_agent.py` | Runs all 4 policies (raw, caption, agent v1, agent v2) on the replay at several `--rates`, uses saved answers (no model calls). Prefers the full "not sure" test CSV if it exists. Saves `experiments/agents_*.csv` | **done, works** |
 | `src/model/confidence.py` | "Not sure" signals: A several answers, B confused classes (from first 300), C answer margin (logprobs), D agreement over 3 shuffled asks. `is_unsure()` = agent v2 rule (A or D or margin < 8), fixed before testing | **done, works** |
-| `src/demo/export.py` + `demo/index.html` | Demo: export runs replay + agent once → `demo/data.js` + `demo/thumbs/` (gitignored); index.html plays it back (map with night side, timeline, stacked score bars, photo card, queue). Rebuilt minimal on 19 Oct (plain words, IBM Plex fonts, `docs/logo.svg`); tested with puppeteer (all controls, phone width) | **done, works** |
+| `src/demo/export.py` + `demo/index.html` | Demo: export runs replay + agent once → `demo/data.js` + `demo/thumbs/` (gitignored); index.html plays it back (map with night side, timeline, stacked score bars, photo card, queue). Rebuilt minimal on 19 Oct (plain words, IBM Plex fonts, `docs/logo.svg`); tested with puppeteer (all controls, phone width). 20 Oct: default is now agent v4 with the small head (`--head`, `--agent`); page shows which model labels (`D.model`) | **done, works** |
 | `src/demo/build_site.py` + `.github/workflows/pages.yml` | Website for GitHub Pages: copies demo page + saved `data.js` + logo into `site/` (gitignored), remakes the thumbnails from Hugging Face (retries 3x). No model or replay. Workflow runs on push to `main`. Live at https://devxsubh.github.io/orbit-agent/ | **done, tested locally** (clean copy, all files load) |
-| `src/eval/plot_results.py` | Draws `docs/results.png` (dark, demo colours) from the final agents CSV, for the README | **done, works** |
+| `src/eval/plot_results.py` | Draws `docs/results.png` (dark) from the final agents CSV (20 Oct: `..._20261020_0947.csv`, with agent v4 small head). Colour-blind-safe set checked with the dataviz validator; v4 = thick yellow, its wrong-label numbers written on the bars | **done, works** |
 | `docs/` | README images (`results.png`, `demo_pass.png`, `demo_end.png`) + `experiment_log.md` (full history, moved out of README on 19 Oct) | done |
 | `src/eval/confidence_test.py` | Runs the signals on 300 NEW AID photos (11-20/class), resumable; prints AUROC + wrong caught at 10/20/30% flagged; saves CSV + chart. `--evaluate-only` | **done, works** (quick 30-photo run done) |
 | `src/model/head.py` | Agent v4 "decision head" (Jev-style): frozen image model (`--backbone siglip` 400M / `siglip-base` 90M / `dinov2`) makes embeddings (cached in `data/processed/`), logistic regression trained on AID photos 31+ (`--train-per-class`, 0 = all 9,100), C picked on tuning by log-loss. Saves `experiments/head_aid_<backbone>_{tuning,final}.csv`; `run_agent` adds agent v4 when one exists | **done, works** (quick Mac test) |
@@ -190,6 +190,9 @@ python check_setup.py                                    # health check
   so on the replay it lets through 3-7 wrong labels vs 0-3 for the small head. More accurate != more
   trustworthy. Small head = better onboard deal. HF rate-limits (429) bulk photo downloads, so Kaggle
   uses the dataset `jiayuanchengala/aid-scene-classification-datasets` (same bytes). Next: non-AID photos.
+- **README, chart and demo show agent v4 (small head) since 20 Oct.** Screenshots made with headless Chrome:
+  `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --window-size=1440,900
+  --virtual-time-budget=5000 --screenshot=out.png "file://$PWD/demo/index.html?t=19900"` (t=86400 = end of day).
 - **Kaggle:** username `subhammahapatra004`. Login works with the new token in `~/.kaggle/access_token` (20 Oct).
 - **Work is on git branch `main`** (agent-v2 was merged via PRs #1 and #2). GitHub Pages deploys from main.
 

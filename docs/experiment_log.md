@@ -386,6 +386,7 @@ Agents on the replay (`experiments/agents_delhi_final_equal_20261020_1111.csv`),
   above 96% (confidently wrong), so the agent trusted them. The small head's mistakes mostly had low
   chances, so the agent sent those photos in full. One photo (Park said Resort) fooled both heads.
 - **For the satellite, the small head looks like the better deal:** about the same delivered info with
-  1/4 of the size and 1/16 of the time.
+  1/4 of the size and much less compute (the two speeds above are on different hardware, so not
+  directly comparable).
 - The big run was slow because it used full precision on the T4. `head.py` now uses half precision (fp16)
   on Nvidia GPUs (checked on the Mac GPU: same embeddings, match 1.0). Not yet timed on a T4.
