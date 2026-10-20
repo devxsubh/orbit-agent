@@ -195,6 +195,11 @@ python check_setup.py                                    # health check
   64 px photos) -> doesn't transfer. Same frozen SigLIP-base + new head on 1,000 EuroSAT photos: **92.8%**,
   calibration error 0.014 (Gemma's 100 photos: 93% vs 29%). Replay: v4 100%/0 wrong at 1 Mbps vs Gemma v1
   69%/333. Lesson: retrain the small head per camera (~1,000 labelled photos), not the big model.
+- **Big model on Sentinel-2 (20 Oct, Kaggle fp16, 48 ms/photo on T4):** test 2 **94.8%** vs small 92.8%, same
+  calibration (0.014); test 1 AID head 40.6% (small 33.2%). ~15-20x compute for +2 points -> small head is the
+  main system, big = upper bound. Head = ~30 KB (768x10), could be uplinked per mission.
+  Kaggle notebook installs `skyfield ollama`; keeps only files written after the clone; runner MERGES embeddings.
+  The big AID embeddings (9,700 photos) were overwritten before that fix; remake with kaggle_run if needed.
 - **README, chart and demo show agent v4 (small head) since 20 Oct.** Screenshots made with headless Chrome:
   `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --window-size=1440,900
   --virtual-time-budget=5000 --screenshot=out.png "file://$PWD/demo/index.html?t=19900"` (t=86400 = end of day).

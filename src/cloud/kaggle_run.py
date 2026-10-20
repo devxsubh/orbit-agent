@@ -90,7 +90,6 @@ Results are saved in `results/` (Output tab).
         cell("code", f"""
 # 1. Get the project code (into /tmp, so it isn't copied into the output)
 import glob, os, shutil, subprocess, time
-started = time.time()  # results = files written after this
 
 def run(command):
     \"\"\"Run a shell command and STOP the notebook if it fails.\"\"\"
@@ -101,6 +100,8 @@ run("rm -rf /tmp/orbit-agent && git clone --depth 1 -b {branch} {REPO} /tmp/orbi
 os.chdir("/tmp/orbit-agent")
 run("git log --oneline -1")
 run("pip install -q skyfield ollama")  # not on Kaggle (it has torch, transformers, sklearn)
+time.sleep(1)
+started = time.time()  # results = files written after this (not the ones that came with the code)
 """),
         cell("code", """
 # 2. Which GPU did we get? Where are the AID photos?
@@ -155,6 +156,18 @@ def wait_until_done(kernel_id: str, check_every: int = 60) -> str:
         time.sleep(check_every)
 
 
+def merge_embeddings(new: Path, saved: Path) -> None:
+    """Add Kaggle's embeddings to the saved ones (never throw saved photos away)."""
+    import numpy as np
+
+    rows = dict(np.load(saved)) if saved.exists() else {}
+    before = len(rows)
+    rows.update(dict(np.load(new)))
+    saved.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(saved, **rows)
+    print(f"  saved data/processed/{saved.name} ({before:,} -> {len(rows):,} photos)")
+
+
 def fetch_results(kernel_id: str) -> None:
     out = ROOT / "experiments" / "kaggle" / f"{SLUG}_{datetime.now():%Y%m%d_%H%M}"
     out.mkdir(parents=True, exist_ok=True)
@@ -164,9 +177,7 @@ def fetch_results(kernel_id: str) -> None:
             shutil.copy(f, ROOT / "experiments" / f.name)
             print(f"  saved experiments/{f.name}")
         elif f.name.startswith("embeddings_") and f.suffix == ".npz":
-            (ROOT / "data" / "processed").mkdir(parents=True, exist_ok=True)
-            shutil.copy(f, ROOT / "data" / "processed" / f.name)  # so the Mac can reuse them
-            print(f"  saved data/processed/{f.name}")
+            merge_embeddings(f, ROOT / "data" / "processed" / f.name)  # so the Mac can reuse them
     print(f"Everything Kaggle made (including the run log) is in {out.relative_to(ROOT)}")
 
 

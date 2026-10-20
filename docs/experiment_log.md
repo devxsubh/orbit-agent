@@ -435,3 +435,25 @@ agent v4 gets 98% / 17 wrong at 0.25 Mbps and 100% / 0-4 from 0.5 Mbps up.
   A satellite mission would train its head on labelled photos from its own camera (or a close one).
 - The frozen image model is the same in both tests; only the tiny classifier changes. So moving to a new
   camera means retraining a small classifier from about 1,000 labelled photos, not the big model.
+
+### Big model (SigLIP 400M) on Sentinel-2, 20 Oct 2026
+
+Embeddings made on Kaggle (T4, half precision, **48 ms per photo**), then
+`python -m src.eval.sentinel_test --backbone siglip` on the Mac (same orbit data as the small run).
+
+| | Small head (SigLIP-base, 90M) | Big head (SigLIP so400m, 400M) |
+|---|---|---|
+| Test 1: AID head on Sentinel-2, all / 8 matched classes | 33.2% / 41.5% | 40.6% / 50.7% |
+| **Test 2: head trained on 1,000 Sentinel-2 photos** | 92.8% | **94.8%** |
+| Calibration error (test 2) | 0.014 | 0.014 |
+| Replay, 1,000 photos, 0.25 Mbps (correct / wrong) | 98% / 17 | 99% / 10 |
+| Replay, 1,000 photos, 1 Mbps | 100% / 0 | 100% / 1 |
+| Compute per photo (estimate from model and input size) | 1x | about 15-20x |
+
+- **The big model buys about 2 points on Sentinel-2 for about 15-20x the compute.** Both are equally honest.
+  For a satellite (power-limited), the small head stays the main choice; the big one is the upper bound.
+- Even the big AID head fails on Sentinel-2 (40.6%): the photo-type gap is the real problem, not model size.
+- **The head is tiny:** 768 x 10 weights + 10 biases for the small model, about 30 KB. A new head for a new
+  camera or mission could be sent UP to the satellite in seconds; the frozen image model never changes.
+- Lost and remakeable: the 9,700-photo AID embeddings of the big model (`data/processed/embeddings_aid_siglip.npz`)
+  were overwritten by this run's 900-photo file (runner bug, now fixed: it merges). The result CSVs are in git.

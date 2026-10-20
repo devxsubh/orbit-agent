@@ -99,6 +99,7 @@ File: `experiments/confidence_aid_test_gemma3-4b_r3_n10_skip20.csv` (+ `.png` ch
   gets only 33% on EuroSAT (Sentinel-2), about the same as Gemma (29%): it calls most blurry 64 px photos
   "bare land". Retraining just the small classifier on 1,000 Sentinel-2 photos (same frozen image model)
   gives **92.8%**, and agent v4 then gets 100% of the info down at 1 Mbps vs 69% for Gemma's agent v1.
+  The big image model (400M) gets 94.8% there: 2 points more for about 15-20x the compute.
   Details: [experiment log](docs/experiment_log.md#agent-v4-on-real-sentinel-2-photos-eurosat-20-oct-2026).
 - **A trained decision head beats a big model with no training.** Agent v4's head gets 95.7% right
   vs Gemma's 63%, about 300x faster, and its chances are honest. All 13 photos it got wrong were among
