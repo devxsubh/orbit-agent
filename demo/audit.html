@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>orbit-agent: can the ground trust the numbers?</title>
+<link rel="icon" href="../docs/logo.svg">
+<!-- Fonts are optional: without internet the page falls back to system fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Same dark base as demo/index.html. Series colours = the README charts (docs/audit_*.png):
+     magenta = the audit, yellow = triage (agent v4), blue = labels only, white tick = the truth.
+     Green check / red cross (always with words) = the error bar held / missed. */
+  :root {
+    --bg: #07080a; --surface: #0e1013; --surface-2: #171a1f;
+    --border: #23272e; --border-2: #343a43;
+    --text: #eef0f3; --text-2: #a3a9b3; --muted: #6b717c;
+    --audit: #d55181; --triage: #c98500; --labels: #3987e5; --held: #34d399; --missed: #f87171;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 var(--sans); }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  a { color: var(--text-2); }
+
+  header { display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap; padding: 14px 24px;
+    border-bottom: 1px solid var(--border); }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .brand img { width: 34px; height: 34px; flex: none; }
+  .brand h1 { margin: 0; font: 600 15px/1.2 var(--mono); letter-spacing: 1.5px; }
+  .brand p { margin: 2px 0 0; color: var(--text-2); font-size: 13px; }
+  header nav { margin-left: auto; font: 12.5px var(--mono); }
+
+  .intro { padding: 16px 24px 0; max-width: 980px; color: var(--text-2); }
+  .intro b { color: var(--text); }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 14px 24px 0; }
+  .controls .label { font: 600 11px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  button { font: 500 12.5px var(--mono); color: var(--text); background: var(--surface);
+    border: 1px solid var(--border-2); border-radius: 6px; padding: 6px 11px; cursor: pointer; }
+  button:hover { border-color: var(--text-2); }
+  button[aria-pressed="true"] { background: var(--text); border-color: var(--text); color: #000; font-weight: 600; }
+  button:disabled { opacity: .4; cursor: default; }
+  .day { display: flex; align-items: center; gap: 8px; }
+
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; padding: 14px 24px 24px; align-items: start; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; min-width: 0; }
+  .card h2 { margin: 0 0 4px; font: 600 11px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; }
+  .card .sub { margin: 0 0 12px; color: var(--text-2); font-size: 12.5px; }
+  aside { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 10px; color: var(--text-2); font-size: 12.5px; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  #chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .legend svg { flex: none; }
+  .row-label { fill: var(--text-2); font: 12.5px var(--sans); }
+  .tick text { fill: var(--muted); font: 11px var(--mono); }
+  .gridline { stroke: #1b1e23; }
+  .verdict { font: 500 12px var(--mono); }
+
+  .tally { display: grid; gap: 10px; }
+  .tally .who { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); }
+  .tally .big { font: 600 20px var(--mono); color: var(--text); }
+  .tally .small { font-size: 12px; color: var(--muted); }
+  .sw { width: 10px; height: 10px; border-radius: 50%; flex: none; display: inline-block; }
+  .ok { color: var(--held); } .bad { color: var(--missed); }
+
+  .photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+  .photo { font-size: 11px; color: var(--text-2); }
+  .photo img { width: 100%; aspect-ratio: 1; display: block; border-radius: 4px; border: 2px solid var(--border-2); }
+  .photo.wrong img { border-color: var(--missed); }
+  .photo b { color: var(--text); font-weight: 500; }
+
+  details { margin-top: 12px; color: var(--text-2); font-size: 12.5px; }
+  details summary { cursor: pointer; color: var(--text-2); }
+  table { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 12px; }
+  th, td { text-align: right; padding: 3px 6px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  .steps { margin: 0; padding-left: 18px; color: var(--text-2); font-size: 12.5px; }
+  .steps li { margin-bottom: 6px; } .steps b { color: var(--text); }
+  footer { padding: 0 24px 24px; color: var(--muted); font-size: 12px; max-width: 980px; }
+
+  #tip { position: fixed; pointer-events: none; background: #000; border: 1px solid var(--border-2); border-radius: 6px;
+    padding: 7px 9px; font: 12px var(--mono); color: var(--text); opacity: 0; transition: opacity .1s; z-index: 10; max-width: 280px; }
+
+  @media (max-width: 860px) {
+    header, .intro, .controls, main, footer { padding-left: 16px; padding-right: 16px; }
+    main { grid-template-columns: minmax(0, 1fr); }
+    header nav { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img src="../docs/logo.svg" alt="">
+    <div>
+      <h1>ORBIT-AGENT · AUDIT</h1>
+      <p>Can the ground trust the satellite's numbers?</p>
+    </div>
+  </div>
+  <nav><a href="index.html">← main demo</a></nav>
+</header>
+
+<p class="intro" id="intro"></p>
+
+<div class="controls">
+  <span class="label">Onboard model</span>
+  <div class="chips" id="scenarios"></div>
+  <div class="day">
+    <span class="label">Day</span>
+    <button id="prev" aria-label="Previous day">◀</button>
+    <span class="num" id="dayname"></span>
+    <button id="next" aria-label="Next day">▶</button>
+  </div>
+</div>
+
+<main>
+  <section class="card">
+    <h2>The day's class shares</h2>
+    <p class="sub" id="chartsub"></p>
+    <div class="legend">
+      <span><svg width="14" height="14" viewBox="0 0 14 14"><line x1="7" y1="0" x2="7" y2="14" stroke="#eef0f3" stroke-width="2.5"/></svg>truth</span>
+      <span><svg width="22" height="14" viewBox="0 0 22 14"><line x1="1" y1="7" x2="21" y2="7" stroke="#d55181" stroke-width="2"/><circle cx="11" cy="7" r="4.5" fill="#d55181" stroke="#000" stroke-width="1.5"/></svg>audit + its 90% error bar</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14"><rect x="2.5" y="2.5" width="9" height="9" fill="#c98500" stroke="#000" stroke-width="1.5"/></svg>triage (agent v4)</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14"><rect x="3" y="3" width="8" height="8" transform="rotate(45 7 7)" fill="#3987e5" stroke="#000" stroke-width="1.5"/></svg>labels only</span>
+    </div>
+    <div id="chart"></div>
+    <details>
+      <summary>Show as a table</summary>
+      <table id="table"></table>
+    </details>
+  </section>
+
+  <aside>
+    <section class="card">
+      <h2>Error bars that held today</h2>
+      <p class="sub">A 90% error bar should contain the truth for about 9 classes in 10.</p>
+      <div class="tally" id="tally"></div>
+    </section>
+    <section class="card" id="photocard">
+      <h2>Some photos the audit checked</h2>
+      <p class="sub">Picked at random (unsure photos a bit more often). Red frame = the model's label was wrong.</p>
+      <div class="photos" id="photos"></div>
+    </section>
+    <section class="card">
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li><b>Label every photo</b> onboard, with the model's chance for each class (about 60 bytes).</li>
+        <li><b>Check a random sample:</b> send some full photos, picked at random with known chances. Every photo keeps a minimum chance, so confident mistakes can be caught too.</li>
+        <li><b>Correct on the ground:</b> the labels' average, plus the average mistake seen in the checked photos. The error bar comes from the checks, not from the model's opinion of itself.</li>
+      </ol>
+    </section>
+  </aside>
+</main>
+
+<footer id="footer"></footer>
+<div id="tip" role="tooltip"></div>
+
+<script src="audit_data.js"></script>
+<script>
+const D = window.AUDIT;
+const $ = (id) => document.getElementById(id);
+const pct = (v) => (100 * v).toFixed(1) + "%";
+const pts = (v) => (100 * v).toFixed(1);
+const NS = "http://www.w3.org/2000/svg";
+let scenario = D.scenarios[0].name, day = 0;
+
+function el(tag, attrs = {}, parent) {
+  const node = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  if (parent) parent.appendChild(node);
+  return node;
+}
+
+function tip(node, text) {
+  node.addEventListener("mousemove", (ev) => {
+    const t = $("tip");
+    t.textContent = text; t.style.opacity = 1;
+    t.style.left = Math.min(ev.clientX + 14, innerWidth - 290) + "px";
+    t.style.top = ev.clientY + 14 + "px";
+  });
+  node.addEventListener("mouseleave", () => { $("tip").style.opacity = 0; });
+}
+
+function intro() {
+  const where = D.data === "real"
+    ? "real Sentinel-2A photos from 13–19 Oct 2026, at the places and times the satellite really took them (clouds included), labelled by ESA WorldCover and the image's own cloud map"
+    : "real Sentinel-2 photos (EuroSAT) in a simulated orbit replay, with an assumed India-like mix of land types";
+  $("intro").innerHTML = `Each day the ground wants one product: <b>what share of today's photos showed each land type, and how sure we are</b>. ` +
+    `Same orbit, same ${D.station} passes and same bytes (${D.rate_mbps} Mbps) for every policy. Data: ${where}. ` +
+    `Switch the onboard model to a broken one and watch which numbers you can still trust.`;
+  $("footer").innerHTML = `Made by <code>python -m src.demo.export_audit</code> (orbit-agent). Policies: <code>src/agent/audit.py</code>; ` +
+    `ground methods and error bars: <code>src/eval/estimate.py</code> (difference estimator, "scaled+1" 90% bars). ` +
+    `Triage and labels-only have no honest error bar: the one used for them pretends every label is right.` +
+    (D.data === "real" ? ` Photos: contains modified Copernicus Sentinel data 2026. Labels: ESA WorldCover 2021 (a reference map with its own errors).` : "");
+}
+
+function scenarioButtons() {
+  const box = $("scenarios");
+  box.innerHTML = "";
+  for (const s of D.scenarios) {
+    const b = document.createElement("button");
+    b.textContent = s.name;
+    b.title = s.note;
+    b.setAttribute("aria-pressed", s.name === scenario);
+    b.onclick = () => { scenario = s.name; render(); };
+    box.appendChild(b);
+  }
+}
+
+function render() {
+  scenarioButtons();
+  const days = D.days[scenario], d = days[day];
+  $("dayname").textContent = `${d.day} (${day + 1}/${days.length})`;
+  $("prev").disabled = day === 0; $("next").disabled = day === days.length - 1;
+  const note = D.scenarios.find((s) => s.name === scenario).note;
+  $("chartsub").textContent = `${d.photos} photos, ${d.passes} passes, ${d.budget_mb} MB could come down. ` +
+    `Onboard model: ${scenario}, ${note}. The audit checked ${d.audit.checked} photos in full; triage sent ${d.triage.checked} in full.`;
+
+  // chart: one row per class (narrower margins on a phone)
+  const W = Math.max(280, $("chart").clientWidth || 640), narrow = W < 560;
+  const K = D.classes.length, rowH = 34, left = narrow ? 92 : 118, right = narrow ? 84 : 112, top = 22;
+  const H = top + K * rowH + 8;
+  const all = [...d.truth, ...d.audit.hi, ...d.triage.est, ...d.labels.est];
+  const xmax = Math.min(1, Math.ceil(Math.max(...all) * 10 + 0.5) / 10);
+  const x = (v) => left + (W - left - right) * Math.max(0, Math.min(v, xmax)) / xmax;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
+    "aria-label": "Class shares: truth, audit estimate with error bar, triage, labels only" });
+  const step = narrow ? (xmax > 0.5 ? 0.2 : 0.1) : (xmax > 0.5 ? 0.1 : 0.05);
+  for (let t = 0; t <= xmax + 1e-9; t += step) {
+    el("line", { x1: x(t), x2: x(t), y1: top - 6, y2: H - 4, class: "gridline" }, svg);
+    const g = el("g", { class: "tick" }, svg);
+    el("text", { x: x(t), y: 12, "text-anchor": "middle" }, g).textContent = Math.round(t * 100) + "%";
+  }
+  D.classes.forEach((c, k) => {
+    const y = top + k * rowH + rowH / 2;
+    el("text", { x: left - 10, y: y + 4, "text-anchor": "end", class: "row-label" }, svg).textContent = c.words;
+    const a = d.audit, held = a.lo[k] - 1e-9 <= d.truth[k] && d.truth[k] <= a.hi[k] + 1e-9;
+    el("line", { x1: x(a.lo[k]), x2: x(a.hi[k]), y1: y, y2: y, stroke: "#d55181", "stroke-width": 2 }, svg);
+    for (const end of [a.lo[k], a.hi[k]])
+      el("line", { x1: x(end), x2: x(end), y1: y - 5, y2: y + 5, stroke: "#d55181", "stroke-width": 2 }, svg);
+    const truth = el("line", { x1: x(d.truth[k]), x2: x(d.truth[k]), y1: y - 11, y2: y + 11, stroke: "#eef0f3", "stroke-width": 2.5 }, svg);
+    const lab = el("rect", { x: x(d.labels.est[k]) - 4.5, y: y + 4 - 4.5, width: 9, height: 9, fill: "#3987e5", stroke: "#000", "stroke-width": 1.5,
+      transform: `rotate(45 ${x(d.labels.est[k])} ${y + 4})` }, svg);
+    const tri = el("rect", { x: x(d.triage.est[k]) - 5, y: y - 9, width: 10, height: 10, fill: "#c98500", stroke: "#000", "stroke-width": 1.5 }, svg);
+    const dot = el("circle", { cx: x(a.est[k]), cy: y, r: 5.5, fill: "#d55181", stroke: "#000", "stroke-width": 1.5 }, svg);
+    const v = el("text", { x: W - right + 12, y: y + 4, class: "verdict", fill: held ? "#34d399" : "#f87171" }, svg);
+    v.textContent = `${held ? "✓ held" : "✗ missed"} ±${pts((a.hi[k] - a.lo[k]) / 2)}`;
+    tip(truth, `${c.words}: truth ${pct(d.truth[k])}`);
+    tip(dot, `${c.words}: audit ${pct(a.est[k])} (90% bar ${pct(a.lo[k])} – ${pct(a.hi[k])}), truth ${pct(d.truth[k])}`);
+    tip(tri, `${c.words}: triage says ${pct(d.triage.est[k])}, truth ${pct(d.truth[k])} (off by ${pts(Math.abs(d.triage.est[k] - d.truth[k]))} points)`);
+    tip(lab, `${c.words}: labels only say ${pct(d.labels.est[k])}, truth ${pct(d.truth[k])} (off by ${pts(Math.abs(d.labels.est[k] - d.truth[k]))} points)`);
+  });
+  $("chart").replaceChildren(svg);
+
+  // tally: today, and over all days (one day of 10 classes is too few to judge a method by itself)
+  const count = (x, m) => x.truth.filter((t, k) => x[m].lo[k] - 1e-9 <= t && t <= x[m].hi[k] + 1e-9).length;
+  const worst = (m) => Math.max(...d.truth.map((t, k) => Math.abs(d[m].est[k] - t)));
+  const rows = [["audit", "#d55181", "Audit (honest error bar)"], ["triage", "#c98500", "Triage, agent v4 (pretend error bar)"],
+                ["labels", "#3987e5", "Labels only (pretend error bar)"]];
+  $("tally").innerHTML = rows.map(([m, col, name]) => {
+    const week = days.reduce((s, x) => s + count(x, m), 0) / (days.length * K);
+    const ok = week >= 0.8;
+    return `<div><div class="who"><span class="sw" style="background:${col}"></span>${name}</div>
+      <div><span class="big">${count(d, m)} of ${K}</span> <span class="small">held today</span></div>
+      <div class="small">all ${days.length} days: <span class="${ok ? "ok" : "bad"}">${ok ? "✓" : "✗"} ${Math.round(100 * week)}% held</span>
+        · worst class today off by ${pts(worst(m))} points</div></div>`;
+  }).join("");
+
+  // photos
+  const shown = d.shown || [];
+  $("photocard").style.display = shown.length ? "" : "none";
+  $("photos").innerHTML = shown.map((p) => {
+    const wrong = p.said !== p.truth;
+    const words = (n) => (D.classes.find((c) => c.name === n) || { words: n }).words;
+    return `<div class="photo ${wrong ? "wrong" : ""}"><img src="audit_thumbs/${p.file}" alt="${words(p.truth)} at ${p.where}">
+      <b>${words(p.truth)}</b>${wrong ? `<br>model said ${words(p.said)}` : ""}<br><span class="num">${p.where}</span></div>`;
+  }).join("");
+
+  // table view
+  $("table").innerHTML = `<tr><th>class</th><th>truth</th><th>audit</th><th>90% bar</th><th>triage</th><th>labels only</th></tr>` +
+    D.classes.map((c, k) => `<tr><td>${c.words}</td><td class="num">${pct(d.truth[k])}</td><td class="num">${pct(d.audit.est[k])}</td>
+      <td class="num">${pct(d.audit.lo[k])} – ${pct(d.audit.hi[k])}</td><td class="num">${pct(d.triage.est[k])}</td>
+      <td class="num">${pct(d.labels.est[k])}</td></tr>`).join("");
+}
+
+$("prev").onclick = () => { day = Math.max(0, day - 1); render(); };
+$("next").onclick = () => { day = Math.min(D.days[scenario].length - 1, day + 1); render(); };
+addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft") $("prev").click();
+  if (e.key === "ArrowRight") $("next").click();
+});
+addEventListener("resize", render);
+// audit.html?model=1&day=3 opens a given onboard model (0 = healthy) and day (1-7), e.g. for screenshots
+const query = new URLSearchParams(location.search);
+if (query.has("model")) scenario = (D.scenarios[+query.get("model")] || D.scenarios[0]).name;
+if (query.has("day")) day = Math.max(0, Math.min(D.days[scenario].length - 1, +query.get("day") - 1));
+intro();
+render();
+</script>
+</body>
+</html>

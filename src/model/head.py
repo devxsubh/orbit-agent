@@ -119,6 +119,32 @@ def embed(photos: list[tuple[str, str]], backbone: str, batch: int = 32,
     return rows / np.linalg.norm(rows, axis=1, keepdims=True), ms_per_photo  # same length for all
 
 
+_loaded: dict = {}
+
+
+def embed_images(images: list, backbone: str = "siglip-base", batch: int = 32) -> np.ndarray:
+    """Embeddings for photos already in memory (e.g. compressed or damaged copies), unit length.
+    No caching here: the caller saves what it needs."""
+    import torch
+    from transformers import AutoImageProcessor, AutoModel, SiglipVisionModel
+    from transformers.utils import logging
+
+    if backbone not in _loaded:
+        logging.set_verbosity_error()
+        device = best_device()
+        model_class = SiglipVisionModel if backbone.startswith("siglip") else AutoModel
+        model = model_class.from_pretrained(BACKBONES[backbone]).to(device).eval()
+        _loaded[backbone] = (model, AutoImageProcessor.from_pretrained(BACKBONES[backbone]), device)
+    model, processor, device = _loaded[backbone]
+    vectors = []
+    for i in range(0, len(images), batch):
+        inputs = processor(images=images[i:i + batch], return_tensors="pt").to(device)
+        with torch.no_grad():
+            vectors.append(model(**inputs).pooler_output.float().cpu().numpy())
+    rows = np.concatenate(vectors)
+    return rows / np.linalg.norm(rows, axis=1, keepdims=True)
+
+
 def calibration_error(chances: np.ndarray, right: np.ndarray, bins: int = 10) -> float:
     """ECE: on average, how far "says 80% sure" is from "is right 80% of the time". 0 = perfect."""
     edges = np.linspace(0, 1, bins + 1)

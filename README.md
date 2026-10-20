@@ -20,6 +20,64 @@ saw a labelled photo, so v3 vs v4 is not a like-for-like contest (see [Honest li
 
 Tested on **photos never used while building the agent** (see [Fair testing](#fair-testing)).
 
+## New (20 Oct): can the ground trust the numbers? The audited downlink
+
+The main result above has two catches. Its score counts a 50-byte label and a 280 KB photo as the same
+"1 correct", so any good labeller scores about 100%. And agent v4 only checks the photos it is **unsure**
+about, so when the model is wrong in a **confident** way (a new camera, a radiation bit flip, damaged
+optics), nothing on the ground can see it. Full reasoning: [research review](notes/research_review_2026-10-20.md).
+
+**New product:** the share of the day's photos in each class (cloud, cropland, water...) with a 90% error bar.
+**New policy, the audit** (`src/agent/audit.py`): label every photo, then send full photos picked **at random
+with known chances** (unsure photos more likely, every photo keeps a minimum chance). The ground corrects the
+labels with the checked photos (`src/eval/estimate.py`): right on average **whatever the onboard model is like**.
+
+![Healthy or broken onboard model: how far off each policy's class shares are, and how often its error bar held](docs/audit_honesty.png)
+
+| EuroSAT replay, 0.25 Mbps, 63 days per cell | Labels only | Triage (agent v4) | **Audit** |
+|---|---|---|---|
+| Healthy head (93% right) | 0.7 points off, bar held 96% | **0.3**, 100% | 0.5, 98% |
+| New camera (AID head, 28% right) | 10.8, **0%** | 8.0, **8%** | 2.7, 86% |
+| Silent swap (wrong but as sure as right answers) | 4.4, 79% | 3.1, 80% | 1.2, 97% |
+| Radiation bit flips in the 30 KB head | 1.4, 73% | 1.6, 80% | 1.3, 95% |
+| Damaged camera (sensor noise) | 11.6, 7% | 7.8, 18% | 1.8, 95% |
+
+- **Healthy model: agent v4's triage is the most accurate, but it can't tell you so.**
+- **Broken model: labels and triage are off by up to 12 points, with error bars that almost never hold.**
+  The audit stays honest and is never much worse than sending random raw photos.
+- **Real photos, real clouds:** `src/data/s2_real.py` replays what Sentinel-2A **really photographed** at each
+  photo slot of its real path, 6-19 Oct 2026 (3,527 photos; the simulated times match the real images within
+  0-7 s). Real Earth is 46% cloud and 0.1% built-up. With a head trained on 6-12 Oct (82% right), tested 13-19 Oct:
+
+  | Real Sentinel-2A photos, 0.05 Mbps | Labels only | Triage (agent v4) | **Audit** |
+  |---|---|---|---|
+  | Healthy head (82% right) | 1.9 points off, bar held 80% | 1.5, 84% | 3.5, **99%** |
+  | New place (EuroSAT head: no "cloud" class) | 19.5, **9%** | 16.6, **20%** | 8.3, 97% |
+  | Radiation bit flips | 10.6, 27% | 10.8, 27% | 8.1, 91% |
+  | Damaged camera (blur) | 4.5, 51% | 3.3, 67% | 3.7, 97% |
+
+  On real photos **even a healthy model's labels mislead** (their error bar holds 80%, 60% for rare classes).
+  The honest price: with a badly broken model the audit is noisier than random raw photos (8.3 vs 5.9 points),
+  because its check chances come from that model. Chart: `docs/audit_honesty_real.png`.
+- **A floor of 0.5 is nearly free insurance** (`docs/audit_floor.png`): same error as checking only unsure photos
+  when the model is healthy (0.47 points), but confident mistakes are caught (bit flips: bars hold 95% vs 86-88%).
+- **When does onboard AI beat plain compression?** Re-save every photo as a smaller JPEG until the pass fits, and
+  in the old replay range (R = data taken ÷ data sent = 1.4-5.6) every photo comes down and the class shares
+  are exact: **onboard AI adds nothing there**. Above R ≈ 30 it wins clearly, and sending the checks as 160 px
+  thumbnails gives 4-5x narrower honest error bars than compression (same bytes, same human checks).
+
+  ![When onboard AI beats plain compression](docs/audit_rsweep.png)
+- **A new camera with zero labels learns from its own audits** (`src/eval/audit_loop.py`): checked photos become
+  training labels, the 30 KB head is retrained after every pass. On the real replay (0.1 Mbps), starting from
+  the EuroSAT head (20% right), the new head reaches **77-83% right in 3-4 days from 164-215 checked photos**
+  (a head trained before launch on 1,525 labels: 82%), and its error bars stay honest (held 96%). Keeping the
+  launch head with triage: bars held 12%, one day 42 points off.
+
+  ![A new camera with zero labels learns from its own audits, real Sentinel-2A photos](docs/audit_loop_real.png)
+
+Details and every number: [experiment log](docs/experiment_log.md#audited-downlink-can-the-ground-trust-the-numbers-20-oct-2026-evening).
+Second demo page: `demo/audit.html` ("the satellite reports its own error").
+
 ## The problem
 Satellites take far more photos than they can send to Earth. They can only talk to a ground
 station for a few minutes per pass. Sentinel-2A can talk to Delhi only **1.4% of the time**
@@ -160,9 +218,13 @@ All photos get the same size (`--sizes equal`), because real satellite tiles are
 With real JPEG sizes, the agent could look better just by picking photos that compress well.
 
 ## Honest limits
-- **Photos are stand-ins.** Time, position and budget are real, but each photo is a random photo,
-  not the real view at that spot: AID aerial photos in the main results, real Sentinel-2 photos
-  (EuroSAT) in the Sentinel-2 test and the demo.
+- **Photos are stand-ins in the main results.** Time, position and budget are real, but each photo is a
+  random photo, not the real view at that spot: AID aerial photos in the main results, real Sentinel-2
+  photos (EuroSAT) in the Sentinel-2 test and the demo. **Fixed for the audit work:** `src/data/s2_real.py`
+  replays what Sentinel-2A really photographed at each slot (6-19 Oct 2026, real clouds), labelled by its
+  cloud map and ESA WorldCover 2021 (a reference map with its own errors).
+- **The old score can't fail, and plain compression ties it** in the main replay's range (see the audit
+  section). The class-share product with honest error bars is the fairer test.
 - **Agent v4 learned from labelled AID photos; Gemma saw none.** v4 is "supervised", v1-v3 are
   "zero-shot", so compare them with that in mind. On real Sentinel-2 photos (EuroSAT) the AID head drops
   to 33%; it needs about 1,000 labelled photos from the same kind of camera to reach 92.8%.
@@ -226,6 +288,18 @@ python -m src.eval.run_agent            # all policies at 0.25-4 Mbps (seconds, 
 python -m src.eval.sentinel_test        # agent v4 on real Sentinel-2 photos (EuroSAT, ~10 min)
 python -m src.eval.replay_bars --plot   # error bars: 7 days x 3 stations x 3 photo orders (40 s)
 python -m src.eval.plot_results         # redraws docs/results.png
+
+# Audited downlink (20 Oct)
+python -m src.data.s2_real              # what Sentinel-2A really photographed, 6-19 Oct (~1-2 h, resumable)
+python -m src.eval.estimate             # self-test of the ground estimators on made-up data (10 s)
+python -m src.eval.audit_test           # audit vs today's policies, healthy or broken model (EuroSAT, ~5 min)
+python -m src.eval.audit_test --data real   # the same on the real Sentinel-2A replay
+python -m src.eval.audit_floor          # how much to spend on checks (~5 min)
+python -m src.eval.compress_test        # R sweep: onboard AI vs plain compression (~3 min)
+python -m src.eval.audit_loop --data real   # new camera, zero labels, learns from its own audits
+python -m src.eval.audit_tables         # every table above as markdown, from the saved CSVs
+python -m src.eval.plot_audit           # redraws docs/audit_*.png
+python -m src.demo.export_audit && open demo/audit.html   # second demo page
 ```
 
 More commands (EuroSAT, prompts, image sizes, replay options) are in [docs/experiment_log.md](docs/experiment_log.md).
@@ -236,7 +310,7 @@ More commands (EuroSAT, prompts, image sizes, replay options) are in [docs/exper
 | `src/orbit/` | Orbit simulator (passes, budget per pass) and the photo replay |
 | `src/data/` | Downloads AID (Hugging Face) and EuroSAT (Zenodo) |
 | `src/model/` | Gemma 3 via Ollama, the "not sure" signals, and the v4 decision head |
-| `src/agent/` | The agents (v1-v4) and the baselines |
+| `src/agent/` | The agents (v1-v4), the baselines, and the audited downlink (`audit.py`) |
 | `src/cloud/` + `kaggle/` | Runs the decision-head training on a free Kaggle GPU |
 | `src/eval/` | Baseline tests, agent runs, scoring, charts |
 | `src/demo/` + `demo/` | Demo export and the playback page |
@@ -254,10 +328,15 @@ More commands (EuroSAT, prompts, image sizes, replay options) are in [docs/exper
 - [x] Test the decision head on real Sentinel-2 photos (EuroSAT): AID head 33%, retrained head **92.8%**
 - [x] Demo page
 - [ ] Check NAVI's setup (paper 04) to compare accuracy fairly
+- [x] Audited downlink: honest class shares even with a broken onboard model (20 Oct)
+- [x] Replay of what Sentinel-2A really photographed (real clouds and places, 6-19 Oct 2026)
+- [x] Compression baseline and R sweep; closed loop for a new camera with zero labels
+- [x] Second demo page: `demo/audit.html`
+- [ ] Error bars that hold for rare classes under a badly wrong model (betting intervals)
 - [ ] Skip cloudy photos, send crops
 - [ ] Run on a Jetson Orin Nano (speed and power)
 - [ ] Demo video
-- [ ] Paper draft
+- [ ] Paper draft (outline: `paper/outline_v2_audit.md`)
 
 ## Built on
 - **NAVI-Orbital** (NASA JPL, arXiv 2606.18271): the first vision-language model run fully in orbit

@@ -1,0 +1,106 @@
+data,station,rate_mbps,seed,day,method,halfwidth_pts,holds,rmse_pts,worst_error_pts,head_right,labels_so_far
+eurosat,delhi,0.25,42,2026-10-19,closed loop,4.037,0.9,2.682,4.72,0.0744,152
+eurosat,delhi,0.25,42,2026-10-19,launch head + audit,4.023,0.9,3.327,7.49,,
+eurosat,delhi,0.25,42,2026-10-19,launch head + triage,1.135,0.0,9.205,21.212,,
+eurosat,delhi,0.25,42,2026-10-19,head trained before launch + audit,1.126,1.0,0.445,0.839,,
+eurosat,delhi,0.25,42,2026-10-19,raw random,3.773,0.9,1.973,3.758,,
+eurosat,delhi,0.25,42,2026-10-20,closed loop,1.324,1.0,0.722,1.451,0.9179,364
+eurosat,delhi,0.25,42,2026-10-20,launch head + audit,4.137,0.8,2.541,5.04,,
+eurosat,delhi,0.25,42,2026-10-20,launch head + triage,1.197,0.0,7.968,16.908,,
+eurosat,delhi,0.25,42,2026-10-20,head trained before launch + audit,0.977,1.0,0.544,0.9,,
+eurosat,delhi,0.25,42,2026-10-20,raw random,3.216,0.4,3.806,7.614,,
+eurosat,delhi,0.25,42,2026-10-21,closed loop,1.842,1.0,0.753,1.495,0.9375,554
+eurosat,delhi,0.25,42,2026-10-21,launch head + audit,6.207,0.8,3.099,6.423,,
+eurosat,delhi,0.25,42,2026-10-21,launch head + triage,1.196,0.0,9.146,22.234,,
+eurosat,delhi,0.25,42,2026-10-21,head trained before launch + audit,1.371,1.0,0.418,0.934,,
+eurosat,delhi,0.25,42,2026-10-21,raw random,5.045,1.0,2.748,6.281,,
+eurosat,delhi,0.25,42,2026-10-22,closed loop,1.266,1.0,0.44,1.06,0.9584,682
+eurosat,delhi,0.25,42,2026-10-22,launch head + audit,3.982,0.8,3.344,7.166,,
+eurosat,delhi,0.25,42,2026-10-22,launch head + triage,1.156,0.0,9.501,21.624,,
+eurosat,delhi,0.25,42,2026-10-22,head trained before launch + audit,1.531,1.0,0.629,1.229,,
+eurosat,delhi,0.25,42,2026-10-22,raw random,3.759,0.8,2.685,7.058,,
+eurosat,delhi,0.25,42,2026-10-23,closed loop,0.81,1.0,0.201,0.406,0.9707,886
+eurosat,delhi,0.25,42,2026-10-23,launch head + audit,3.806,0.6,6.443,15.258,,
+eurosat,delhi,0.25,42,2026-10-23,launch head + triage,1.184,0.2,8.814,21.078,,
+eurosat,delhi,0.25,42,2026-10-23,head trained before launch + audit,0.947,0.9,0.466,1.27,,
+eurosat,delhi,0.25,42,2026-10-23,raw random,3.297,0.8,2.625,4.99,,
+eurosat,delhi,0.25,42,2026-10-24,closed loop,0.862,1.0,0.425,0.903,0.9779,1091
+eurosat,delhi,0.25,42,2026-10-24,launch head + audit,5.006,1.0,1.827,3.405,,
+eurosat,delhi,0.25,42,2026-10-24,launch head + triage,1.218,0.1,8.904,21.486,,
+eurosat,delhi,0.25,42,2026-10-24,head trained before launch + audit,1.084,1.0,0.562,1.021,,
+eurosat,delhi,0.25,42,2026-10-24,raw random,4.255,0.9,1.968,3.516,,
+eurosat,delhi,0.25,42,2026-10-25,closed loop,1.194,1.0,0.12,0.221,0.9828,1219
+eurosat,delhi,0.25,42,2026-10-25,launch head + audit,3.711,0.9,1.041,1.612,,
+eurosat,delhi,0.25,42,2026-10-25,launch head + triage,1.167,0.0,8.423,19.352,,
+eurosat,delhi,0.25,42,2026-10-25,head trained before launch + audit,1.509,1.0,0.773,1.877,,
+eurosat,delhi,0.25,42,2026-10-25,raw random,3.876,1.0,2.004,4.31,,
+eurosat,delhi,0.25,43,2026-10-19,closed loop,4.231,1.0,1.919,3.532,0.0836,152
+eurosat,delhi,0.25,43,2026-10-19,launch head + audit,3.837,0.8,1.907,3.63,,
+eurosat,delhi,0.25,43,2026-10-19,launch head + triage,1.131,0.0,9.428,22.406,,
+eurosat,delhi,0.25,43,2026-10-19,head trained before launch + audit,1.074,0.9,0.489,1.323,,
+eurosat,delhi,0.25,43,2026-10-19,raw random,3.622,0.9,1.337,2.091,,
+eurosat,delhi,0.25,43,2026-10-20,closed loop,1.278,1.0,0.448,0.727,0.8986,364
+eurosat,delhi,0.25,43,2026-10-20,launch head + audit,3.882,0.9,1.338,3.246,,
+eurosat,delhi,0.25,43,2026-10-20,launch head + triage,1.188,0.0,8.565,20.483,,
+eurosat,delhi,0.25,43,2026-10-20,head trained before launch + audit,1.045,1.0,0.282,0.478,,
+eurosat,delhi,0.25,43,2026-10-20,raw random,3.591,1.0,2.398,5.153,,
+eurosat,delhi,0.25,43,2026-10-21,closed loop,1.398,1.0,0.706,1.429,0.9467,554
+eurosat,delhi,0.25,43,2026-10-21,launch head + audit,6.784,0.9,4.479,9.447,,
+eurosat,delhi,0.25,43,2026-10-21,launch head + triage,1.245,0.0,8.845,21.824,,
+eurosat,delhi,0.25,43,2026-10-21,head trained before launch + audit,1.447,1.0,0.666,1.394,,
+eurosat,delhi,0.25,43,2026-10-21,raw random,4.997,1.0,1.452,2.914,,
+eurosat,delhi,0.25,43,2026-10-22,closed loop,1.196,1.0,0.327,0.564,0.9594,682
+eurosat,delhi,0.25,43,2026-10-22,launch head + audit,4.676,0.9,3.307,6.454,,
+eurosat,delhi,0.25,43,2026-10-22,launch head + triage,1.189,0.1,9.602,23.959,,
+eurosat,delhi,0.25,43,2026-10-22,head trained before launch + audit,1.272,0.9,0.684,1.629,,
+eurosat,delhi,0.25,43,2026-10-22,raw random,3.834,0.9,2.662,5.158,,
+eurosat,delhi,0.25,43,2026-10-23,closed loop,0.772,1.0,0.303,0.579,0.9726,886
+eurosat,delhi,0.25,43,2026-10-23,launch head + audit,3.624,0.9,1.929,3.809,,
+eurosat,delhi,0.25,43,2026-10-23,launch head + triage,1.17,0.0,9.378,24.008,,
+eurosat,delhi,0.25,43,2026-10-23,head trained before launch + audit,0.936,1.0,0.453,0.693,,
+eurosat,delhi,0.25,43,2026-10-23,raw random,3.395,1.0,1.584,3.796,,
+eurosat,delhi,0.25,43,2026-10-24,closed loop,0.941,1.0,0.154,0.222,0.9679,1091
+eurosat,delhi,0.25,43,2026-10-24,launch head + audit,4.88,0.9,2.72,4.79,,
+eurosat,delhi,0.25,43,2026-10-24,launch head + triage,1.196,0.1,8.947,22.289,,
+eurosat,delhi,0.25,43,2026-10-24,head trained before launch + audit,1.165,1.0,0.393,0.998,,
+eurosat,delhi,0.25,43,2026-10-24,raw random,4.242,0.9,1.825,3.33,,
+eurosat,delhi,0.25,43,2026-10-25,closed loop,1.194,1.0,0.198,0.327,0.9787,1219
+eurosat,delhi,0.25,43,2026-10-25,launch head + audit,4.363,0.9,1.816,3.007,,
+eurosat,delhi,0.25,43,2026-10-25,launch head + triage,1.196,0.0,9.019,20.365,,
+eurosat,delhi,0.25,43,2026-10-25,head trained before launch + audit,1.413,1.0,0.659,1.108,,
+eurosat,delhi,0.25,43,2026-10-25,raw random,3.727,0.9,1.884,4.711,,
+eurosat,delhi,0.25,44,2026-10-19,closed loop,4.17,1.0,1.175,2.015,0.0725,152
+eurosat,delhi,0.25,44,2026-10-19,launch head + audit,4.336,0.8,3.752,8.684,,
+eurosat,delhi,0.25,44,2026-10-19,launch head + triage,1.131,0.1,9.631,22.59,,
+eurosat,delhi,0.25,44,2026-10-19,head trained before launch + audit,1.072,1.0,0.532,0.91,,
+eurosat,delhi,0.25,44,2026-10-19,raw random,3.685,0.9,2.575,3.98,,
+eurosat,delhi,0.25,44,2026-10-20,closed loop,1.361,1.0,0.43,0.77,0.9101,364
+eurosat,delhi,0.25,44,2026-10-20,launch head + audit,3.683,0.8,2.387,4.069,,
+eurosat,delhi,0.25,44,2026-10-20,launch head + triage,1.175,0.0,9.508,23.865,,
+eurosat,delhi,0.25,44,2026-10-20,head trained before launch + audit,0.933,1.0,0.391,0.792,,
+eurosat,delhi,0.25,44,2026-10-20,raw random,3.598,0.9,1.597,3.394,,
+eurosat,delhi,0.25,44,2026-10-21,closed loop,1.636,1.0,0.707,1.432,0.9426,554
+eurosat,delhi,0.25,44,2026-10-21,launch head + audit,4.951,0.7,4.014,9.482,,
+eurosat,delhi,0.25,44,2026-10-21,launch head + triage,1.191,0.1,8.632,20.492,,
+eurosat,delhi,0.25,44,2026-10-21,head trained before launch + audit,1.559,1.0,0.666,1.434,,
+eurosat,delhi,0.25,44,2026-10-21,raw random,4.971,0.8,3.607,7.692,,
+eurosat,delhi,0.25,44,2026-10-22,closed loop,1.201,1.0,0.391,0.612,0.9645,682
+eurosat,delhi,0.25,44,2026-10-22,launch head + audit,4.135,0.7,3.604,7.439,,
+eurosat,delhi,0.25,44,2026-10-22,launch head + triage,1.164,0.0,9.822,23.553,,
+eurosat,delhi,0.25,44,2026-10-22,head trained before launch + audit,1.255,1.0,0.553,0.958,,
+eurosat,delhi,0.25,44,2026-10-22,raw random,3.703,0.8,3.895,9.478,,
+eurosat,delhi,0.25,44,2026-10-23,closed loop,0.842,1.0,0.351,0.672,0.9698,886
+eurosat,delhi,0.25,44,2026-10-23,launch head + audit,3.54,0.8,3.561,9.125,,
+eurosat,delhi,0.25,44,2026-10-23,launch head + triage,1.141,0.1,9.233,23.251,,
+eurosat,delhi,0.25,44,2026-10-23,head trained before launch + audit,1.254,1.0,0.544,1.0,,
+eurosat,delhi,0.25,44,2026-10-23,raw random,3.563,0.9,2.487,6.528,,
+eurosat,delhi,0.25,44,2026-10-24,closed loop,0.861,1.0,0.351,0.717,0.9789,1091
+eurosat,delhi,0.25,44,2026-10-24,launch head + audit,4.448,0.9,3.096,6.422,,
+eurosat,delhi,0.25,44,2026-10-24,launch head + triage,1.229,0.1,8.799,21.084,,
+eurosat,delhi,0.25,44,2026-10-24,head trained before launch + audit,1.178,1.0,0.376,0.886,,
+eurosat,delhi,0.25,44,2026-10-24,raw random,4.246,0.9,2.591,5.006,,
+eurosat,delhi,0.25,44,2026-10-25,closed loop,1.194,1.0,0.329,0.735,0.9797,1219
+eurosat,delhi,0.25,44,2026-10-25,launch head + audit,4.495,1.0,2.352,5.356,,
+eurosat,delhi,0.25,44,2026-10-25,launch head + triage,1.174,0.1,9.861,23.911,,
+eurosat,delhi,0.25,44,2026-10-25,head trained before launch + audit,1.272,1.0,0.402,0.628,,
+eurosat,delhi,0.25,44,2026-10-25,raw random,3.888,0.9,2.528,4.716,,
