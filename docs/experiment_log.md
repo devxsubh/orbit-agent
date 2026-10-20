@@ -362,3 +362,30 @@ No photo is in two sets (checked). All 13 wrong answers are among the 58 least-s
   wrong labels if sent; v4 sends almost all of them as full photos because its chances are honest.
 - Next: full run with the 400M SigLIP and all 9,100 training photos on a Kaggle GPU
   (`python -m src.cloud.kaggle_run`); try `dinov2`; test on photos that are NOT from AID (real Sentinel-2).
+
+### Full run on Kaggle (20 Oct 2026): SigLIP 400M, all 9,100 training photos
+
+Run with `python -m src.cloud.kaggle_run` (Tesla T4, 72 min; AID read from the Kaggle copy, same bytes as
+Hugging Face). Setting C=300 picked on tuning photos.
+
+| Head | Training photos | Tuning | **FINAL (21-30)** | Calibration error (final) | Speed |
+|---|---|---|---|---|---|
+| SigLIP-base (90M) | 600 | 95.7% | 95.7% (13 wrong) | 0.036 | 26 ms/photo (Mac M2) |
+| **SigLIP so400m (400M)** | 9,100 | 99.3% | **98.3%** (5 wrong) | 0.021 | 420 ms/photo (T4, full precision) |
+
+Agents on the replay (`experiments/agents_delhi_final_equal_20261020_1111.csv`), correct / wrong labels:
+
+| Downlink | send all raw | agent v3 (Gemma) | v4 small head | **v4 big head** |
+|---|---|---|---|---|
+| 0.25 Mbps | 15% / 0 | 68% / 192 | 100% / 3 | 99% / 7 |
+| 0.5 Mbps | 30% / 0 | 79% / 164 | 100% / 0 | 100% / 5 |
+| 1 Mbps | 60% / 0 | 92% / 90 | 100% / 0 | 100% / 3 |
+| 2 Mbps | 89% / 0 | 99% / 6 | 100% / 0 | 100% / 0 |
+
+- **More accurate is not the same as more trustworthy.** The big head's 5 mistakes all had chances
+  above 96% (confidently wrong), so the agent trusted them. The small head's mistakes mostly had low
+  chances, so the agent sent those photos in full. One photo (Park said Resort) fooled both heads.
+- **For the satellite, the small head looks like the better deal:** about the same delivered info with
+  1/4 of the size and 1/16 of the time.
+- The big run was slow because it used full precision on the T4. `head.py` now uses half precision (fp16)
+  on Nvidia GPUs (checked on the Mac GPU: same embeddings, match 1.0). Not yet timed on a T4.

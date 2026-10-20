@@ -67,7 +67,8 @@ def download_all(photos: list[tuple[str, str]]) -> None:
                 print(f"  {i:,}/{len(missing):,}")
 
 
-def embed(photos: list[tuple[str, str]], backbone: str, batch: int = 32) -> tuple[np.ndarray, float]:
+def embed(photos: list[tuple[str, str]], backbone: str, batch: int = 32,
+          device: str | None = None, half: bool | None = None) -> tuple[np.ndarray, float]:
     """Embeddings for these photos (saved to disk, so each photo is only done once).
 
     Returns (one row per photo, milliseconds per photo on this computer).
@@ -84,11 +85,14 @@ def embed(photos: list[tuple[str, str]], backbone: str, batch: int = 32) -> tupl
 
         logging.set_verbosity_error()  # hide the long "unused text-model weights" list (harmless)
 
-        device = best_device()
+        device = device or best_device()
+        if half is None:
+            half = device == "cuda"  # half precision: an Nvidia GPU is several times faster
+        dtype = torch.float16 if half else torch.float32
         name = BACKBONES[backbone]
-        print(f"Loading the frozen image model {name} on {device}...")
+        print(f"Loading the frozen image model {name} on {device} ({dtype})...")
         model_class = SiglipVisionModel if backbone.startswith("siglip") else AutoModel
-        model = model_class.from_pretrained(name).to(device).eval()  # eval = frozen, no training
+        model = model_class.from_pretrained(name, dtype=dtype).to(device).eval()  # eval = frozen
         processor = AutoImageProcessor.from_pretrained(name)
 
         print(f"Making embeddings for {len(todo):,} photos...")
@@ -97,6 +101,7 @@ def embed(photos: list[tuple[str, str]], backbone: str, batch: int = 32) -> tupl
             chunk = todo[i:i + batch]
             images = [Image.open(AID_DIR / label / n).convert("RGB") for label, n in chunk]
             inputs = processor(images=images, return_tensors="pt").to(device)
+            inputs["pixel_values"] = inputs["pixel_values"].to(dtype)
             with torch.no_grad():  # no_grad = we never change the model's weights
                 vectors = model(**inputs).pooler_output.float().cpu().numpy()
             for (_, n), v in zip(chunk, vectors):
