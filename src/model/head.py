@@ -32,7 +32,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from src.data.aid import AID_DIR, CLASSES, _download, pick
+from src.data.aid import AID_DIR, _download, pick
 
 ROOT = Path(__file__).resolve().parents[2]
 CACHE = ROOT / "data" / "processed"  # saved embeddings (gitignored)
@@ -68,12 +68,14 @@ def download_all(photos: list[tuple[str, str]]) -> None:
 
 
 def embed(photos: list[tuple[str, str]], backbone: str, batch: int = 32,
-          device: str | None = None, half: bool | None = None) -> tuple[np.ndarray, float]:
+          device: str | None = None, half: bool | None = None,
+          root: Path = AID_DIR, dataset: str = "aid") -> tuple[np.ndarray, float]:
     """Embeddings for these photos (saved to disk, so each photo is only done once).
 
+    photos: (label, file name) pairs; the photo is at root/label/name.
     Returns (one row per photo, milliseconds per photo on this computer).
     """
-    cache_file = CACHE / f"embeddings_aid_{backbone}.npz"
+    cache_file = CACHE / f"embeddings_{dataset}_{backbone}.npz"
     saved = dict(np.load(cache_file)) if cache_file.exists() else {}
     todo = [(label, name) for label, name in photos if name not in saved]
 
@@ -99,7 +101,7 @@ def embed(photos: list[tuple[str, str]], backbone: str, batch: int = 32,
         start = time.perf_counter()
         for i in range(0, len(todo), batch):
             chunk = todo[i:i + batch]
-            images = [Image.open(AID_DIR / label / n).convert("RGB") for label, n in chunk]
+            images = [Image.open(root / label / n).convert("RGB") for label, n in chunk]
             inputs = processor(images=images, return_tensors="pt").to(device)
             inputs["pixel_values"] = inputs["pixel_values"].to(dtype)
             with torch.no_grad():  # no_grad = we never change the model's weights
@@ -143,10 +145,35 @@ def save_answers(path: Path, photos, classifier, x: np.ndarray, ms_per_photo: fl
                              round(ms_per_photo, 1)])
 
 
-def main() -> None:
+def fit_head(x_train: np.ndarray, y_train: list[str], x_tuning: np.ndarray, y_tuning: list[str]):
+    """Train the small classifier. The setting C (how strongly to hold it back) is picked on the
+    TUNING photos by log-loss, which rewards honest chances, not just right answers."""
     from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import log_loss
 
+    print(f"\nTraining the head on {len(y_train):,} photos...")
+    y_tuning = np.array(y_tuning)
+    best = None
+    for c in [1, 10, 100, 300, 1000, 3000]:
+        classifier = LogisticRegression(C=c, max_iter=3000).fit(x_train, y_train)
+        loss = log_loss(y_tuning, classifier.predict_proba(x_tuning), labels=classifier.classes_)
+        accuracy = (classifier.predict(x_tuning) == y_tuning).mean()
+        print(f"  C={c:<5} tuning accuracy {accuracy:.1%}, log-loss {loss:.3f}")
+        if best is None or loss < best[0]:
+            best = (loss, c, classifier)
+    print(f"Chosen: C={best[1]} (lowest tuning log-loss)")
+    return best[2]
+
+
+def aid_head(backbone: str, train_per_class: int):
+    """The AID head again, from saved embeddings (same photos and steps as `main`)."""
+    train, tuning = pick(train_per_class or None, skip=30), pick(10, skip=10)
+    x_train, _ = embed(train, backbone)
+    x_tuning, _ = embed(tuning, backbone)
+    return fit_head(x_train, [l for l, _ in train], x_tuning, [l for l, _ in tuning])
+
+
+def main() -> None:
     parser = argparse.ArgumentParser(description="Agent v4: frozen image model + small classifier")
     parser.add_argument("--backbone", default="siglip", choices=BACKBONES)
     parser.add_argument("--train-per-class", type=int, default=0,
@@ -161,22 +188,8 @@ def main() -> None:
     x_train, _ = embed(train, args.backbone)
     x_tuning, _ = embed(tuning, args.backbone)
     x_final, ms_final = embed(final, args.backbone)
-    y_train = [label for label, _ in train]
-    y_tuning = np.array([label for label, _ in tuning])
-
-    # Pick how strongly to hold the classifier back (C), using the TUNING photos only.
-    # Log-loss rewards honest chances, not just right answers.
-    print(f"\nTraining the head on {len(train):,} photos ({len(train) // len(CLASSES)}/class)...")
-    best = None
-    for c in [1, 10, 100, 300, 1000, 3000]:
-        classifier = LogisticRegression(C=c, max_iter=3000).fit(x_train, y_train)
-        loss = log_loss(y_tuning, classifier.predict_proba(x_tuning), labels=classifier.classes_)
-        accuracy = (classifier.predict(x_tuning) == y_tuning).mean()
-        print(f"  C={c:<5} tuning accuracy {accuracy:.1%}, log-loss {loss:.3f}")
-        if best is None or loss < best[0]:
-            best = (loss, c, classifier)
-    _, c, classifier = best
-    print(f"Chosen: C={c} (lowest tuning log-loss)")
+    classifier = fit_head(x_train, [label for label, _ in train],
+                          x_tuning, [label for label, _ in tuning])
 
     tag = f"{args.backbone}_n{args.train_per_class}" if args.train_per_class else args.backbone
     for name, photos, x in [("tuning", tuning, x_tuning), ("final", final, x_final)]:

@@ -95,6 +95,11 @@ Files: `experiments/head_aid_siglip-base_n20_final.csv`, `experiments/head_aid_s
 File: `experiments/confidence_aid_test_gemma3-4b_r3_n10_skip20.csv` (+ `.png` chart)
 
 ## What we learned
+- **On real Sentinel-2 photos, the head must be trained on Sentinel-2 photos.** The AID-trained head
+  gets only 33% on EuroSAT (Sentinel-2), about the same as Gemma (29%): it calls most blurry 64 px photos
+  "bare land". Retraining just the small classifier on 1,000 Sentinel-2 photos (same frozen image model)
+  gives **92.8%**, and agent v4 then gets 100% of the info down at 1 Mbps vs 69% for Gemma's agent v1.
+  Details: [experiment log](docs/experiment_log.md#agent-v4-on-real-sentinel-2-photos-eurosat-20-oct-2026).
 - **A trained decision head beats a big model with no training.** Agent v4's head gets 95.7% right
   vs Gemma's 63%, about 300x faster, and its chances are honest. All 13 photos it got wrong were among
   its least-sure 20%, so the agent sent those as full photos and no wrong label reached the ground.
@@ -133,8 +138,8 @@ With real JPEG sizes, the agent could look better just by picking photos that co
 - **Photos are stand-ins.** Time, position and budget are real, but each photo is a random AID aerial
   photo, not the real Sentinel-2 view at that spot.
 - **Agent v4 learned from labelled AID photos; Gemma saw none.** v4 is "supervised", v1-v3 are
-  "zero-shot", so compare them with that in mind. All tests so far use AID photos. How the head does
-  on photos that are *not* from AID (real Sentinel-2) is the big open question.
+  "zero-shot", so compare them with that in mind. On real Sentinel-2 photos (EuroSAT) the AID head drops
+  to 33%; it needs about 1,000 labelled photos from the same kind of camera to reach 92.8%.
 - **Gemma's accuracy is 61–65%** on AID's 30 classes, vs 88.16% for NASA JPL's NAVI-Orbital
   (Gemma 3 in orbit). Their model size, prompt and test split still need checking before comparing.
 - **Laptop, not flight hardware.** Speeds are from a MacBook M2 and a Kaggle T4. Speed and power
@@ -188,6 +193,7 @@ python -m src.eval.confidence_test --skip 20   # model + "not sure" signals (~2 
 python -m src.model.head --backbone siglip-base --train-per-class 20   # agent v4 head (~15 min first time)
 python -m src.cloud.kaggle_run          # or: big head on a free Kaggle GPU (push your code first)
 python -m src.eval.run_agent            # all policies at 0.25-4 Mbps (seconds, no model calls)
+python -m src.eval.sentinel_test        # agent v4 on real Sentinel-2 photos (EuroSAT, ~10 min)
 python -m src.eval.plot_results         # redraws docs/results.png
 ```
 
@@ -214,7 +220,7 @@ More commands (EuroSAT, prompts, image sizes, replay options) are in [docs/exper
 - [x] Agent v1 (rules), v2 and v3 ("not sure"-aware)
 - [x] Final test on unseen photos: **v3 92% vs raw 60% at 1 Mbps**
 - [x] Agent v4 with a decision head (frozen SigLIP + small classifier): **100%, 0 wrong labels at 1 Mbps**
-- [ ] Test the decision head on photos that are not from AID (real Sentinel-2)
+- [x] Test the decision head on real Sentinel-2 photos (EuroSAT): AID head 33%, retrained head **92.8%**
 - [x] Demo page
 - [ ] Check NAVI's setup (paper 04) to compare accuracy fairly
 - [ ] Skip cloudy photos, send crops

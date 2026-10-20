@@ -390,3 +390,48 @@ Agents on the replay (`experiments/agents_delhi_final_equal_20261020_1111.csv`),
   directly comparable).
 - The big run was slow because it used full precision on the T4. `head.py` now uses half precision (fp16)
   on Nvidia GPUs (checked on the Mac GPU: same embeddings, match 1.0). Not yet timed on a T4.
+
+## Agent v4 on real Sentinel-2 photos (EuroSAT), 20 Oct 2026
+
+`python -m src.eval.sentinel_test` (small head, SigLIP-base, on the Mac, 22 ms per photo).
+EuroSAT photos are real Sentinel-2 (64x64 px, 10 m per pixel, 10 classes); AID photos are sharp
+Google Earth photos. Sets: FINAL = 1,000 photos (100/class, including Gemma's 100 baseline photos),
+tuning = 500, training = 1,000 (100/class). None overlap.
+
+**Test 1: the AID head as it is (no retraining).** Its 30 classes were matched to EuroSAT's 10 before
+testing (`MATCH` in the script; PermanentCrop and HerbaceousVegetation have no match).
+
+| Photos | Right |
+|---|---|
+| All 1,000 | 33.2% (random guessing: 12%) |
+| Only the 8 classes with an AID match | 41.5% |
+| Gemma's 100 photos | 30% (Gemma 3 itself: 29%) |
+
+- **It does not carry over.** It calls most blurry 64 px photos "BareLand" (crops, grass, orchards,
+  even houses) and dark lakes "Forest". Only Forest (94%) and Residential (70%) work.
+- So a head trained on one kind of photo is no better than Gemma on a different kind.
+
+**Test 2: same frozen SigLIP, new head trained on 1,000 Sentinel-2 photos.** C=300 picked on tuning.
+
+| Photos | Right | Calibration error |
+|---|---|---|
+| **FINAL 1,000** | **92.8%** | 0.014 |
+| Gemma's 100 photos | 93% (Gemma 3: 29%) | |
+
+**Test 3: satellite replay with Sentinel-2 photos** (each counted as 280 KB, like the main results).
+Correct info / wrong labels (`experiments/sentinel_test3_replay_20261020_1126.csv`):
+
+| Downlink | send all raw | caption all (Gemma) | agent v1 (Gemma) | **agent v4** |
+|---|---|---|---|---|
+| 0.25 Mbps | 15% / 0 | 29% / 776 | 37% / 687 | **97% / 29** |
+| 0.5 Mbps | 30% / 0 | 29% / 776 | 49% / 557 | **100% / 5** |
+| 1 Mbps | 60% / 0 | 29% / 776 | 69% / 333 | **100% / 0** |
+| 2 Mbps | 89% / 0 | 29% / 776 | 92% / 86 | **100% / 0** |
+
+Photos drawn from Gemma's 100 (Gemma answers exist only for those). With all 1,000 final photos,
+agent v4 gets 98% / 17 wrong at 0.25 Mbps and 100% / 0-4 from 0.5 Mbps up.
+
+- **The method works on real Sentinel-2 photos, but the head must be trained on the same kind of photos.**
+  A satellite mission would train its head on labelled photos from its own camera (or a close one).
+- The frozen image model is the same in both tests; only the tiny classifier changes. So moving to a new
+  camera means retraining a small classifier from about 1,000 labelled photos, not the big model.

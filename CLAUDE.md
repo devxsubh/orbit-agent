@@ -95,6 +95,7 @@ smart compression (FOOL paper).
 | `docs/` | README images (`results.png`, `demo_pass.png`, `demo_end.png`) + `experiment_log.md` (full history, moved out of README on 19 Oct) | done |
 | `src/eval/confidence_test.py` | Runs the signals on 300 NEW AID photos (11-20/class), resumable; prints AUROC + wrong caught at 10/20/30% flagged; saves CSV + chart. `--evaluate-only` | **done, works** (quick 30-photo run done) |
 | `src/model/head.py` | Agent v4 "decision head" (Jev-style): frozen image model (`--backbone siglip` 400M / `siglip-base` 90M / `dinov2`) makes embeddings (cached in `data/processed/`), logistic regression trained on AID photos 31+ (`--train-per-class`, 0 = all 9,100), C picked on tuning by log-loss. Saves `experiments/head_aid_<backbone>_{tuning,final}.csv`; `run_agent` adds agent v4 when one exists | **done, works** (quick Mac test) |
+| `src/eval/sentinel_test.py` | Agent v4 on real Sentinel-2 (EuroSAT): test 1 AID head as is (30 AID classes matched to 10 EuroSAT via `MATCH`, fixed before testing), test 2 new head on EuroSAT (final 1,000 incl. Gemma's 100, tuning 500, train 100/class), test 3 replay (photos counted as 280 KB) | **done, works** |
 | `src/cloud/kaggle_run.py` + `kaggle/` | Runs `head.py` on a free Kaggle T4 from the terminal: writes `kaggle/orbit-agent-head.ipynb` (clones the repo from GitHub, so push first), pushes, waits, copies CSVs to `experiments/` and embeddings to `data/processed/` | **done, works** (full run 20 Oct, 72 min on a T4) |
 
 ## How to run
@@ -190,6 +191,10 @@ python check_setup.py                                    # health check
   so on the replay it lets through 3-7 wrong labels vs 0-3 for the small head. More accurate != more
   trustworthy. Small head = better onboard deal. HF rate-limits (429) bulk photo downloads, so Kaggle
   uses the dataset `jiayuanchengala/aid-scene-classification-datasets` (same bytes). Next: non-AID photos.
+- **v4 on real Sentinel-2 / EuroSAT (20 Oct):** AID head as is 33% (Gemma 29%; says "BareLand" for most blurry
+  64 px photos) -> doesn't transfer. Same frozen SigLIP-base + new head on 1,000 EuroSAT photos: **92.8%**,
+  calibration error 0.014 (Gemma's 100 photos: 93% vs 29%). Replay: v4 100%/0 wrong at 1 Mbps vs Gemma v1
+  69%/333. Lesson: retrain the small head per camera (~1,000 labelled photos), not the big model.
 - **README, chart and demo show agent v4 (small head) since 20 Oct.** Screenshots made with headless Chrome:
   `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --window-size=1440,900
   --virtual-time-budget=5000 --screenshot=out.png "file://$PWD/demo/index.html?t=19900"` (t=86400 = end of day).
