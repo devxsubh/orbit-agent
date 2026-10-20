@@ -24,6 +24,10 @@ v3 replaces the yes/no "not sure" rule with p = the chance the label is right
 - spend the budget on the biggest gain per byte first.
 v3-lite uses only the free signal (B); v3 also uses agreement over 3 asks (D).
 
+v4 plans like v3, but the label and its chance come from the "decision head"
+(a frozen image model + small classifier, src/model/head.py) instead of Gemma.
+One quick pass per photo, no text generated.
+
 Also here: two simple policies to compare against (send everything raw / caption everything).
 """
 from __future__ import annotations
@@ -61,6 +65,8 @@ class ModelView:
     doubt: bool = False  # v2 signal: any of several answers / changing answers / small margin
     p_lite: float = 0.5  # v3-lite: chance the label is right, from B only
     p_full: float = 0.5  # v3: chance the label is right, from B + D
+    head_guess: str = ""  # v4: the decision head's label (src/model/head.py)
+    p_head: float = 0.0   # v4: the head's chance that its label is right
 
 
 @dataclass
@@ -133,17 +139,21 @@ def plan_agent_v2(window: Window, views: dict[str, ModelView]) -> list[Choice]:
     return _label_then_upgrade(window, views, priority, warn_unsure=True)
 
 
-def _plan_by_value(window: Window, views: dict[str, ModelView], chance: str) -> list[Choice]:
-    """Agent v3: label every photo (plain or "unsure"), then buy the most value per byte."""
+def _plan_by_value(window: Window, views: dict[str, ModelView], chance: str,
+                   guess: str = "guess") -> list[Choice]:
+    """Agent v3: label every photo (plain or "unsure"), then buy the most value per byte.
+
+    chance / guess: which ModelView fields to use (v3: Gemma's, v4: the decision head's).
+    """
     choices, gain = [], {}
     budget = window.budget_bytes
     for photo in window.photos:
         view = views[photo.path.name]
-        p = getattr(view, chance)
+        p, best = getattr(view, chance), getattr(view, guess)
         if p >= 0.5:
-            decision, label, label_value = Decision.DESCRIBE, view.guess, 2 * p - 1
+            decision, label, label_value = Decision.DESCRIBE, best, 2 * p - 1
         else:
-            decision, label, label_value = Decision.DESCRIBE_UNSURE, f"unsure: {view.guess}?", 0.0
+            decision, label, label_value = Decision.DESCRIBE_UNSURE, f"unsure: {best}?", 0.0
         cost = describe_bytes(photo, label)
         if cost <= budget:
             choice = Choice(photo, decision, label, cost)
@@ -170,6 +180,11 @@ def plan_agent_v3_lite(window: Window, views: dict[str, ModelView]) -> list[Choi
 def plan_agent_v3(window: Window, views: dict[str, ModelView]) -> list[Choice]:
     """Agent v3: chance-based, free signal + agreement (3 model calls per photo)."""
     return _plan_by_value(window, views, "p_full")
+
+
+def plan_agent_v4(window: Window, views: dict[str, ModelView]) -> list[Choice]:
+    """Agent v4: like v3, with labels and chances from the decision head (no Gemma call)."""
+    return _plan_by_value(window, views, "p_head", guess="head_guess")
 
 
 def plan_raw(window: Window, views: dict[str, ModelView] | None = None) -> list[Choice]:
@@ -200,4 +215,5 @@ def plan_caption(window: Window, views: dict[str, ModelView]) -> list[Choice]:
 
 POLICIES = {"send all raw": plan_raw, "caption all": plan_caption,
             "agent v1": plan_agent, "agent v2": plan_agent_v2,
-            "agent v3-lite": plan_agent_v3_lite, "agent v3": plan_agent_v3}
+            "agent v3-lite": plan_agent_v3_lite, "agent v3": plan_agent_v3,
+            "agent v4": plan_agent_v4}

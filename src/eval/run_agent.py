@@ -8,6 +8,8 @@ Uses saved model answers (no model calls, so it takes seconds). Default, best fi
 - the FINAL test photos (21-30 per class), once that run is complete
 - the tuning photos (11-20), used to learn agent v3's chances
 - the AID baseline on the first 300 photos
+Agent v4 runs too if the decision head's answers for the same photos exist
+(python -m src.model.head).
 
 Scoring, per photo:
 - full photo sent      -> correct (people on the ground can see what it is)
@@ -63,7 +65,16 @@ def photo_set_name(path: Path) -> str:
         path.resolve(), "first 300 photos")
 
 
-def load_views(path: Path) -> tuple[dict[str, ModelView], list[tuple[Path, str]]]:
+def head_answers(path: Path) -> Path | None:
+    """The newest decision-head CSV for the same photo set (agent v4), if there is one."""
+    which = {FINAL: "final", TUNING: "tuning"}.get(path.resolve())
+    files = sorted((ROOT / "experiments").glob(f"head_aid_*_{which}.csv"),
+                   key=lambda f: f.stat().st_mtime) if which else []
+    return files[-1] if files else None
+
+
+def load_views(path: Path, head: Path | None = None) -> tuple[dict[str, ModelView],
+                                                              list[tuple[Path, str]]]:
     """What the model said about each photo, from a baseline or "not sure" test CSV.
 
     Returns (views by file name, photo pool for the replay).
@@ -89,6 +100,12 @@ def load_views(path: Path) -> tuple[dict[str, ModelView], list[tuple[Path, str]]
                 view.p_full = right_chance(row, trust, w_full)
         views[row["file"]] = view
         pool.append((AID_DIR / row["truth"] / row["file"], row["truth"]))
+
+    if head:  # agent v4: the decision head's label and chance for each photo
+        for row in _rows(head):
+            if row["file"] in views:
+                views[row["file"]].head_guess = row["guess"]
+                views[row["file"]].p_head = float(row["p"])
     return views, pool
 
 
@@ -118,6 +135,8 @@ def main() -> None:
     parser.add_argument("--start", default="2026-10-19T00:00", help="start time in UTC")
     parser.add_argument("--answers", help="CSV with model answers (default: 'not sure' test "
                                           "on new photos if done, else the AID baseline)")
+    parser.add_argument("--head", help="decision-head CSV for agent v4 (default: newest for "
+                                       "the same photos)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--tle", help="use a saved TLE file (for repeatable runs)")
     parser.add_argument("--sizes", choices=["equal", "jpeg"], default="equal",
@@ -126,7 +145,8 @@ def main() -> None:
     args = parser.parse_args()
 
     answers = Path(args.answers) if args.answers else default_answers()
-    views, pool = load_views(answers)
+    head = Path(args.head) if args.head else head_answers(answers)
+    views, pool = load_views(answers, head)
     start = datetime.fromisoformat(args.start).replace(tzinfo=timezone.utc)
     sat = load_satellite(tle_path=args.tle)
     photo_bytes = None
@@ -139,6 +159,8 @@ def main() -> None:
     print(f"\nModel answers: {answers.name} = {photo_set_name(answers)}")
     print(f"{len(views)} photos. Not sure: {unsure} by v1 rule, {doubt} by v2 rule, "
           f"{v3_unsure} by v3 (chance right < 50%).")
+    print(f"Agent v4 head: {head.name}" if head else
+          "Agent v4 skipped: no decision-head answers for these photos (python -m src.model.head)")
     print(f"Replay: {sat.name} over {args.station.title()}, {args.hours:g} h from {args.start} UTC, "
           f"photo every {args.every} s in daylight. Unsent photos are dropped.")
     print("Photo sizes: " + (f"all {photo_bytes / 1000:.0f} KB (equal, like raw tiles)"
@@ -158,6 +180,8 @@ def main() -> None:
               f"{'Wrong labels':>13} {'Unsure labels':>14} {'Interesting OK':>15} {'Correct/MB':>11}")
 
         for name, plan in POLICIES.items():
+            if name == "agent v4" and not head:
+                continue
             choices = [c for w in windows for c in plan(w, views)]
             s = score(choices)
             print(f"{name:<14} {s['mb']:>8,.2f} {s['full']:>12,} "

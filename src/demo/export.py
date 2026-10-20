@@ -21,7 +21,7 @@ from PIL import Image
 
 from src.agent.decide import POLICIES, Decision
 from src.data.aid import LABELS
-from src.eval.run_agent import default_answers, load_views, photo_set_name, score
+from src.eval.run_agent import default_answers, head_answers, load_views, photo_set_name, score
 from src.orbit.contact_windows import GROUND_STATIONS, ground_track, load_satellite
 from src.orbit.replay import build_replay
 
@@ -92,7 +92,7 @@ def main() -> None:
     args = parser.parse_args()
 
     answers = Path(args.answers) if args.answers else default_answers()
-    views, pool = load_views(answers)
+    views, pool = load_views(answers, head_answers(answers))  # head: for --agent "agent v4"
     photo_bytes = sum(p.stat().st_size for p, _ in pool) // len(pool)  # equal sizes, like run_agent
     start = datetime.fromisoformat(args.start).replace(tzinfo=timezone.utc)
     sat = load_satellite()

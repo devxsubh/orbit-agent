@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import random
+import time
 import urllib.request
 from pathlib import Path
 
@@ -87,14 +88,38 @@ def file_list() -> dict[str, list[str]]:
 
 
 def _download(label: str, name: str) -> Path:
-    """Download one photo (skips it if we already have it)."""
+    """Download one photo (skips it if we already have it). Tries 3 times."""
     dest = AID_DIR / label / name
-    if not dest.exists():
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        part = dest.with_suffix(".part")
-        part.write_bytes(_get(f"{REPO}/resolve/main/data/{label}/{name}"))
-        part.replace(dest)
+    if dest.exists():
+        return dest
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    part = dest.with_suffix(".part")
+    for attempt in range(1, 4):  # Hugging Face sometimes drops a connection
+        try:
+            part.write_bytes(_get(f"{REPO}/resolve/main/data/{label}/{name}"))
+            break
+        except OSError as error:
+            if attempt == 3:
+                raise
+            print(f"  {name}: download failed ({error}), trying again...")
+            time.sleep(5 * attempt)
+    part.replace(dest)
     return dest
+
+
+def pick(per_class: int | None = 10, seed: int = 42, skip: int = 0) -> list[tuple[str, str]]:
+    """Choose photos without downloading them. Returns (label, file name).
+
+    Each class is shuffled with its own seed, so the same photos come out every time.
+    per_class=None means "all photos after the first `skip`".
+    """
+    picked = []
+    for label, names in file_list().items():
+        names = list(names)
+        random.Random(f"{seed}-{label}").shuffle(names)
+        end = None if per_class is None else skip + per_class
+        picked += [(label, n) for n in names[skip:end]]
+    return picked
 
 
 def sample(per_class: int = 10, seed: int = 42, skip: int = 0) -> list[tuple[Path, str]]:
@@ -107,14 +132,8 @@ def sample(per_class: int = 10, seed: int = 42, skip: int = 0) -> list[tuple[Pat
     """
     from tqdm import tqdm
 
-    picked = []
-    for label, names in file_list().items():
-        names = list(names)
-        random.Random(f"{seed}-{label}").shuffle(names)
-        picked += [(label, n) for n in names[skip:skip + per_class]]
-
     photos = []
-    for label, name in tqdm(picked, desc="AID photos", unit="photo"):
+    for label, name in tqdm(pick(per_class, seed, skip), desc="AID photos", unit="photo"):
         photos.append((_download(label, name), label))
     return photos
 

@@ -24,3 +24,6 @@ demo/thumbs/
 
 # Website built by python -m src.demo.build_site (GitHub Pages)
 site/
+
+# Downloads from Kaggle runs (logs + embeddings; the CSVs are copied to experiments/)
+experiments/kaggle/

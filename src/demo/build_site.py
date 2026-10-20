@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import json
 import shutil
-import time
 from pathlib import Path
 
 from PIL import Image
@@ -50,16 +49,7 @@ def make_thumbnail(name: str, out: Path) -> None:
     """Download one AID photo and save a small copy (same size as src/demo/export.py)."""
     by_lower = {label.lower(): label for label in CLASSES}  # "bareland" -> "BareLand"
     label = by_lower[name.rsplit("_", 1)[0]]                # "bareland_29.jpg" -> "BareLand"
-    for attempt in range(1, 4):  # Hugging Face sometimes drops a connection: try 3 times
-        try:
-            path = _download(label, name)
-            break
-        except OSError as error:
-            if attempt == 3:
-                raise
-            print(f"  {name}: download failed ({error}), trying again...")
-            time.sleep(5 * attempt)
-    with Image.open(path) as img:
+    with Image.open(_download(label, name)) as img:  # _download retries 3 times
         img.convert("RGB").resize((160, 160), Image.Resampling.LANCZOS).save(out, quality=82)
 
 

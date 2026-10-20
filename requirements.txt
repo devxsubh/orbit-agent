@@ -10,3 +10,9 @@ tqdm
 # AI model + agent
 ollama          # runs Gemma 3 locally
 langgraph       # the decision loop
+
+# Agent v4: frozen image model + small classifier (src/model/head.py)
+torch
+transformers
+scikit-learn
+kaggle          # run training on a free Kaggle GPU (src/cloud/kaggle_run.py)

@@ -328,3 +328,37 @@ Accuracy on the new photos: **65%** (194/300), close to the first set's 61%.
 - **At 0.25 Mbps, v2 is too careful:** it halves the wrong labels but loses a lot of correct info,
   because the budget is too small to send the unsure photos in full.
 - **Both agents beat "send all raw" by a wide margin** whenever the downlink is tight.
+
+## Agent v4: "decision head" (frozen image model + small classifier), 20 Oct 2026
+
+Idea from "decision models" like TypeSafe's Jev: fix the answers in advance (30 classes) and get a
+chance for every answer in one quick pass, with no text generated. For photos:
+a **frozen** image model (SigLIP) makes an embedding, and a small logistic-regression head is trained on top.
+Code: `src/model/head.py`. Agent v4 = agent v3's planner with the head's label and chance.
+
+**Quick test on the Mac** (`siglip-base`, 90M parameters, 20 training photos per class = 600 photos
+from AID photos 31+, which Gemma never saw). Setting C=1000 picked on tuning photos (11-20) by log-loss.
+
+| Photos | Accuracy | Calibration error (0 = perfect) |
+|---|---|---|
+| tuning (11-20) | 95.7% | 0.026 |
+| **FINAL (21-30)** | **95.7%** (287/300) | 0.036 |
+
+Gemma 3 4B zero-shot on the same final photos: 63%. Speed: **26 ms per photo** (Mac M2 GPU) vs about 7,500 ms.
+No photo is in two sets (checked). All 13 wrong answers are among the 58 least-sure photos.
+
+**Agents on the replay** (`experiments/agents_delhi_final_equal_20261020_0947.csv`, equal sizes)
+
+| Downlink | agent v3 (Gemma) correct / wrong | **agent v4 (head)** correct / wrong |
+|---|---|---|
+| 0.25 Mbps | 68% / 192 | **100% / 3** |
+| 0.5 Mbps | 79% / 164 | **100% / 0** |
+| 1 Mbps | 92% / 90 | **100% / 0** |
+| 2 Mbps | 99% / 6 | 100% / 0 |
+
+- **Not a fair fight, so say so:** the head is trained on 600 labelled AID photos (same dataset, same
+  kind of photos). Gemma never saw a single labelled example. v4 is "supervised", v3 is "zero-shot".
+- The replay reuses the 300 final photos about 3.6 times each, so 13 wrong photos become about 47
+  wrong labels if sent; v4 sends almost all of them as full photos because its chances are honest.
+- Next: full run with the 400M SigLIP and all 9,100 training photos on a Kaggle GPU
+  (`python -m src.cloud.kaggle_run`); try `dinov2`; test on photos that are NOT from AID (real Sentinel-2).

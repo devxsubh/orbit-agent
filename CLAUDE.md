@@ -94,6 +94,8 @@ smart compression (FOOL paper).
 | `src/eval/plot_results.py` | Draws `docs/results.png` (dark, demo colours) from the final agents CSV, for the README | **done, works** |
 | `docs/` | README images (`results.png`, `demo_pass.png`, `demo_end.png`) + `experiment_log.md` (full history, moved out of README on 19 Oct) | done |
 | `src/eval/confidence_test.py` | Runs the signals on 300 NEW AID photos (11-20/class), resumable; prints AUROC + wrong caught at 10/20/30% flagged; saves CSV + chart. `--evaluate-only` | **done, works** (quick 30-photo run done) |
+| `src/model/head.py` | Agent v4 "decision head" (Jev-style): frozen image model (`--backbone siglip` 400M / `siglip-base` 90M / `dinov2`) makes embeddings (cached in `data/processed/`), logistic regression trained on AID photos 31+ (`--train-per-class`, 0 = all 9,100), C picked on tuning by log-loss. Saves `experiments/head_aid_<backbone>_{tuning,final}.csv`; `run_agent` adds agent v4 when one exists | **done, works** (quick Mac test) |
+| `src/cloud/kaggle_run.py` + `kaggle/` | Runs `head.py` on a free Kaggle T4 from the terminal: writes `kaggle/orbit-agent-head.ipynb` (clones the repo from GitHub, so push first), pushes, waits, copies CSVs to `experiments/` and embeddings to `data/processed/` | written, **tested with a fake kaggle command** (real key needs renewing) |
 
 ## How to run
 ```bash
@@ -119,6 +121,8 @@ python -m src.demo.export && open demo/index.html       # demo page (dark theme,
 python -m src.eval.plot_results                          # redraw docs/results.png for the README
 python -m src.demo.build_site && python -m http.server -d site   # website as GitHub Pages shows it
 python -m src.model.vlm path/to/photo.jpg                # describe one photo
+python -m src.model.head --backbone siglip-base --train-per-class 20   # agent v4 head, quick Mac test (~15 min first time)
+python -m src.cloud.kaggle_run                           # agent v4 full run on a Kaggle GPU (push code first)
 python check_setup.py                                    # health check
 ```
 
@@ -176,7 +180,13 @@ python check_setup.py                                    # health check
   v1 84%/173, v2 89%/85, v3-lite 91%/99, **v3 92%/90**; 0.5 Mbps v1 74%/282, v3 79%/164;
   2 Mbps v1 95%/51, v3 99%/6; 0.25 Mbps v1 70%/331 vs v3 68%/192 (trade-off). v3-lite ≈ v3 with
   1 call instead of 3. Chances calibrated on final photos (~75% → 77% right). Demo exported from final photos.
-- **Work is on git branch `agent-v2`** (main has only the first commit).
+- **Agent v4, decision head (20 Oct):** idea from TypeSafe's Jev (fixed answers, one pass, a chance per answer).
+  Frozen SigLIP-base + logistic regression, 600 training photos (31+): **FINAL 95.7%** (Gemma 63%),
+  calibration error 0.036, 26 ms/photo on the Mac. Replay: v4 100% correct / 0 wrong at 0.5-1 Mbps
+  (v3 92% / 90 at 1 Mbps). Caveat for the paper: v4 is supervised on AID, Gemma is zero-shot.
+  Details in `docs/experiment_log.md`. Next: full SigLIP-400M on Kaggle, then non-AID photos.
+- **Kaggle:** username `subhammahapatra004`. Login works with the new token in `~/.kaggle/access_token` (20 Oct).
+- **Work is on git branch `main`** (agent-v2 was merged via PRs #1 and #2). GitHub Pages deploys from main.
 
 ## Key decisions
 - Satellites: Sentinel-2A (NORAD 40697), Sentinel-2B (42063). Default ground station: Delhi.
