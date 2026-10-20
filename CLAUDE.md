@@ -98,6 +98,7 @@ smart compression (FOOL paper).
 | `src/eval/sentinel_test.py` | Agent v4 on real Sentinel-2 (EuroSAT): test 1 AID head as is (30 AID classes matched to 10 EuroSAT via `MATCH`, fixed before testing), test 2 new head on EuroSAT (final 1,000 incl. Gemma's 100, tuning 500, train 100/class), test 3 replay (photos counted as 280 KB) | **done, works** |
 | `src/model/cnn.py` | Tiny CNN baseline (MobileNetV3-Small, ImageNet start, all weights trained, flips/rot90, 20 epochs, best epoch + temperature on tuning). Same photo sets as the heads; CSV in head format -> `run_agent --head` / `sentinel_test --head-csv` | **done, works** (Kaggle T4, 7 min) |
 | `src/eval/label_curve.py` + `src/eval/plot_label_curve.py` | Accuracy vs training photos per class (5/10/20/50/100, 3 seeds) for frozen head vs tiny CNN on AID and EuroSAT -> `experiments/label_curve_*.csv`, chart `docs/label_curve.png` (head yellow, CNN magenta, Gemma grey dashed) | **done, works** (Kaggle) |
+| `paper/outline.md` | Paper outline for IGARSS 2027 (4 pages, deadline ~10 Jan 2027): titles, sections with page budget, Tables 1-2 + Figures (results.png, label_curve.png) with numbers and source files, TODO list (Jetson first), timeline | draft |
 | `src/cloud/kaggle_run.py` + `kaggle/` | Runs `head.py` on a free Kaggle T4 from the terminal: writes `kaggle/orbit-agent-head.ipynb` (clones the repo from GitHub, so push first), pushes, waits, copies CSVs to `experiments/` and embeddings to `data/processed/` | **done, works** (full run 20 Oct, 72 min on a T4) |
 
 ## How to run
