@@ -12,14 +12,16 @@ Download the test set (photos 11-20 of each class, never used for tuning):
 from __future__ import annotations
 
 import json
+import os
 import random
 import time
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-AID_DIR = ROOT / "data" / "raw" / "aid"
-FILE_LIST = AID_DIR / "file_list.json"
+# Where the photos are. On Kaggle, set AID_DIR to the AID dataset folder (no download needed).
+AID_DIR = Path(os.environ.get("AID_DIR", ROOT / "data" / "raw" / "aid"))
+FILE_LIST = Path(__file__).with_name("aid_files.json")  # names of all 10,000 photos (in git)
 REPO = "https://huggingface.co/datasets/blanchon/AID"
 API = "https://huggingface.co/api/datasets/blanchon/AID/tree/main/data"
 USER_AGENT = "orbit-agent/0.1 (student research project)"
@@ -82,7 +84,6 @@ def file_list() -> dict[str, list[str]]:
     total = sum(len(v) for v in files.values())
     if total != 10_000:
         print(f"Warning: expected 10,000 photos, found {total:,}.")
-    AID_DIR.mkdir(parents=True, exist_ok=True)
     FILE_LIST.write_text(json.dumps(files, indent=1))
     return files
 

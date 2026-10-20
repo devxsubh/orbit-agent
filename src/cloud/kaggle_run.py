@@ -31,6 +31,7 @@ FOLDER = ROOT / "kaggle"           # what gets uploaded
 NOTEBOOK = "orbit-agent-head.ipynb"
 SLUG = "orbit-agent-head"          # the notebook's name on Kaggle
 REPO = "https://github.com/devxsubh/orbit-agent.git"
+AID_ON_KAGGLE = "jiayuanchengala/aid-scene-classification-datasets"  # same photos as Hugging Face
 
 
 def git(*args: str) -> str:
@@ -82,28 +83,43 @@ def write_notebook(branch: str, head_args: str) -> None:
 # orbit-agent: agent v4 decision head
 
 Trains the small classifier on top of a frozen image model (`src/model/head.py`) on a GPU.
-Code: {REPO} (branch `{branch}`). Results are saved in `results/` (Output tab).
+Code: {REPO} (branch `{branch}`). Photos: the Kaggle copy of AID ({AID_ON_KAGGLE}).
+Results are saved in `results/` (Output tab).
 """),
         cell("code", f"""
 # 1. Get the project code (into /tmp, so it isn't copied into the output)
-!rm -rf /tmp/orbit-agent
-!git clone --depth 1 -b {branch} {REPO} /tmp/orbit-agent
-%cd /tmp/orbit-agent
-!git log --oneline -1
+import glob, os, shutil, subprocess
+
+def run(command):
+    \"\"\"Run a shell command and STOP the notebook if it fails.\"\"\"
+    print("$", command, flush=True)
+    subprocess.run(command, shell=True, check=True)
+
+run("rm -rf /tmp/orbit-agent && git clone --depth 1 -b {branch} {REPO} /tmp/orbit-agent")
+os.chdir("/tmp/orbit-agent")
+run("git log --oneline -1")
+run("rm -f experiments/head_aid_*.csv")  # so only results made in THIS run are kept
 """),
         cell("code", """
-# 2. Which GPU did we get?
-!nvidia-smi --query-gpu=name,memory.total --format=csv
+# 2. Which GPU did we get? Where are the AID photos?
+run("nvidia-smi --query-gpu=name,memory.total --format=csv")
+found = glob.glob("/kaggle/input/**/AID/Airport", recursive=True)
+assert found, "AID dataset not attached (add it in the notebook's Input panel)"
+os.environ["AID_DIR"] = os.path.dirname(found[0])
+print("AID photos in", os.environ["AID_DIR"])
 """),
         cell("code", f"""
-# 3. Download photos, make embeddings with the frozen model, train the head
-!python -u -m src.model.head {head_args}
+# 3. Make embeddings with the frozen model, train the head
+run("python -u -m src.model.head {head_args}")
 """),
         cell("code", """
 # 4. Keep the results (Kaggle saves everything in /kaggle/working)
-!mkdir -p /kaggle/working/results
-!cp experiments/head_aid_*.csv data/processed/embeddings_aid_*.npz /kaggle/working/results/
-!ls -lh /kaggle/working/results
+os.makedirs("/kaggle/working/results", exist_ok=True)
+files = glob.glob("experiments/head_aid_*.csv") + glob.glob("data/processed/embeddings_aid_*.npz")
+assert files, "No results were made"
+for f in files:
+    shutil.copy(f, "/kaggle/working/results/")
+run("ls -lh /kaggle/working/results")
 """),
     ]
     notebook = {"cells": cells, "metadata": {"kernelspec": {"name": "python3",
@@ -117,7 +133,7 @@ def write_metadata(user: str) -> str:
     kernel_id = f"{user}/{SLUG}"
     metadata = {"id": kernel_id, "title": SLUG, "code_file": NOTEBOOK, "language": "python",
                 "kernel_type": "notebook", "is_private": True, "enable_gpu": True,
-                "enable_internet": True, "dataset_sources": [], "competition_sources": [],
+                "enable_internet": True, "dataset_sources": [AID_ON_KAGGLE], "competition_sources": [],
                 "kernel_sources": []}
     (FOLDER / "kernel-metadata.json").write_text(json.dumps(metadata, indent=1) + "\n")
     return kernel_id
