@@ -109,6 +109,7 @@ smart compression (FOOL paper).
 | `src/model/faults.py` | Failure suite: new camera (mapped chances), silent swap (as sure as right answers), radiation bit flips in the 30 KB head (subtle: 5-30 pt drop), damaged camera (blur/noise/stripes, re-embedded); chances computed in 64-bit | **done, works** |
 | `src/eval/audit_test.py` | Main audit experiment: `--data eurosat` (stand-in replay, India-like shares ASSUMED) or `--data real`; scenarios x policies x rates x 3 stations x 7 days x 3 seeds -> `experiments/audit_summary_*.csv` (+ every estimate in `data/processed/audit_runs_*.csv.gz`) | **done, works** |
 | `src/eval/audit_floor.py`, `src/eval/compress_test.py`, `src/eval/audit_loop.py` | Floor sweep; R sweep with compress-to-fit (real JPEG ladder) + thumbnail audits; closed loop (new camera, zero labels, head retrained after every pass, used 1 pass later) | **done, works** |
+| `src/agent/self_check.py` | **Self-checking audit:** ground keeps seen/expected mistakes over all checks so far; > 1.5 -> safe mode (uniform checks + chances recalibrated from past checks, a predicted->true table). Decided on EuroSAT only, tested once on real photos. Method "audit, self-check" in `audit_test` (memory across a mission); the demo uses it | **done, works** |
 | `src/eval/audit_tables.py`, `src/eval/plot_audit.py` | Markdown tables from the newest CSVs; charts `docs/audit_{honesty,floor,rsweep,loop,loop_real}.png` (palette validated: blue/yellow/magenta + grey) | **done, works** |
 | `src/demo/export_audit.py` + `demo/audit.html` | Second demo page "the satellite reports its own error": per day, class shares truth vs audit (± bar) vs triage vs labels; onboard model switch; checked real photos; `?model=1&day=3`; tested at 1440 px and 390 px | **done, works** |
 | `paper/outline_v2_audit.md` | New paper outline (audited downlink); old outline kept, its agent v4 = baseline | draft |
@@ -249,24 +250,30 @@ python -m src.demo.export_audit && open demo/audit.html  # second demo page (?mo
   range. New direction = **audited downlink**: product = the day's class shares with a 90% error bar; policy =
   labels for all + random checks with known chances (floor 0.5) -> honest whatever the onboard model is like.
 - **Real replay (20 Oct, `src/data/s2_real.py`):** 3,527 photos Sentinel-2A really took, 6-19 Oct (cloud 46%,
-  water 17%, built-up 0.1%). Head trained 6-12 Oct = 82.3% right on 13-19 Oct. `audit_summary_real_20261020_2001.csv`,
+  water 17%, built-up 0.1%). Head trained 6-12 Oct = 82.3% right on 13-19 Oct. `audit_summary_real_20261020_2023.csv`,
   0.05 Mbps: healthy labels-only 1.9 pts / bars held 80% (rare 60%) -> even a healthy model misleads on real photos;
   EuroSAT head (no cloud class): labels 19.5 / 9%, triage 16.6 / 20%, audit 8.3 / 97%. Audit holds 85-99% everywhere
   (weakest: bit flips at 0.25 Mbps 85%; floor 1 = 98%). Price: with a badly broken model the audit is noisier than
   raw random (8.3 vs 5.9). Real closed loop (0.1 Mbps): 46% -> 83% right in 4 days from 215 checked photos,
   bars held 96%; launch head + triage 12%. Demo `demo/audit.html` uses this data at 0.1 Mbps.
-- **Audit results, EuroSAT replay (20 Oct, `audit_summary_eurosat_20261020_2001.csv`, 0.25 Mbps, 63 days):**
+- **Audit results, EuroSAT replay (20 Oct, `audit_summary_eurosat_20261020_2023.csv`, 0.25 Mbps, 63 days):**
   healthy head: triage 0.26 pts error (best, but no honest bar), audit 0.47 / bar held 98%. Broken models
   (new camera 28% right, silent swap, bit flips 84%, damaged camera 43-62%): labels-only / triage off by
   1.4-11.6 pts, bars held 0-80%; audit 1.2-2.7 pts, held 86-97%. Default bar = "scaled+1" (rare classes);
   still open: new camera, rare classes, 0.25-0.5 Mbps ~80-87% -> try betting intervals.
+- **Self-checking audit (20 Oct, late, `src/agent/self_check.py`):** T = 1.5 and safe mode chosen on EuroSAT, one real
+  test: broken models now BEAT raw random (real 0.05 Mbps: EuroSAT head 5.34 vs 5.89, bit flips 5.50 vs 5.89; plain
+  audit was 8.3/8.1), bars 95-98%; real bit flips 0.25 Mbps 85% -> 96%; EuroSAT new camera rare classes 80% -> 95%.
+  Healthy: <= 3% of passes switched. Costs: EuroSAT damaged camera +0.1-0.3 pts; real 0.02 Mbps false switches
+  (swap 9.1 vs 5.7). Next idea: recalibrate with the full chance vector.
 - **Floor sweep:** floor 0.5 = free insurance (healthy 0.47 pts like lower floors; bit flips held 95% vs 86-88%).
 - **R sweep (compress_test, same bytes + same human checks):** R <= 14 compress-to-fit is exact (onboard AI adds
   nothing); R >= 140 thumbnail audits (160 px, 6.4 KB) give ±0.4-1.1 vs ±1.8-4.5 for compression; R* ~ 30.
 - **Closed loop (EuroSAT, 0.25 Mbps):** head from zero labels reaches 91% by day 2, bars held 100% (EuroSAT photos
   repeat, so inflated); launch head + triage held 5%, 24 pts worst day. Loop CSVs now named `audit_loop_<data>_<rate>mbps_*`.
 - **Kaggle:** username `subhammahapatra004`. Login works with the new token in `~/.kaggle/access_token` (20 Oct).
-- **Work is on git branch `main`** (agent-v2 was merged via PRs #1 and #2). GitHub Pages deploys from main.
+- **Git:** PR #3 (audited downlink, branch `audited-downlink`) and the self-check PR (branch `self-check-audit`,
+  stacked on #3) wait for Subham to merge (auto-merge was blocked: merges need his review). GitHub Pages deploys from main.
 
 ## Key decisions
 - Satellites: Sentinel-2A (NORAD 40697), Sentinel-2B (42063). Default ground station: Delhi.
@@ -281,8 +288,8 @@ python -m src.demo.export_audit && open demo/audit.html  # second demo page (?mo
 - Big files stay out of git: `data/raw/*` and the PDFs are in `.gitignore`.
 
 ## Next steps (updated 20 Oct evening; steps 1-5 of the first plan are done)
-1. Paper = the audited downlink (`paper/outline_v2_audit.md`, IGARSS 2027). Fill Table 2 from the real replay.
-2. Error bars for rare classes under a badly wrong model (betting intervals, Waudby-Smith & Ramdas 2024).
+1. Paper = the self-checking audited downlink (`paper/outline_v2_audit.md`, IGARSS 2027). Write sections 3-4.
+2. Check the real truth labels by eye (~150 photos vs WorldCover/cloud map). Betting intervals for the tightest budgets.
 3. Jetson Orin Nano: time + energy for encoder + head + sampler.
 4. Demo video from `demo/audit.html` (switch to a broken model: triage's numbers go wrong, the audit's bars hold).
 5. Optional: spatially separate EuroSAT split; more real days; a second station network.

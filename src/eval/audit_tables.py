@@ -23,7 +23,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-MAIN = ["labels only", "triage (v4)", "raw random", "stratified", "audit, floor 0.5"]
+MAIN = ["labels only", "triage (v4)", "raw random", "stratified", "audit, floor 0.5", "audit, self-check"]
 
 
 def newest(pattern: str) -> Path | None:

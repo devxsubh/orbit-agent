@@ -624,7 +624,7 @@ Finding on the side: the frozen SigLIP + head is **fragile to moderate camera da
 ### Main result (`python -m src.eval.audit_test`, 7 days x 3 stations x 3 photo orders, India-like shares (assumed))
 0.25 Mbps, 63 days per cell. Each cell: typical error (RMSE, percentage points) / 90% error bar held
 (all classes, rare classes). Labels only and triage only have a "pretend every label is right" bar.
-File: `experiments/audit_summary_eurosat_20261020_2001.csv` (every estimate: `data/processed/audit_runs_eurosat_*.csv.gz`).
+File: `experiments/audit_summary_eurosat_20261020_2023.csv` (every estimate: `data/processed/audit_runs_eurosat_*.csv.gz`).
 
 | Onboard model | labels only | triage (v4) | raw random | stratified | **audit, floor 0.5** |
 |---|---|---|---|---|---|
@@ -734,7 +734,7 @@ daylight slot asks Element 84's Earth Search catalogue for a Sentinel-2A image w
   (real 224 px photos survive blur/noise much better than EuroSAT's 64 px ones).
 - Downlink speeds 0.01-0.25 Mbps (R ~ 1.7-42 for ~250 photos/day at 300 KB). Same 3 stations x 7 days x 3 seeds.
 
-`python -m src.eval.audit_test --data real` -> `experiments/audit_summary_real_20261020_2001.csv`,
+`python -m src.eval.audit_test --data real` -> `experiments/audit_summary_real_20261020_2023.csv`,
 chart `docs/audit_honesty_real.png`. Typical error (points) / 90% bar held (all classes, rare classes):
 
 | 0.05 Mbps (Delhi: ~30 checks a day) | labels only | triage (v4) | raw random | stratified | **audit, floor 0.5** |
@@ -788,3 +788,45 @@ raw random 95%.
   1,525 labels: 82%), and its error bars match the pre-trained head's from day 3 (±3.7-5.0 vs ±3.5-5.4), tighter
   than raw random (±5.8-9.1) and the launch head (±7-11).
 - At 0.05 Mbps (~30 checks a day): head 43% -> 81% by day 4 (111 labels), bars held 98%; triage 11%.
+
+### Self-checking audit: the satellite notices its own broken model (20 Oct, late)
+Code: `src/agent/self_check.py`, method "audit, self-check" in `src/eval/audit_test.py` (memory across the 7 days
+of a mission). After every pass the ground compares the mistakes it saw on the checked photos with the mistakes
+the model's chances expected, over all checks so far. If **seen / expected > 1.5**, one bit goes up and the next
+passes run in **safe mode**: (1) checks picked uniformly at random (floor 1), (2) the model's chances recalibrated
+with a table learned from past checks (predicted class -> share of each true class among checked photos,
+smoothed; fewer than 20 past checks: use the checks alone). Everything used comes from earlier passes, so the
+error bars stay honest. This is the "conservative fallback mode" of the On-Orbit Space AI survey (Sec. 6B).
+
+**Decided on the EuroSAT replay only, before any real-photo test** (scripts in the job's scratch folder, not kept):
+- Signal: the healthy head's running ratio stayed 0.62-0.83 (per pass: median 0.82, 95th percentile 1.31, 2% of
+  passes above 1.5); broken models 1.7-2.7 (71-99% of passes above 1.5). -> switch at 1.5.
+- Safe mode, 3 options at 0.25 Mbps (error): checks alone 2.3-2.4 for every failure; model's own chances: new
+  camera 2.50 (bars 87%); **recalibrated chances: new camera 2.21 (92%), swap 1.09, bit flips 1.24** -> chosen.
+
+**Results** (`experiments/audit_summary_*_20261020_2023.csv`; the older methods' numbers are identical to the
+earlier run). Typical error / 90% bar held / share of passes in safe mode:
+
+| | plain audit (floor 0.5) | **self-checking audit** | raw random |
+|---|---|---|---|
+| EuroSAT, 0.25 Mbps, healthy head | 0.47 / 98% | 0.53 / 98% / 1% | 2.18 / 91% |
+| EuroSAT, new camera | 2.69 / 86% (rare 80%) | **1.99 / 94% (rare 95%)** / 96% | 2.18 / 91% |
+| EuroSAT, silent swap | 1.22 / 97% | **0.95 / 97%** / 94% | 2.18 / 91% |
+| EuroSAT, bit flips | 1.33 / 95% | 1.30 / 96% / 95% | 2.18 / 91% |
+| EuroSAT, blur | **1.22** / 94% | 1.47 / 95% / 96% | 2.18 / 91% |
+| **Real**, 0.05 Mbps, healthy head | 3.53 / 99% | 3.56 / 98% / 3% | 5.89 / 96% |
+| **Real**, new place (EuroSAT head) | 8.30 / 97% | **5.34 / 98%** / 97% | 5.89 / 96% |
+| **Real**, bit flips | 8.12 / 91% | **5.50 / 97%** / 96% | 5.89 / 96% |
+| **Real**, blur | 3.71 / 97% | 3.56 / 97% / 6% | 5.89 / 96% |
+| **Real**, 0.25 Mbps, new place | 3.49 / 92% | **1.85 / 95%** / 97% | 2.22 / 92% |
+| **Real**, 0.25 Mbps, bit flips | 2.78 / **85%** | **1.73 / 96%** / 97% | 2.22 / 92% |
+
+- **The one real test confirms the EuroSAT choice.** With a badly broken model the audit used to be noisier
+  than random raw photos; with the self-check it beats them (5.3-5.5 vs 5.9 points at 0.05 Mbps; 1.7-1.9 vs 2.2
+  at 0.25) and its bars hold 95-98% (the 85% weak spot is now 96%). Healthy models: at most 3% of passes switched.
+- It also mostly closes the rare-class gap with a wrong camera (EuroSAT 0.25 Mbps: rare classes 80% -> 95%).
+- **Costs:** damaged cameras on EuroSAT (safe mode drops the model's per-photo confidence: blur 1.47 vs 1.22);
+  at the tightest real budget (0.02 Mbps, ~6-12 checks a day) a few false switches (up to 12% of passes) made
+  the silent-swap case worse (9.1 vs 5.7 points). Next idea: recalibrate with the full chance vector, not only
+  the top label.
+- Demo: `demo/audit.html` now uses the self-checking audit and shows, pass by pass, the mistake ratio and the mode.

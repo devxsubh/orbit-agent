@@ -31,34 +31,39 @@ optics), nothing on the ground can see it. Full reasoning: [research review](not
 **New policy, the audit** (`src/agent/audit.py`): label every photo, then send full photos picked **at random
 with known chances** (unsure photos more likely, every photo keeps a minimum chance). The ground corrects the
 labels with the checked photos (`src/eval/estimate.py`): right on average **whatever the onboard model is like**.
+**And it checks itself** (`src/agent/self_check.py`): if the checked mistakes are 1.5x bigger than the model
+expected, the next passes run in **safe mode** (checks fully at random, chances recalibrated from past checks).
 
-![Healthy or broken onboard model: how far off each policy's class shares are, and how often its error bar held](docs/audit_honesty.png)
+![Healthy or broken onboard model on real Sentinel-2A photos: how far off each policy's class shares are, and how often its error bar held](docs/audit_honesty_real.png)
 
-| EuroSAT replay, 0.25 Mbps, 63 days per cell | Labels only | Triage (agent v4) | **Audit** |
+| EuroSAT replay, 0.25 Mbps, 63 days per cell | Labels only | Triage (agent v4) | **Self-checking audit** |
 |---|---|---|---|
 | Healthy head (93% right) | 0.7 points off, bar held 96% | **0.3**, 100% | 0.5, 98% |
-| New camera (AID head, 28% right) | 10.8, **0%** | 8.0, **8%** | 2.7, 86% |
-| Silent swap (wrong but as sure as right answers) | 4.4, 79% | 3.1, 80% | 1.2, 97% |
-| Radiation bit flips in the 30 KB head | 1.4, 73% | 1.6, 80% | 1.3, 95% |
-| Damaged camera (sensor noise) | 11.6, 7% | 7.8, 18% | 1.8, 95% |
+| New camera (AID head, 28% right) | 10.8, **0%** | 8.0, **8%** | 2.0, 94% |
+| Silent swap (wrong but as sure as right answers) | 4.4, 79% | 3.1, 80% | 1.0, 97% |
+| Radiation bit flips in the 30 KB head | 1.4, 73% | 1.6, 80% | 1.3, 96% |
+| Damaged camera (sensor noise) | 11.6, 7% | 7.8, 18% | 1.9, 94% |
 
 - **Healthy model: agent v4's triage is the most accurate, but it can't tell you so.**
 - **Broken model: labels and triage are off by up to 12 points, with error bars that almost never hold.**
-  The audit stays honest and is never much worse than sending random raw photos.
+  The audit stays honest (EuroSAT chart: `docs/audit_honesty.png`).
 - **Real photos, real clouds:** `src/data/s2_real.py` replays what Sentinel-2A **really photographed** at each
   photo slot of its real path, 6-19 Oct 2026 (3,527 photos; the simulated times match the real images within
   0-7 s). Real Earth is 46% cloud and 0.1% built-up. With a head trained on 6-12 Oct (82% right), tested 13-19 Oct:
 
-  | Real Sentinel-2A photos, 0.05 Mbps | Labels only | Triage (agent v4) | **Audit** |
-  |---|---|---|---|
-  | Healthy head (82% right) | 1.9 points off, bar held 80% | 1.5, 84% | 3.5, **99%** |
-  | New place (EuroSAT head: no "cloud" class) | 19.5, **9%** | 16.6, **20%** | 8.3, 97% |
-  | Radiation bit flips | 10.6, 27% | 10.8, 27% | 8.1, 91% |
-  | Damaged camera (blur) | 4.5, 51% | 3.3, 67% | 3.7, 97% |
+  | Real Sentinel-2A photos, 0.05 Mbps | Labels only | Triage (agent v4) | Random raw photos | **Self-checking audit** |
+  |---|---|---|---|---|
+  | Healthy head (82% right) | 1.9 points off, bar held 80% | 1.5, 84% | 5.9, 96% | 3.6, **98%** |
+  | New place (EuroSAT head: no "cloud" class) | 19.5, **9%** | 16.6, **20%** | 5.9, 96% | **5.3, 98%** |
+  | Radiation bit flips | 10.6, 27% | 10.8, 27% | 5.9, 96% | **5.5, 97%** |
+  | Damaged camera (blur) | 4.5, 51% | 3.3, 67% | 5.9, 96% | 3.6, 97% |
 
   On real photos **even a healthy model's labels mislead** (their error bar holds 80%, 60% for rare classes).
-  The honest price: with a badly broken model the audit is noisier than random raw photos (8.3 vs 5.9 points),
-  because its check chances come from that model. Chart: `docs/audit_honesty_real.png`.
+- **The self-check was decided on EuroSAT only, then tested once on the real photos.** Without it, the audit was
+  noisier than random raw photos when the model was badly broken (8.3 and 8.1 points vs 5.9), and with bit flips
+  at 0.25 Mbps its bars held only 85%. With it: 5.3-5.5 points (better than raw) and 96-98% held. A healthy
+  model almost never trips it (at most 3% of passes). Cost: at the tightest budget (0.02 Mbps) a few false
+  switches made the silent-swap case worse (9.1 vs 5.7 points).
 - **A floor of 0.5 is nearly free insurance** (`docs/audit_floor.png`): same error as checking only unsure photos
   when the model is healthy (0.47 points), but confident mistakes are caught (bit flips: bars hold 95% vs 86-88%).
 - **When does onboard AI beat plain compression?** Re-save every photo as a smaller JPEG until the pass fits, and
@@ -76,7 +81,7 @@ labels with the checked photos (`src/eval/estimate.py`): right on average **what
   ![A new camera with zero labels learns from its own audits, real Sentinel-2A photos](docs/audit_loop_real.png)
 
 Details and every number: [experiment log](docs/experiment_log.md#audited-downlink-can-the-ground-trust-the-numbers-20-oct-2026-evening).
-Second demo page: `demo/audit.html` ("the satellite reports its own error").
+Second demo page: `demo/audit.html` ("the satellite reports its own error"; try a broken model to see safe mode).
 
 ## The problem
 Satellites take far more photos than they can send to Earth. They can only talk to a ground
@@ -332,7 +337,8 @@ More commands (EuroSAT, prompts, image sizes, replay options) are in [docs/exper
 - [x] Replay of what Sentinel-2A really photographed (real clouds and places, 6-19 Oct 2026)
 - [x] Compression baseline and R sweep; closed loop for a new camera with zero labels
 - [x] Second demo page: `demo/audit.html`
-- [ ] Error bars that hold for rare classes under a badly wrong model (betting intervals)
+- [x] Self-checking audit: switches to safe mode when its checks show the model is broken
+- [ ] Error bars that always hold for rare classes at the tightest budgets (betting intervals)
 - [ ] Skip cloudy photos, send crops
 - [ ] Run on a Jetson Orin Nano (speed and power)
 - [ ] Demo video
