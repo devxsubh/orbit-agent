@@ -132,16 +132,21 @@ def calibration_error(chances: np.ndarray, right: np.ndarray, bins: int = 10) ->
 
 def save_answers(path: Path, photos, classifier, x: np.ndarray, ms_per_photo: float) -> None:
     """Same first columns as the Gemma CSVs, so run_agent can read both."""
-    chances = classifier.predict_proba(x)
+    write_answers(path, photos, list(classifier.classes_), classifier.predict_proba(x), ms_per_photo)
+
+
+def write_answers(path: Path, photos, classes: list[str], chances: np.ndarray,
+                  ms_per_photo: float) -> None:
+    """One row per photo: best label, its chance, and the runner-up. Used by the head and the CNN."""
     with open(path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["file", "truth", "guess", "correct", "p", "second_guess", "p_second",
                          "ms_per_photo"])
         for (truth, name), row in zip(photos, chances):
             first, second = np.argsort(row)[::-1][:2]
-            guess = classifier.classes_[first]
+            guess = classes[first]
             writer.writerow([name, truth, guess, guess == truth, round(float(row[first]), 4),
-                             classifier.classes_[second], round(float(row[second]), 4),
+                             classes[second], round(float(row[second]), 4),
                              round(ms_per_photo, 1)])
 
 

@@ -2,6 +2,8 @@
 
 Run from the orbit-agent folder:
     python -m src.eval.sentinel_test                 (small head, siglip-base; about 10 min first time)
+    python -m src.eval.sentinel_test --head-csv experiments/cnn_eurosat_..._final.csv
+                                                     (test 3 only, with another model's answers)
 
 Three tests:
 1. AID head as it is: the head trained on AID (sharp Google Earth photos, 30 classes) labels
@@ -122,15 +124,15 @@ def test_new_head(backbone, final, x_final, tuning, x_tuning, train, x_train, ge
     return head
 
 
-def test_replay(final, head, x_final, rates: list[float]) -> None:
-    """Test 3: the satellite replay, now with real Sentinel-2 photos."""
-    print("\n=== Test 3: satellite replay with Sentinel-2 photos ===")
+def test_replay(final, answers: dict[str, tuple[str, float]], rates: list[float], tag: str) -> None:
+    """Test 3: the satellite replay, now with real Sentinel-2 photos.
+
+    answers: agent v4's (label, chance) for each final photo, from the head or another model.
+    """
+    print(f"\n=== Test 3: satellite replay with Sentinel-2 photos (agent v4 = {tag}) ===")
     root = dataset_dir()
-    chances = head.predict_proba(x_final)
-    views = {}
-    for (label, name), row in zip(final, chances):
-        views[name] = ModelView(guess="", unsure=False, head_guess=head.classes_[row.argmax()],
-                                p_head=float(row.max()))
+    views = {name: ModelView(guess="", unsure=False, head_guess=answers[name][0],
+                             p_head=answers[name][1]) for _, name in final}
     with open(GEMMA) as f:  # Gemma's answers exist only for its 100 photos
         for r in csv.DictReader(f):
             views[r["file"]].guess = r["guess"]
@@ -162,7 +164,7 @@ def test_replay(final, head, x_final, rates: list[float]) -> None:
         for name in policies:
             print(f"{name:<14}" + "".join(f"{cell:>13}" for cell in results[name]))
 
-    out = ROOT / "experiments" / f"sentinel_test3_replay_{datetime.now():%Y%m%d_%H%M}.csv"
+    out = ROOT / "experiments" / f"sentinel_test3_replay_{tag}_{datetime.now():%Y%m%d_%H%M}.csv"
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer.writeheader()
@@ -175,9 +177,16 @@ def main() -> None:
     parser.add_argument("--backbone", default="siglip-base")
     parser.add_argument("--train-per-class", type=int, default=100)
     parser.add_argument("--rates", type=float, nargs="+", default=[0.25, 0.5, 1, 2, 4])
+    parser.add_argument("--head-csv", help="skip tests 1-2; run test 3 with this answers CSV "
+                                           "(e.g. the tiny CNN from src.model.cnn)")
     args = parser.parse_args()
 
     final, tuning, train = photo_sets(args.train_per_class)
+    if args.head_csv:
+        with open(args.head_csv) as f:
+            answers = {r["file"]: (r["guess"], float(r["p"])) for r in csv.DictReader(f)}
+        test_replay(final, answers, args.rates, tag=Path(args.head_csv).stem.removesuffix("_final"))
+        return
     gemma_files = {p.name for p, _ in sample(10, seed=42)}
     print(f"EuroSAT photos: {len(final):,} final test (incl. Gemma's 100), {len(tuning)} tuning, "
           f"{len(train):,} training")
@@ -190,7 +199,10 @@ def main() -> None:
 
     test_aid_head(args.backbone, final, x_final, gemma_files)
     head = test_new_head(args.backbone, final, x_final, tuning, x_tuning, train, x_train, gemma_files)
-    test_replay(final, head, x_final, args.rates)
+    chances = head.predict_proba(x_final)
+    answers = {name: (head.classes_[row.argmax()], float(row.max()))
+               for (_, name), row in zip(final, chances)}
+    test_replay(final, answers, args.rates, tag=f"head_{args.backbone}")
 
 
 if __name__ == "__main__":
