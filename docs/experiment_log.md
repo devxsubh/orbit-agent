@@ -495,3 +495,31 @@ Files: `experiments/cnn_*_mobilenet_v3_small_*_final.csv`, `experiments/agents_d
   were on different machines. Real numbers need the Jetson.
 - Next for the paper: accuracy vs number of training photos (5/10/20/50/100 per class) for both, to find
   where the CNN catches up.
+
+## Label curve: how many labelled photos does each model need? 20 Oct 2026
+
+`python -m src.cloud.kaggle_run --command "src.eval.label_curve"` (Kaggle T4), chart: `python -m src.eval.plot_label_curve`.
+Frozen SigLIP-base + head vs tiny CNN (MobileNetV3-Small, up to 30 epochs, best on tuning), 5-100 training photos
+per class, 3 random picks of photos each. Same tuning and final photos throughout.
+File: `experiments/label_curve_20261020_0752.csv`, chart: `docs/label_curve.png`. Mean of 3 picks (lowest-highest):
+
+| Photos/class | AID head | AID CNN | Sentinel-2 head | Sentinel-2 CNN |
+|---|---|---|---|---|
+| 5 | **89.7%** (88.7-90.7) | 67.9% (66.3-70.7) | **79.3%** (75.7-82.6) | 44.2% (36.2-55.4) |
+| 10 | **91.6%** | 80.4% | **84.4%** | 61.7% |
+| 20 | **94.2%** | 85.9% | **88.5%** | 81.4% |
+| 50 | **94.8%** | 88.6% | 91.4% | 91.4% |
+| 100 | 94.7% | 93.8% | 92.8% | **95.4%** |
+
+- **The frozen head needs far fewer labels.** With 5 photos per class it gets 90% (AID) and 79% (Sentinel-2);
+  the CNN gets 68% and 44%. It is also much steadier: the CNN's result swings by up to 19 points
+  depending on which 5 photos were picked.
+- **On Sentinel-2 the two cross at about 50 photos per class**; at 100 the CNN is ahead (95.4% vs 92.8%).
+  On AID (30 classes, harder) the CNN is still behind at 100 (93.8% vs 94.7%).
+- **Calibration:** with few labels the head's chances are more honest (Sentinel-2, 5/class: error 0.022 vs 0.093);
+  at 100/class the CNN's are slightly better (0.012 vs 0.019).
+- Note: at 100/class all 3 picks use the same 100 photos (that is the whole training pool), so the head's
+  result there doesn't vary; the CNN's still does (random start).
+- **For the paper:** a new satellite or camera starts with few labelled photos. The frozen head is the right
+  tool then (and needs only a 30 KB update); once a few thousand labels exist, a tiny CNN is cheaper to run
+  for the same accuracy. Both beat Gemma 3 with no training at every size.

@@ -101,6 +101,12 @@ File: `experiments/confidence_aid_test_gemma3-4b_r3_n10_skip20.csv` (+ `.png` ch
   "bare land". Retraining just the small classifier on 1,000 Sentinel-2 photos (same frozen image model)
   gives **92.8%**, and agent v4 then gets 100% of the info down at 1 Mbps vs 69% for Gemma's agent v1.
   The big image model (400M) gets 94.8% there: 2 points more for about 15-20x the compute.
+- **How many labelled photos are needed?** With only 5 per class, the frozen head gets 90% (AID) and
+  79% (Sentinel-2); the tiny CNN gets 68% and 44%. On Sentinel-2 they meet at about 50 per class,
+  and at 100 the CNN is ahead (95% vs 93%). A new satellite starts with few labels, so the frozen head
+  fits the start of a mission; a tiny CNN fits later, once there are many labels.
+
+  ![Accuracy vs labelled training photos: frozen head vs tiny CNN](docs/label_curve.png)
 - **A tiny CNN is the real competitor when there are enough labels.** MobileNetV3-Small (1.5M weights,
   trained end to end) gets 85.0% on AID with 20 photos per class (head: 95.7%), but 94.6% on Sentinel-2
   with 100 per class (head: 92.8%), at about 1/300 of the compute. The frozen head wins on label

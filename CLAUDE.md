@@ -97,6 +97,7 @@ smart compression (FOOL paper).
 | `src/model/head.py` | Agent v4 "decision head" (Jev-style): frozen image model (`--backbone siglip` 400M / `siglip-base` 90M / `dinov2`) makes embeddings (cached in `data/processed/`), logistic regression trained on AID photos 31+ (`--train-per-class`, 0 = all 9,100), C picked on tuning by log-loss. Saves `experiments/head_aid_<backbone>_{tuning,final}.csv`; `run_agent` adds agent v4 when one exists | **done, works** (quick Mac test) |
 | `src/eval/sentinel_test.py` | Agent v4 on real Sentinel-2 (EuroSAT): test 1 AID head as is (30 AID classes matched to 10 EuroSAT via `MATCH`, fixed before testing), test 2 new head on EuroSAT (final 1,000 incl. Gemma's 100, tuning 500, train 100/class), test 3 replay (photos counted as 280 KB) | **done, works** |
 | `src/model/cnn.py` | Tiny CNN baseline (MobileNetV3-Small, ImageNet start, all weights trained, flips/rot90, 20 epochs, best epoch + temperature on tuning). Same photo sets as the heads; CSV in head format -> `run_agent --head` / `sentinel_test --head-csv` | **done, works** (Kaggle T4, 7 min) |
+| `src/eval/label_curve.py` + `src/eval/plot_label_curve.py` | Accuracy vs training photos per class (5/10/20/50/100, 3 seeds) for frozen head vs tiny CNN on AID and EuroSAT -> `experiments/label_curve_*.csv`, chart `docs/label_curve.png` (head yellow, CNN magenta, Gemma grey dashed) | **done, works** (Kaggle) |
 | `src/cloud/kaggle_run.py` + `kaggle/` | Runs `head.py` on a free Kaggle T4 from the terminal: writes `kaggle/orbit-agent-head.ipynb` (clones the repo from GitHub, so push first), pushes, waits, copies CSVs to `experiments/` and embeddings to `data/processed/` | **done, works** (full run 20 Oct, 72 min on a T4) |
 
 ## How to run
@@ -205,6 +206,9 @@ python check_setup.py                                    # health check
   92%/91 wrong vs head 100%/3). Sentinel-2 100/class **94.6%** (head 92.8%, big 94.8%), ~1/300 compute of the head.
   Story = trade-off: head = label-efficient + 30 KB swap per mission; CNN = cheap compute. CNN still improving at
   epoch 20 on EuroSAT. Next: accuracy vs training photos per class (5-100) for both; Jetson timing/power.
+- **Label curve (20 Oct):** 5/class: head AID 89.7% / S2 79.3% vs CNN 67.9% / 44.2% (CNN swings up to 19 pts by pick).
+  S2 cross at ~50/class (91.4% both); 100/class CNN 95.4% vs head 92.8%. AID: head ahead up to 100 (94.7 vs 93.8).
+  Paper message: frozen head for the start of a mission (few labels, 30 KB update), tiny CNN once labels are many.
 - **README, chart and demo show agent v4 (small head) since 20 Oct.** Screenshots made with headless Chrome:
   `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --window-size=1440,900
   --virtual-time-budget=5000 --screenshot=out.png "file://$PWD/demo/index.html?t=19900"` (t=86400 = end of day).
