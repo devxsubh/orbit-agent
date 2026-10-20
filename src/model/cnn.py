@@ -103,12 +103,13 @@ def augment(x):
 
 
 def train(arch: str, classes: list[str], x_train, y_train, x_tuning, y_tuning, epochs: int,
-          device: str):
+          device: str, verbose: bool = True, seed: int = 0):
     """Train the whole CNN. Keep the epoch with the best tuning log-loss."""
     import torch
     from torch.nn import functional as F
 
-    torch.manual_seed(0)
+    torch.manual_seed(seed)
+    say = print if verbose else (lambda *a, **k: None)
     model = build(arch, len(classes)).to(device)
     optimiser = torch.optim.AdamW(model.parameters(), lr=3e-4, weight_decay=1e-4)
     mean = torch.tensor(MEAN, device=device).view(1, 3, 1, 1)
@@ -127,11 +128,11 @@ def train(arch: str, classes: list[str], x_train, y_train, x_tuning, y_tuning, e
         tuning_logits = logits_of(model, x_tuning, device)
         tuning_loss = F.cross_entropy(tuning_logits, y_tuning).item()
         accuracy = (tuning_logits.argmax(1) == y_tuning).float().mean().item()
-        print(f"  epoch {epoch:>2}: tuning accuracy {accuracy:.1%}, log-loss {tuning_loss:.3f}")
+        say(f"  epoch {epoch:>2}: tuning accuracy {accuracy:.1%}, log-loss {tuning_loss:.3f}")
         if tuning_loss < best[0]:
             best = (tuning_loss, copy.deepcopy(model.state_dict()), epoch)
     model.load_state_dict(best[1])
-    print(f"Kept epoch {best[2]} (lowest tuning log-loss)")
+    say(f"Kept epoch {best[2]} (lowest tuning log-loss)")
     return model
 
 

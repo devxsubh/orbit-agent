@@ -150,23 +150,25 @@ def write_answers(path: Path, photos, classes: list[str], chances: np.ndarray,
                              round(ms_per_photo, 1)])
 
 
-def fit_head(x_train: np.ndarray, y_train: list[str], x_tuning: np.ndarray, y_tuning: list[str]):
+def fit_head(x_train: np.ndarray, y_train: list[str], x_tuning: np.ndarray, y_tuning: list[str],
+             verbose: bool = True):
     """Train the small classifier. The setting C (how strongly to hold it back) is picked on the
     TUNING photos by log-loss, which rewards honest chances, not just right answers."""
     from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import log_loss
 
-    print(f"\nTraining the head on {len(y_train):,} photos...")
+    say = print if verbose else (lambda *a, **k: None)
+    say(f"\nTraining the head on {len(y_train):,} photos...")
     y_tuning = np.array(y_tuning)
     best = None
     for c in [1, 10, 100, 300, 1000, 3000]:
         classifier = LogisticRegression(C=c, max_iter=3000).fit(x_train, y_train)
         loss = log_loss(y_tuning, classifier.predict_proba(x_tuning), labels=classifier.classes_)
         accuracy = (classifier.predict(x_tuning) == y_tuning).mean()
-        print(f"  C={c:<5} tuning accuracy {accuracy:.1%}, log-loss {loss:.3f}")
+        say(f"  C={c:<5} tuning accuracy {accuracy:.1%}, log-loss {loss:.3f}")
         if best is None or loss < best[0]:
             best = (loss, c, classifier)
-    print(f"Chosen: C={best[1]} (lowest tuning log-loss)")
+    say(f"Chosen: C={best[1]} (lowest tuning log-loss)")
     return best[2]
 
 
