@@ -27,7 +27,7 @@ from pathlib import Path
 import numpy as np
 
 from src.agent.decide import POLICIES, ModelView
-from src.data.eurosat import CLASSES, LABELS, dataset_dir, photos_in, sample
+from src.data.eurosat import CLASSES, LABELS, dataset_dir, download, photos_in, sample
 from src.eval.run_agent import score
 from src.model.head import aid_head, calibration_error, embed, fit_head, save_answers
 from src.model.vlm import labels_mentioned
@@ -58,7 +58,7 @@ PHOTO_BYTES = 280_000
 
 def photo_sets(train_per_class: int, seed: int = 42):
     """(final, tuning, train) as lists of (label, file name). Final starts with Gemma's photos."""
-    root = dataset_dir()
+    root = dataset_dir() or download()
     gemma = {p.name for p, _ in sample(10, seed=seed)}
     final, tuning, train = [], [], []
     for label in CLASSES:

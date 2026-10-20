@@ -1,14 +1,15 @@
-"""Run the decision-head training (src/model/head.py) on a free Kaggle GPU, from this terminal.
+"""Run a project command (default: decision-head training) on a free Kaggle GPU, from this terminal.
 
 Run from the orbit-agent folder:
-    python -m src.cloud.kaggle_run                                  # full run: SigLIP, all photos
-    python -m src.cloud.kaggle_run --head-args "--backbone dinov2"  # other options for head.py
+    python -m src.cloud.kaggle_run                                   # AID head: SigLIP, all photos
+    python -m src.cloud.kaggle_run --command "src.model.head --backbone dinov2"
+    python -m src.cloud.kaggle_run --command "src.eval.sentinel_test --backbone siglip"
 
 What it does:
 1. Writes kaggle/orbit-agent-head.ipynb, a normal notebook you can also open and run on kaggle.com.
    It downloads this project from GitHub, so push your code first.
 2. Uploads it to Kaggle and starts it on a GPU.
-3. Waits, then saves the results into experiments/ (and the embeddings into data/processed/).
+3. Waits, then saves the new CSVs into experiments/ (and the embeddings into data/processed/).
 
 One-time setup:
 - kaggle.com -> Settings -> verify your phone number (needed for GPU + internet in notebooks)
@@ -76,19 +77,20 @@ def cell(kind: str, text: str) -> dict:
             "source": lines}
 
 
-def write_notebook(branch: str, head_args: str) -> None:
+def write_notebook(branch: str, command: str) -> None:
     """The notebook Kaggle runs. Plain steps, so it's easy to read on kaggle.com too."""
     cells = [
         cell("markdown", f"""
-# orbit-agent: agent v4 decision head
+# orbit-agent on a GPU
 
-Trains the small classifier on top of a frozen image model (`src/model/head.py`) on a GPU.
+Runs `python -m {command}`.
 Code: {REPO} (branch `{branch}`). Photos: the Kaggle copy of AID ({AID_ON_KAGGLE}).
 Results are saved in `results/` (Output tab).
 """),
         cell("code", f"""
 # 1. Get the project code (into /tmp, so it isn't copied into the output)
-import glob, os, shutil, subprocess
+import glob, os, shutil, subprocess, time
+started = time.time()  # results = files written after this
 
 def run(command):
     \"\"\"Run a shell command and STOP the notebook if it fails.\"\"\"
@@ -98,7 +100,6 @@ def run(command):
 run("rm -rf /tmp/orbit-agent && git clone --depth 1 -b {branch} {REPO} /tmp/orbit-agent")
 os.chdir("/tmp/orbit-agent")
 run("git log --oneline -1")
-run("rm -f experiments/head_aid_*.csv")  # so only results made in THIS run are kept
 """),
         cell("code", """
 # 2. Which GPU did we get? Where are the AID photos?
@@ -109,13 +110,14 @@ os.environ["AID_DIR"] = os.path.dirname(found[0])
 print("AID photos in", os.environ["AID_DIR"])
 """),
         cell("code", f"""
-# 3. Make embeddings with the frozen model, train the head
-run("python -u -m src.model.head {head_args}")
+# 3. The actual work
+run("python -u -m {command}")
 """),
         cell("code", """
 # 4. Keep the results (Kaggle saves everything in /kaggle/working)
 os.makedirs("/kaggle/working/results", exist_ok=True)
-files = glob.glob("experiments/head_aid_*.csv") + glob.glob("data/processed/embeddings_aid_*.npz")
+files = [f for f in glob.glob("experiments/*.csv") + glob.glob("data/processed/embeddings_*.npz")
+         if os.path.getmtime(f) > started]  # only what THIS run made
 assert files, "No results were made"
 for f in files:
     shutil.copy(f, "/kaggle/working/results/")
@@ -157,10 +159,10 @@ def fetch_results(kernel_id: str) -> None:
     out.mkdir(parents=True, exist_ok=True)
     kaggle("kernels", "output", kernel_id, "-p", str(out))
     for f in sorted(out.rglob("*")):
-        if f.name.startswith("head_aid_") and f.suffix == ".csv":
+        if f.suffix == ".csv":
             shutil.copy(f, ROOT / "experiments" / f.name)
             print(f"  saved experiments/{f.name}")
-        elif f.name.startswith("embeddings_aid_") and f.suffix == ".npz":
+        elif f.name.startswith("embeddings_") and f.suffix == ".npz":
             (ROOT / "data" / "processed").mkdir(parents=True, exist_ok=True)
             shutil.copy(f, ROOT / "data" / "processed" / f.name)  # so the Mac can reuse them
             print(f"  saved data/processed/{f.name}")
@@ -168,18 +170,18 @@ def fetch_results(kernel_id: str) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Train the decision head on a Kaggle GPU")
+    parser = argparse.ArgumentParser(description="Run a project command on a Kaggle GPU")
     parser.add_argument("--branch", default=git("branch", "--show-current"),
                         help="GitHub branch Kaggle downloads (default: your current branch)")
-    parser.add_argument("--head-args", default="--backbone siglip",
-                        help='options passed to src.model.head, e.g. "--backbone dinov2"')
+    parser.add_argument("--command", default="src.model.head --backbone siglip",
+                        help='module and options to run, e.g. "src.eval.sentinel_test --backbone siglip"')
     parser.add_argument("--accelerator", default="NvidiaTeslaT4", help="Kaggle GPU type")
     parser.add_argument("--no-wait", action="store_true", help="start it and return straight away")
     args = parser.parse_args()
 
     user = kaggle_username()
     check_pushed(args.branch)
-    write_notebook(args.branch, args.head_args)
+    write_notebook(args.branch, args.command)
     kernel_id = write_metadata(user)
     print(f"Uploading {FOLDER.relative_to(ROOT)}/{NOTEBOOK} to Kaggle as {kernel_id}...")
     print(kaggle("kernels", "push", "-p", str(FOLDER), "--accelerator", args.accelerator))
