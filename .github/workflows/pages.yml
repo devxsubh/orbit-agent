@@ -30,17 +30,19 @@ jobs:
         with:
           python-version: "3.12"
 
-      # Only Pillow is needed (no model, no orbit maths)
+      # Only Pillow (thumbnails) and tqdm (download progress) are needed: no model, no orbit maths
       - name: Install Pillow
-        run: pip install pillow
+        run: pip install pillow tqdm
 
-      # Keep the downloaded AID photos between runs (new download only if data.js changes)
+      # Keep the downloaded photos (AID and EuroSAT) between runs
       - name: Reuse downloaded photos
         uses: actions/cache@v4
         with:
-          path: data/raw/aid
-          key: aid-photos-${{ hashFiles('demo/data.js') }}
-          restore-keys: aid-photos-
+          path: |
+            data/raw/aid
+            data/raw/eurosat
+          key: demo-photos-${{ hashFiles('demo/data.js') }}
+          restore-keys: demo-photos-
 
       - name: Build the site
         run: python -m src.demo.build_site

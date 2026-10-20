@@ -348,8 +348,9 @@ $("lg-station").textContent = D.station + " ground station";
 $("tl-station").textContent = D.station;
 $("about").innerHTML =
   `<b>What's real:</b> the orbit (${D.satellite}, real orbit data), pass times over ${D.station}, ` +
-  `and the downlink budget (${D.rate_mbps} Mbps). <b>What's a stand-in:</b> each photo is an AID ` +
-  `aerial photo (${D.photo_kb} KB each), not the real view at that spot. The model's answers are real ` +
+  `and the downlink budget (${D.rate_mbps} Mbps). <b>What's a stand-in:</b> ` +
+  `${D.photo_about || `each photo is an AID aerial photo (${D.photo_kb} KB each), not the real view at that spot`}. ` +
+  `The model's answers are real ` +
   `(${D.model_about || "gemma3:4b on a laptop"}, ${D.photo_set}).`;
 // Hide the "not sure" score row when the agent never sent a not-sure label (e.g. budget covers them all)
 const anyUnsure = passes.some(p => p.agent_unsure + p.raw_unsure > 0);

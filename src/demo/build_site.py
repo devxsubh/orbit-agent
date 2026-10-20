@@ -5,8 +5,8 @@ Run from the orbit-agent folder:
     python -m http.server -d site     (then open http://localhost:8000)
 
 It does NOT run the model or the replay. It uses the saved demo/data.js and only
-remakes the photo thumbnails (demo/thumbs/ is not in git), downloading the AID
-photos it needs from Hugging Face.
+remakes the photo thumbnails (demo/thumbs/ is not in git). It downloads what it needs:
+AID photos from Hugging Face, or EuroSAT (Sentinel-2, about 95 MB) from Zenodo.
 
 site/
     index.html          sends visitors on to demo/
@@ -23,6 +23,7 @@ from pathlib import Path
 
 from PIL import Image
 
+from src.data import eurosat
 from src.data.aid import CLASSES, _download
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -45,11 +46,21 @@ def photo_names() -> list[str]:
     return data["images"]
 
 
-def make_thumbnail(name: str, out: Path) -> None:
-    """Download one AID photo and save a small copy (same size as src/demo/export.py)."""
+def photo_path(name: str) -> Path:
+    """Where a demo photo is, downloading it if needed.
+
+    EuroSAT names start with a capital ("Forest_36.jpg"), AID names don't ("forest_36.jpg").
+    """
+    prefix = name.rsplit("_", 1)[0]
+    if prefix in eurosat.CLASSES:
+        return (eurosat.dataset_dir() or eurosat.download()) / prefix / name
     by_lower = {label.lower(): label for label in CLASSES}  # "bareland" -> "BareLand"
-    label = by_lower[name.rsplit("_", 1)[0]]                # "bareland_29.jpg" -> "BareLand"
-    with Image.open(_download(label, name)) as img:  # _download retries 3 times
+    return _download(by_lower[prefix], name)                # _download retries 3 times
+
+
+def make_thumbnail(name: str, out: Path) -> None:
+    """Save a small copy of one photo (same size as src/demo/export.py)."""
+    with Image.open(photo_path(name)) as img:
         img.convert("RGB").resize((160, 160), Image.Resampling.LANCZOS).save(out, quality=82)
 
 

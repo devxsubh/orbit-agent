@@ -4,7 +4,7 @@
 
 Gemma 3 (4B) vision-language model + a Jev-style decision head (frozen SigLIP) · real orbit data · Python · laptop now, Jetson Orin later
 
-![Demo: during the first pass over Delhi only 84% of the waiting photos fit as full photos, but agent v4 still gets every photo's information down correctly](docs/demo_pass.png)
+![Demo with real Sentinel-2 photos: during the first pass over Delhi only 84% of the waiting photos fit as full photos, but agent v4 still gets every photo's information down correctly](docs/demo_pass.png)
 
 ## Main result
 
@@ -135,8 +135,9 @@ All photos get the same size (`--sizes equal`), because real satellite tiles are
 With real JPEG sizes, the agent could look better just by picking photos that compress well.
 
 ## Honest limits
-- **Photos are stand-ins.** Time, position and budget are real, but each photo is a random AID aerial
-  photo, not the real Sentinel-2 view at that spot.
+- **Photos are stand-ins.** Time, position and budget are real, but each photo is a random photo,
+  not the real view at that spot: AID aerial photos in the main results, real Sentinel-2 photos
+  (EuroSAT) in the Sentinel-2 test and the demo.
 - **Agent v4 learned from labelled AID photos; Gemma saw none.** v4 is "supervised", v1-v3 are
   "zero-shot", so compare them with that in mind. On real Sentinel-2 photos (EuroSAT) the AID head drops
   to 33%; it needs about 1,000 labelled photos from the same kind of camera to reach 92.8%.
@@ -148,15 +149,17 @@ With real JPEG sizes, the agent could look better just by picking photos that co
 - **One satellite, one ground station, one day.** Skipping cloudy photos and sending crops are not built yet.
 
 ## Demo
-A web page that plays back one day of the satellite, using the final test photos.
+A web page that plays back one day of the satellite, using **real Sentinel-2 photos** (the EuroSAT
+final test photos) and agent v4 with the head trained on Sentinel-2.
 
 Live: **https://devxsubh.github.io/orbit-agent/**
 
 ```bash
-python -m src.demo.export      # makes demo/data.js and demo/thumbs/ (agent v4, small head)
+python -m src.demo.export      # makes demo/data.js and demo/thumbs/ (Sentinel-2 photos, agent v4)
 open demo/index.html           # opens in the browser, no server needed
 ```
-`python -m src.demo.export --agent "agent v3"` shows Gemma 3's labels instead.
+`python -m src.demo.export --photos aid` uses the AID photos instead, and
+`--photos aid --agent "agent v3"` shows Gemma 3's labels.
 
 What you see:
 - **Map:** the satellite's path, the night side (no photos there), and the zone where it can talk to Delhi.
@@ -176,7 +179,7 @@ Keys: Space = play/pause, N = next pass, ← → = 1 minute. Passes play slower 
 orange = ground station and passes, green = sure or correct, amber = not sure, red = wrong, grey = send all raw.
 The results chart uses its own colour-blind-safe set, with grey still meaning "send all raw".
 
-![End of the day: agent v4 100% vs raw 60%, 0 wrong labels](docs/demo_end.png)
+![End of the day with Sentinel-2 photos: agent v4 100% vs raw 60%, 0 wrong labels](docs/demo_end.png)
 
 ## Run it yourself
 Tested on macOS (Apple Silicon, 8 GB). Needs Python 3.10+, and [Ollama](https://ollama.com) with a Gemma 3 model (`ollama pull gemma3:4b`).

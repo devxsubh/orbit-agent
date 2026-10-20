@@ -1,9 +1,10 @@
 """Make the data for the demo page (demo/index.html).
 
 Run from the orbit-agent folder:
-    python -m src.demo.export                 (1 Mbps, agent v4 with the small head)
+    python -m src.demo.export                 (real Sentinel-2 photos, agent v4, 1 Mbps)
     python -m src.demo.export --rate 0.5
-    python -m src.demo.export --agent "agent v3"   (Gemma 3 labels instead)
+    python -m src.demo.export --photos aid    (AID stand-in photos, agent v4 with the AID head)
+    python -m src.demo.export --photos aid --agent "agent v3"   (Gemma 3 labels instead)
 
 It runs the photo replay and the agents once, then saves:
 - demo/data.js     everything the page plays back (orbit, passes, photos, decisions)
@@ -13,6 +14,7 @@ Then open demo/index.html in a browser. No server needed.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -20,9 +22,11 @@ from pathlib import Path
 
 from PIL import Image
 
-from src.agent.decide import POLICIES, Decision
+from src.agent.decide import POLICIES, Decision, ModelView
+from src.data import eurosat
 from src.data.aid import LABELS
 from src.eval.run_agent import default_answers, load_views, photo_set_name, score
+from src.eval.sentinel_test import PHOTO_BYTES
 from src.orbit.contact_windows import GROUND_STATIONS, ground_track, load_satellite
 from src.orbit.replay import build_replay
 
@@ -32,9 +36,10 @@ LAND_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/land-110m.json"
 LAND_FILE = ROOT / "data" / "raw" / "land-110m.json"
 USER_AGENT = "orbit-agent/0.1 (student research project)"
 
-# Agent v4's head for the demo: the small one (90M, 26 ms/photo). It suits a satellite better and
-# lets fewer wrong labels through than the big head (see docs/experiment_log.md).
-SMALL_HEAD = ROOT / "experiments" / "head_aid_siglip-base_n20_final.csv"
+# Agent v4's heads for the demo: the small ones (SigLIP-base, 90M). They suit a satellite better and
+# let fewer wrong labels through than the big head (see docs/experiment_log.md).
+SMALL_HEAD = ROOT / "experiments" / "head_aid_siglip-base_n20_final.csv"            # AID photos
+SENTINEL_HEAD = ROOT / "experiments" / "head_eurosat_siglip-base_n100_final.csv"     # Sentinel-2
 
 # Which model makes the labels, as shown on the page: (short, longer)
 MODEL_TEXT = {
@@ -43,6 +48,21 @@ MODEL_TEXT = {
                  "AID photos, on a laptop"),
 }
 GEMMA_TEXT = ("Gemma 3 (4B), on board", "gemma3:4b on a laptop")
+SENTINEL_TEXT = ("SigLIP-base + Sentinel-2 head, on board",
+                 "a frozen SigLIP-base image model (90M) with a small classifier trained on 1,000 "
+                 "other Sentinel-2 photos, on a laptop")
+
+
+def sentinel_views(head_csv: Path) -> tuple[dict[str, ModelView], list[tuple[Path, str]]]:
+    """Agent v4's answers for the 1,000 final EuroSAT (Sentinel-2) photos, and the photo pool."""
+    root = eurosat.dataset_dir() or eurosat.download()
+    views, pool = {}, []
+    with open(head_csv) as f:
+        for row in csv.DictReader(f):
+            views[row["file"]] = ModelView(guess="", unsure=False, head_guess=row["guess"],
+                                           p_head=float(row["p"]))
+            pool.append((root / row["truth"] / row["file"], row["truth"]))
+    return views, pool
 
 # One letter per decision, to keep data.js small
 CODES = {Decision.SEND_FULL: "F", Decision.DESCRIBE: "L", Decision.DESCRIBE_UNSURE: "U",
@@ -98,15 +118,35 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Make the data for the demo page")
     parser.add_argument("--rate", type=float, default=1.0, help="downlink speed in Mbps")
     parser.add_argument("--agent", default="agent v4", choices=[p for p in POLICIES if "agent" in p])
-    parser.add_argument("--head", default=str(SMALL_HEAD), help="decision-head CSV (agent v4)")
+    parser.add_argument("--photos", default="sentinel", choices=["sentinel", "aid"],
+                        help="sentinel = real Sentinel-2 photos (EuroSAT); aid = AID stand-ins")
+    parser.add_argument("--head", help="decision-head CSV for agent v4 (default: the small head "
+                                       "for the chosen photos)")
     parser.add_argument("--station", default="delhi", choices=GROUND_STATIONS)
     parser.add_argument("--start", default="2026-10-19T00:00", help="start time in UTC")
     parser.add_argument("--hours", type=float, default=24)
     parser.add_argument("--answers", help="CSV with model answers (default: same as run_agent)")
     args = parser.parse_args()
 
-    answers = Path(args.answers) if args.answers else default_answers()
-    views, pool = load_views(answers, Path(args.head) if args.agent == "agent v4" else None)
+    if args.photos == "sentinel":
+        if args.agent != "agent v4":
+            raise SystemExit("Gemma's answers exist for only 100 Sentinel-2 photos, so the "
+                             "Sentinel-2 demo shows agent v4. For agents v1-v3 add: --photos aid")
+        views, pool = sentinel_views(Path(args.head or SENTINEL_HEAD))
+        photo_bytes = PHOTO_BYTES  # same as the Sentinel-2 replay test (a full tile)
+        photo_set = "FINAL TEST Sentinel-2 photos"
+        labels, model_text = eurosat.LABELS, SENTINEL_TEXT
+        photo_about = ("each photo is a real Sentinel-2 photo from EuroSAT (64x64 px, 10 m per pixel; "
+                       f"counted as {photo_bytes // 1000} KB, like a full tile), but not the view at "
+                       "that exact spot")
+    else:
+        answers = Path(args.answers) if args.answers else default_answers()
+        views, pool = load_views(answers, Path(args.head or SMALL_HEAD)
+                                 if args.agent == "agent v4" else None)
+        photo_bytes = sum(p.stat().st_size for p, _ in pool) // len(pool)  # equal sizes, like run_agent
+        photo_set = photo_set_name(answers)
+        labels, model_text = LABELS, MODEL_TEXT.get(args.agent, GEMMA_TEXT)
+        photo_about = f"each photo is an AID aerial photo ({photo_bytes // 1000} KB each), not the real view at that spot"
 
     def said(view) -> tuple[str, int]:
         """The label and chance (%) of the chosen agent's model."""
@@ -114,7 +154,6 @@ def main() -> None:
             return view.head_guess, round(view.p_head * 100)
         return view.guess, round((view.p_lite if args.agent == "agent v3-lite" else view.p_full) * 100)
 
-    photo_bytes = sum(p.stat().st_size for p, _ in pool) // len(pool)  # equal sizes, like run_agent
     start = datetime.fromisoformat(args.start).replace(tzinfo=timezone.utc)
     sat = load_satellite()
     windows, left_over = build_replay(sat, args.station, start, args.hours, pool,
@@ -157,10 +196,9 @@ def main() -> None:
         "satellite": sat.name, "station": args.station.title(), "station_lat": lat, "station_lon": lon,
         "start_utc": start.isoformat(), "hours": args.hours, "rate_mbps": args.rate,
         "photo_kb": round(photo_bytes / 1000), "agent": args.agent,
-        "model": MODEL_TEXT.get(args.agent, GEMMA_TEXT)[0],
-        "model_about": MODEL_TEXT.get(args.agent, GEMMA_TEXT)[1],
-        "photo_set": photo_set_name(answers), "made": datetime.now(timezone.utc).isoformat(),
-        "labels": LABELS, "images": list(images), "track": track, "passes": passes,
+        "model": model_text[0], "model_about": model_text[1], "photo_about": photo_about,
+        "photo_set": photo_set, "made": datetime.now(timezone.utc).isoformat(),
+        "labels": labels, "images": list(images), "track": track, "passes": passes,
         "photo_fields": ["t", "lat", "lon", "img", "truth", "guess", "chance", "window",
                          "agent", "raw"],
         "photos": photos, "land": land_outlines(),
@@ -169,7 +207,7 @@ def main() -> None:
     out.write_text("// Made by: python -m src.demo.export  (don't edit by hand)\n"
                    "window.DEMO = " + json.dumps(data, separators=(",", ":")) + ";\n")
     print(f"Demo data: {len(photos):,} photos, {len(passes)} passes, {len(images)} thumbnails, "
-          f"{args.agent} at {args.rate:g} Mbps, answers from {photo_set_name(answers)}.")
+          f"{args.agent} at {args.rate:g} Mbps, answers from {photo_set}.")
     print(f"Saved {out} ({out.stat().st_size / 1e6:.1f} MB). Open demo/index.html in a browser.")
 
 
