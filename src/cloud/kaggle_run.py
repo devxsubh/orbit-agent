@@ -100,7 +100,7 @@ def run(command):
 run("rm -rf /tmp/orbit-agent && git clone --depth 1 -b {branch} {REPO} /tmp/orbit-agent")
 os.chdir("/tmp/orbit-agent")
 run("git log --oneline -1")
-run("pip install -q skyfield")  # orbit maths; Kaggle already has torch, transformers, sklearn
+run("pip install -q skyfield ollama")  # not on Kaggle (it has torch, transformers, sklearn)
 """),
         cell("code", """
 # 2. Which GPU did we get? Where are the AID photos?
