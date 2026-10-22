@@ -65,7 +65,7 @@ def honesty(out: Path, rate: float = 0.25, data: str = "eurosat") -> None:
     series = [("raw random", "Raw photos, random (no AI)", GREY, "o"),
               ("labels only", "Labels only (NAVI-style)", BLUE, "D"),
               ("triage (v4)", "Triage: least sure first (agent v4)", YELLOW, "s"),
-              ("audit, floor 0.5", "Audit: random checks with known chances", MAGENTA, "o")]
+              ("audit, self-check", "Self-checking audit: random checks with known chances", MAGENTA, "o")]
 
     def mean(scen, method, key):
         return np.mean([float(r[key]) for r in rows if r["scenario"] == scen and r["method"] == method])

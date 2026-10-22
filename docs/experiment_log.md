@@ -624,7 +624,7 @@ Finding on the side: the frozen SigLIP + head is **fragile to moderate camera da
 ### Main result (`python -m src.eval.audit_test`, 7 days x 3 stations x 3 photo orders, India-like shares (assumed))
 0.25 Mbps, 63 days per cell. Each cell: typical error (RMSE, percentage points) / 90% error bar held
 (all classes, rare classes). Labels only and triage only have a "pretend every label is right" bar.
-File: `experiments/audit_summary_eurosat_20261020_2001.csv` (every estimate: `data/processed/audit_runs_eurosat_*.csv.gz`).
+File: `experiments/audit_summary_eurosat_20261020_2023.csv` (every estimate: `data/processed/audit_runs_eurosat_*.csv.gz`).
 
 | Onboard model | labels only | triage (v4) | raw random | stratified | **audit, floor 0.5** |
 |---|---|---|---|---|---|
@@ -734,7 +734,7 @@ daylight slot asks Element 84's Earth Search catalogue for a Sentinel-2A image w
   (real 224 px photos survive blur/noise much better than EuroSAT's 64 px ones).
 - Downlink speeds 0.01-0.25 Mbps (R ~ 1.7-42 for ~250 photos/day at 300 KB). Same 3 stations x 7 days x 3 seeds.
 
-`python -m src.eval.audit_test --data real` -> `experiments/audit_summary_real_20261020_2001.csv`,
+`python -m src.eval.audit_test --data real` -> `experiments/audit_summary_real_20261020_2023.csv`,
 chart `docs/audit_honesty_real.png`. Typical error (points) / 90% bar held (all classes, rare classes):
 
 | 0.05 Mbps (Delhi: ~30 checks a day) | labels only | triage (v4) | raw random | stratified | **audit, floor 0.5** |
@@ -788,3 +788,132 @@ raw random 95%.
   1,525 labels: 82%), and its error bars match the pre-trained head's from day 3 (±3.7-5.0 vs ±3.5-5.4), tighter
   than raw random (±5.8-9.1) and the launch head (±7-11).
 - At 0.05 Mbps (~30 checks a day): head 43% -> 81% by day 4 (111 labels), bars held 98%; triage 11%.
+
+### Self-checking audit: the satellite notices its own broken model (20 Oct, late)
+Code: `src/agent/self_check.py`, method "audit, self-check" in `src/eval/audit_test.py` (memory across the 7 days
+of a mission). After every pass the ground compares the mistakes it saw on the checked photos with the mistakes
+the model's chances expected, over all checks so far. If **seen / expected > 1.5**, one bit goes up and the next
+passes run in **safe mode**: (1) checks picked uniformly at random (floor 1), (2) the model's chances recalibrated
+with a table learned from past checks (predicted class -> share of each true class among checked photos,
+smoothed; fewer than 20 past checks: use the checks alone). Everything used comes from earlier passes, so the
+error bars stay honest. This is the "conservative fallback mode" of the On-Orbit Space AI survey (Sec. 6B).
+
+**Decided on the EuroSAT replay only, before any real-photo test** (scripts in the job's scratch folder, not kept):
+- Signal: the healthy head's running ratio stayed 0.62-0.83 (per pass: median 0.82, 95th percentile 1.31, 2% of
+  passes above 1.5); broken models 1.7-2.7 (71-99% of passes above 1.5). -> switch at 1.5.
+- Safe mode, 3 options at 0.25 Mbps (error): checks alone 2.3-2.4 for every failure; model's own chances: new
+  camera 2.50 (bars 87%); **recalibrated chances: new camera 2.21 (92%), swap 1.09, bit flips 1.24** -> chosen.
+
+**Results** (`experiments/audit_summary_*_20261020_2023.csv`; the older methods' numbers are identical to the
+earlier run). Typical error / 90% bar held / share of passes in safe mode:
+
+| | plain audit (floor 0.5) | **self-checking audit** | raw random |
+|---|---|---|---|
+| EuroSAT, 0.25 Mbps, healthy head | 0.47 / 98% | 0.53 / 98% / 1% | 2.18 / 91% |
+| EuroSAT, new camera | 2.69 / 86% (rare 80%) | **1.99 / 94% (rare 95%)** / 96% | 2.18 / 91% |
+| EuroSAT, silent swap | 1.22 / 97% | **0.95 / 97%** / 94% | 2.18 / 91% |
+| EuroSAT, bit flips | 1.33 / 95% | 1.30 / 96% / 95% | 2.18 / 91% |
+| EuroSAT, blur | **1.22** / 94% | 1.47 / 95% / 96% | 2.18 / 91% |
+| **Real**, 0.05 Mbps, healthy head | 3.53 / 99% | 3.56 / 98% / 3% | 5.89 / 96% |
+| **Real**, new place (EuroSAT head) | 8.30 / 97% | **5.34 / 98%** / 97% | 5.89 / 96% |
+| **Real**, bit flips | 8.12 / 91% | **5.50 / 97%** / 96% | 5.89 / 96% |
+| **Real**, blur | 3.71 / 97% | 3.56 / 97% / 6% | 5.89 / 96% |
+| **Real**, 0.25 Mbps, new place | 3.49 / 92% | **1.85 / 95%** / 97% | 2.22 / 92% |
+| **Real**, 0.25 Mbps, bit flips | 2.78 / **85%** | **1.73 / 96%** / 97% | 2.22 / 92% |
+
+- **The one real test confirms the EuroSAT choice.** With a badly broken model the audit used to be noisier
+  than random raw photos; with the self-check it beats them (5.3-5.5 vs 5.9 points at 0.05 Mbps; 1.7-1.9 vs 2.2
+  at 0.25) and its bars hold 95-98% (the 85% weak spot is now 96%). Healthy models: at most 3% of passes switched.
+- It also mostly closes the rare-class gap with a wrong camera (EuroSAT 0.25 Mbps: rare classes 80% -> 95%).
+- **Costs:** damaged cameras on EuroSAT (safe mode drops the model's per-photo confidence: blur 1.47 vs 1.22);
+  at the tightest real budget (0.02 Mbps, ~6-12 checks a day) a few false switches (up to 12% of passes) made
+  the silent-swap case worse (9.1 vs 5.7 points). Next idea: recalibrate with the full chance vector, not only
+  the top label.
+- Demo: `demo/audit.html` now uses the self-checking audit and shows, pass by pass, the mistake ratio and the mode.
+
+## Fixing the "100%" flaws (22 Oct 2026)
+
+The old per-photo score gave agent v4 100.0 ± 0.0%. That number is a ceiling, not strength: a 50-byte label
+counts as much as a 280 KB photo, and plain compression ties it. The fixes below close the open weak spots.
+
+**1. README and demo.** The audit is now the main result. The per-photo score is "Older result" with a
+warning, and the table has a compress-to-fit row: at 0.25-1 Mbps (R = 1.1-7.1) compress-to-fit shows every
+photo on all 21 days (old "lenient" score 100%, 0 wrong; `compress_sweep_20261020_1938.csv`). The demo page
+(`demo/index.html`) has a "Careful" note under its score with a link to `audit.html`.
+
+**2. A fair zero-shot rival** (`python -m src.model.zeroshot`). SigLIP-base with class names only
+("a satellite photo of {words}.", same words as Gemma's prompt, fixed before testing), the same saved
+embeddings as the head. One temperature fitted on the tuning photos (changes chances, not answers).
+
+| Final photos | SigLIP zero-shot | calibration error (plain / temperature) | Gemma 3 4B | Small head (trained) |
+|---|---|---|---|---|
+| AID, 300 | **66.3%** | 0.067 / 0.048 | 63% | 95.7% |
+| EuroSAT, 1,000 | **40.8%** | 0.189 / 0.102 | 29% (its 100) | 92.8% |
+
+As agent v4's labeller on the old replay (Delhi, 1 Mbps): 94% / 67 wrong labels (Gemma agent v3 92% / 90).
+File: `experiments/agents_delhi_final_equal_zeroshot_20261022_1310.csv`. So a 90M image model with no
+training slightly beats the 4B VLM, 300x faster; the big gap to the trained head is the labels, not the model.
+
+**3. Betting error bars** (`interval(e, "betting")` in `src/eval/estimate.py`). Hedged-capital betting
+confidence interval (Waudby-Smith & Ramdas 2023) on each checked photo's weighted mistake
+W = (y - p) / chance x checks / photos, whose limits are known from the chances sent down. No bell-curve
+approximation. Assumption: checks treated as independent draws (ours are without replacement: less spread,
+so the bar should err wide). Bet cap c = 0.75 chosen on made-up data (c = 0.5: ±20.4, 0.75: ±15.5 at 40
+checks; both held 100%). Self-test (fakes): betting held 99-100% where normal bars held 86-89%.
+
+Audit reruns (`audit_summary_{eurosat,real}_20261022_13*.csv`; every older column identical to 20 Oct).
+Self-checking audit, mean over scenarios x stations: held / rare classes held / worst single class / ± points:
+
+| | scaled+1 (default) | betting |
+|---|---|---|
+| EuroSAT 0.05 Mbps | 97% / 99% / 76% / ±8.7 | 100% / 100% / 95% / ±21.1 |
+| EuroSAT 0.25 Mbps | 95% / 96% / 76% / ±2.5 | 100% / 100% / 90% / ±5.9 |
+| EuroSAT 2 Mbps | 94% / 94% / 71% / ±0.4 | 100% / 100% / 100% / ±1.6 |
+| Real 0.02 Mbps | 99% / 100% / 81% / ±24.1 | 100% / 100% / 100% / ±44.2 |
+| Real 0.05 Mbps | 98% / 99% / 81% / ±11.7 | 100% / 100% / 100% / ±26.5 |
+| Real 0.25 Mbps | 96% / 97% / 81% / ±7.0 | 100% / 100% / 95% / ±7.7 |
+
+- The worst-class numbers of scaled+1 (71-81%) are partly chance: a cell has 21 runs per class, and 16/21 = 76%.
+- Betting holds for every class in every cell (>= 90%), but costs width: ~2.4x on EuroSAT, 1.1x on real
+  photos at 0.25 Mbps, ~2x at the tightest real budgets. Report both: scaled+1 as the working bar, betting as
+  the guaranteed one.
+
+**4. Real labels by eye** (`python -m src.eval.label_check`). 150 real photos from the test days (13-19 Oct;
+~20 per class, all 1 BuiltUp, seed 0), 6 contact sheets. **Checked by Claude from the sheets, not by a person.**
+
+| Label | Photos | Agree | Disagree | Can't tell |
+|---|---|---|---|---|
+| Cloud | 26 | 25 | 1 (thin haze over dry hills) | 0 |
+| Water | 21 | 21 | 0 | 0 |
+| Cropland | 20 | 19 | 1 (thick cloud) | 0 |
+| Trees | 20 | 14 | 1 (all white: cloud) | 5 (half cloud) |
+| ShrubGrass | 21 | 15 | 1 (sand dunes) | 5 |
+| Bare | 21 | 16 | 0 | 5 (pale: bright desert or haze) |
+| SnowIce | 20 | 8 | 0 | 12 (white: snow or cloud?) |
+| **All** | 150 | **119** | **4** | 27 |
+
+- Where the eye could tell: **119/123 = 97%** (also 97% weighted to the real class mix).
+- Weak spots: RGB can't separate snow from cloud (the SWIR band can: snow is dark there, cloud bright);
+  photos ~40-60% cloud get their land class. Next: a person re-checks the CSV; a "partly cloudy" rule.
+
+**5. Sentinel-2 split by location** (`python -m src.data.eurosat_geo`, then `python -m src.eval.spatial_split`).
+Coordinates of all 27,000 EuroSAT photos from the GeoTIFF version (one 2 GB stream from Zenodo, only the first
+4 KB of each file kept; same-name GeoTIFF and JPEG checked to be the same photo: pixel correlation 0.94-0.99 vs
+~0 for another photo). Photos grouped in 10 km blocks (50 km as a check, both fixed before looking); whole blocks
+go to final / tuning / training (40/20/40% of blocks), same sizes as before (100 / 50 / 100 per class), 3 seeds.
+
+| Split | Final accuracy (mean of 3 seeds) | 95% range (one seed) | Calibration error | Final photos with a near-twin in training |
+|---|---|---|---|---|
+| Random (20 Oct) | 92.7% | 91.0-94.2% | 0.014 | 723 / 1,000 |
+| **10 km blocks** | **93.4% ± 0.6%** | 91.3-94.4% | 0.019 | 695 / 1,000 |
+| 50 km blocks | 92.5% ± 0.3% | 90.7-94.0% | 0.016 | 672 / 1,000 |
+
+- **No neighbouring-tile leak:** separating the places doesn't lower the accuracy.
+- The near-twin test (cosine > 0.95) was misleading: two thirds of test photos still have one 50 km away.
+  EuroSAT's 64 px photos of one class look alike to SigLIP. "88.4% without twins" (87-92% here) just drops the
+  typical, easy photos.
+- Files: `experiments/spatial_split_eurosat_20261022_1328.csv`, answers `head_eurosat_siglip-base_n100_spatial_final.csv`.
+
+**6. Jetson script** (`python -m src.eval.jetson_bench`): times image model (batch 1 and 8) + head + audit sampler,
+reads the Jetson's power meter (`tegrastats`, VDD_IN) for energy per photo. MacBook M2 (MPS, no power meter):
+26.9 ms/photo at batch 1, 19.1 at batch 8; head 0.004 ms; sampler 0.001 ms per photo. `experiments/bench_Darwin-arm64_20261022_1320.csv`.

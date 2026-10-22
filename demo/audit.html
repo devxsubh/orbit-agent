@@ -17,7 +17,7 @@
     --bg: #07080a; --surface: #0e1013; --surface-2: #171a1f;
     --border: #23272e; --border-2: #343a43;
     --text: #eef0f3; --text-2: #a3a9b3; --muted: #6b717c;
-    --audit: #d55181; --triage: #c98500; --labels: #3987e5; --held: #34d399; --missed: #f87171;
+    --audit: #d55181; --triage: #c98500; --labels: #3987e5; --held: #34d399; --missed: #f87171; --warn: #fbbf24;
     --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   }
@@ -68,6 +68,10 @@
   .sw { width: 10px; height: 10px; border-radius: 50%; flex: none; display: inline-block; }
   .ok { color: var(--held); } .bad { color: var(--missed); }
 
+  .modes { display: grid; gap: 6px; font-size: 12.5px; color: var(--text-2); }
+  .modes div { display: flex; gap: 8px; align-items: baseline; }
+  .modes b { color: var(--text); font-weight: 500; }
+  .modes .safe b { color: var(--warn); }
   .photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
   .photo { font-size: 11px; color: var(--text-2); }
   .photo img { width: 100%; aspect-ratio: 1; display: block; border-radius: 4px; border: 2px solid var(--border-2); }
@@ -124,7 +128,7 @@
     <p class="sub" id="chartsub"></p>
     <div class="legend">
       <span><svg width="14" height="14" viewBox="0 0 14 14"><line x1="7" y1="0" x2="7" y2="14" stroke="#eef0f3" stroke-width="2.5"/></svg>truth</span>
-      <span><svg width="22" height="14" viewBox="0 0 22 14"><line x1="1" y1="7" x2="21" y2="7" stroke="#d55181" stroke-width="2"/><circle cx="11" cy="7" r="4.5" fill="#d55181" stroke="#000" stroke-width="1.5"/></svg>audit + its 90% error bar</span>
+      <span><svg width="22" height="14" viewBox="0 0 22 14"><line x1="1" y1="7" x2="21" y2="7" stroke="#d55181" stroke-width="2"/><circle cx="11" cy="7" r="4.5" fill="#d55181" stroke="#000" stroke-width="1.5"/></svg>self-checking audit + its 90% error bar</span>
       <span><svg width="14" height="14" viewBox="0 0 14 14"><rect x="2.5" y="2.5" width="9" height="9" fill="#c98500" stroke="#000" stroke-width="1.5"/></svg>triage (agent v4)</span>
       <span><svg width="14" height="14" viewBox="0 0 14 14"><rect x="3" y="3" width="8" height="8" transform="rotate(45 7 7)" fill="#3987e5" stroke="#000" stroke-width="1.5"/></svg>labels only</span>
     </div>
@@ -141,6 +145,13 @@
       <p class="sub">A 90% error bar should contain the truth for about 9 classes in 10.</p>
       <div class="tally" id="tally"></div>
     </section>
+    <section class="card">
+      <h2>Self-check, pass by pass</h2>
+      <p class="sub">The ground compares the mistakes in the checked photos with the mistakes the model expected.
+        Much bigger (over <span class="num" id="switch"></span>x) means the model is broken in a way it can't see:
+        switch to safe mode.</p>
+      <div class="modes" id="modes"></div>
+    </section>
     <section class="card" id="photocard">
       <h2>Some photos the audit checked</h2>
       <p class="sub">Picked at random (unsure photos a bit more often). Red frame = the model's label was wrong.</p>
@@ -152,6 +163,7 @@
         <li><b>Label every photo</b> onboard, with the model's chance for each class (about 60 bytes).</li>
         <li><b>Check a random sample:</b> send some full photos, picked at random with known chances. Every photo keeps a minimum chance, so confident mistakes can be caught too.</li>
         <li><b>Correct on the ground:</b> the labels' average, plus the average mistake seen in the checked photos. The error bar comes from the checks, not from the model's opinion of itself.</li>
+        <li><b>Check the checker:</b> if the checked mistakes are clearly bigger than the model expected, the next passes run in safe mode: checks picked fully at random, and the model's chances recalibrated from past checks.</li>
       </ol>
     </section>
   </aside>
@@ -192,7 +204,8 @@ function intro() {
     : "real Sentinel-2 photos (EuroSAT) in a simulated orbit replay, with an assumed India-like mix of land types";
   $("intro").innerHTML = `Each day the ground wants one product: <b>what share of today's photos showed each land type, and how sure we are</b>. ` +
     `Same orbit, same ${D.station} passes and same bytes (${D.rate_mbps} Mbps) for every policy. Data: ${where}. ` +
-    `Switch the onboard model to a broken one and watch which numbers you can still trust.`;
+    `Switch the onboard model to a broken one and watch which numbers you can still trust, ` +
+    `and when the satellite's self-check notices and switches to safe mode.`;
   $("footer").innerHTML = `Made by <code>python -m src.demo.export_audit</code> (orbit-agent). Policies: <code>src/agent/audit.py</code>; ` +
     `ground methods and error bars: <code>src/eval/estimate.py</code> (difference estimator, "scaled+1" 90% bars). ` +
     `Triage and labels-only have no honest error bar: the one used for them pretends every label is right.` +
@@ -260,7 +273,7 @@ function render() {
   // tally: today, and over all days (one day of 10 classes is too few to judge a method by itself)
   const count = (x, m) => x.truth.filter((t, k) => x[m].lo[k] - 1e-9 <= t && t <= x[m].hi[k] + 1e-9).length;
   const worst = (m) => Math.max(...d.truth.map((t, k) => Math.abs(d[m].est[k] - t)));
-  const rows = [["audit", "#d55181", "Audit (honest error bar)"], ["triage", "#c98500", "Triage, agent v4 (pretend error bar)"],
+  const rows = [["audit", "#d55181", "Self-checking audit (honest error bar)"], ["triage", "#c98500", "Triage, agent v4 (pretend error bar)"],
                 ["labels", "#3987e5", "Labels only (pretend error bar)"]];
   $("tally").innerHTML = rows.map(([m, col, name]) => {
     const week = days.reduce((s, x) => s + count(x, m), 0) / (days.length * K);
@@ -269,6 +282,16 @@ function render() {
       <div><span class="big">${count(d, m)} of ${K}</span> <span class="small">held today</span></div>
       <div class="small">all ${days.length} days: <span class="${ok ? "ok" : "bad"}">${ok ? "✓" : "✗"} ${Math.round(100 * week)}% held</span>
         · worst class today off by ${pts(worst(m))} points</div></div>`;
+  }).join("");
+
+  // self-check, pass by pass (the ratio shown is the one that decided that pass's mode)
+  $("switch").textContent = D.switch;
+  $("modes").innerHTML = (d.modes || []).map((m, i) => {
+    const why = m.ratio === null ? "first pass of the mission: nothing checked yet"
+      : `checked mistakes so far = ${m.ratio}x what the model expected`;
+    return m.safe
+      ? `<div class="safe"><span>⚠</span><span><b>Pass ${i + 1}: safe mode</b> · ${why} · random checks, recalibrated chances</span></div>`
+      : `<div><span class="ok">✓</span><span><b>Pass ${i + 1}: normal</b> · ${why}</span></div>`;
   }).join("");
 
   // photos

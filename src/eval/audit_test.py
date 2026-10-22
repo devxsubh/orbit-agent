@@ -33,6 +33,7 @@ from pathlib import Path
 import numpy as np
 
 from src.agent.audit import POLICIES, audit, label_bytes
+from src.agent.self_check import SelfCheck
 from src.eval.estimate import combine, estimate, interval
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -42,7 +43,7 @@ THUMB = 6_400   # a 160 px JPEG thumbnail (measured on AID photos, src/eval/comp
 FIRST_DAY = datetime(2026, 10, 19, tzinfo=timezone.utc)
 SEEDS = [42, 43, 44]
 LEVEL = 0.9
-INTERVALS = ["normal", "t", "safe", "scaled", "scaled+1"]
+INTERVALS = ["normal", "t", "safe", "scaled", "scaled+1", "betting"]
 # ASSUMPTION (not measured): an India-like mix of EuroSAT classes; three are rare (2-4%)
 SHARES = {"AnnualCrop": .30, "Forest": .12, "HerbaceousVegetation": .12, "Highway": .02,
           "Industrial": .02, "Pasture": .06, "PermanentCrop": .06, "Residential": .08,
@@ -57,7 +58,10 @@ METHODS = {"raw in order": ("raw in order", "raw"), "raw random": ("raw random",
            "audit, floor 0.5, tuned": ("audit (floor 0.5)", "tuned"),
            # checks sent as 160 px thumbnails (6.4 KB, enough for a person to read the class: ~47x more
            # checks per byte; see src/eval/compress_test.py)
-           "audit, thumbnails": (lambda P, b, t, r: audit(P, b, THUMB, r, floor=0.5), "difference")}
+           "audit, thumbnails": (lambda P, b, t, r: audit(P, b, THUMB, r, floor=0.5), "difference"),
+           # the audit + the ground's self-check: safe mode once checked mistakes are 1.5x what the model
+           # expected (src/agent/self_check.py); keeps memory across the days of a mission
+           "audit, self-check": ("self-check", "self-check")}
 EUROSAT_TO_REAL = {"AnnualCrop": "Cropland", "PermanentCrop": "Cropland", "Forest": "Trees",
                    "Pasture": "ShrubGrass", "HerbaceousVegetation": "ShrubGrass",
                    "Residential": "BuiltUp", "Industrial": "BuiltUp", "Highway": "BuiltUp",
@@ -218,26 +222,35 @@ def real_days(pop: Population, station: str, rate: float, days: list[str], sat):
         yield day, [(int(passes[i].data_mb(rate) * 1e6), np.array(idx)) for i, idx in sorted(waiting.items())]
 
 
-def run_day(pop: Population, P_all: np.ndarray, passes, rng, methods=None) -> dict:
-    """Every method on one day: {method: (estimate, {interval kind: (low, high)}, bytes)}.
-    methods: {name: (policy, ground method)}; a policy can also be a function (default: METHODS)."""
+def run_day(pop: Population, P_all: np.ndarray, passes, rng, methods=None, check=None) -> dict:
+    """Every method on one day: {method: (estimate, {interval kind: (low, high)}, bytes, safe share)}.
+    methods: {name: (policy, ground method)}; a policy can also be a function (default: METHODS).
+    check: the mission's SelfCheck (src/agent/self_check.py) for the "audit, self-check" method."""
     out = {}
     K = len(pop.classes)
     for method, (policy, how) in (methods or METHODS).items():
-        send = policy if callable(policy) else POLICIES[policy]
-        parts, sizes, used = [], [], 0
+        if policy == "self-check" and check is None:
+            continue
+        send = policy if callable(policy) or policy == "self-check" else POLICIES[policy]
+        parts, sizes, used, safe = [], [], 0, []
         for budget, idx in passes:
             P = P_all[idx]
             if policy not in ("raw in order", "raw random") and len(idx) * label_bytes(K) > budget:
                 break  # this pass can't even carry the labels
-            sent = send(P, budget, TILE, rng)
-            parts.append(estimate(P, sent, pop.Y[idx][sent.full], how, rng))
+            if policy == "self-check":
+                sent, e, was_safe = check.run_pass(P, budget, TILE, lambda full, idx=idx: pop.Y[idx][full], rng)
+                safe.append(was_safe)
+            else:
+                sent = send(P, budget, TILE, rng)
+                e = estimate(P, sent, pop.Y[idx][sent.full], how, rng)
+            parts.append(e)
             sizes.append(len(idx))
             used += sent.bytes_used
         if len(parts) < len(passes):
             continue
         day = combine(parts, sizes)
-        out[method] = (day.value, {k: interval(day, k, LEVEL) for k in INTERVALS}, used)
+        out[method] = (day.value, {k: interval(day, k, LEVEL) for k in INTERVALS}, used,
+                       float(np.mean(safe)) if safe else "")
     return out
 
 
@@ -251,20 +264,22 @@ def run(pop: Population, data: str, stations, rates, days, seeds, scenarios, met
             for seed in seeds:
                 day_iter = (eurosat_days(pop, station, rate, days, seed, sat) if data == "eurosat"
                             else real_days(pop, station, rate, days, sat))
+                # one mission per station x rate x seed: the self-check remembers all its checks
+                checks = {s: SelfCheck(len(pop.classes)) for s in scenarios}
                 for day, passes in day_iter:
                     idx_all = np.concatenate([idx for _, idx in passes])
                     truth = pop.Y[idx_all].mean(0)
                     for scenario in scenarios:
                         rng = np.random.default_rng([seed, rates.index(rate), stations.index(station),
                                                      int(day.replace("-", ""))])
-                        for method, (value, bars, used) in run_day(pop, pop.scenarios[scenario],
-                                                                   passes, rng, methods).items():
+                        for method, (value, bars, used, safe) in run_day(
+                                pop, pop.scenarios[scenario], passes, rng, methods, checks[scenario]).items():
                             for k, c in enumerate(pop.classes):
                                 row = {"data": data, "scenario": scenario, "station": station,
                                        "rate_mbps": rate, "seed": seed, "day": day, "method": method,
                                        "cls": c, "rare": bool(pop.rare[k]), "photos": len(idx_all),
                                        "mb": round(used / 1e6, 3), "truth": round(float(truth[k]), 7),
-                                       "est": round(float(value[k]), 7)}
+                                       "est": round(float(value[k]), 7), "safe_share": safe}
                                 for kind, (lo, hi) in bars.items():
                                     row[f"lo_{kind}"] = round(float(lo[k]), 7)
                                     row[f"hi_{kind}"] = round(float(hi[k]), 7)
@@ -297,6 +312,8 @@ def summarise(rows: list[dict]) -> list[dict]:
                                                                    for r in rs if r["cls"] == c])
                                                           for c in by_class), 4)
             line[f"halfwidth_{kind}_pts"] = round(100 * half.mean(), 3)
+        safe = [r["safe_share"] for r in rs if r.get("safe_share", "") != ""]
+        line["safe_share"] = round(float(np.mean(safe)), 3) if safe else ""  # self-check: passes in safe mode
         out.append(line)
     return out
 
