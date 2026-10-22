@@ -137,9 +137,17 @@ File: `audit_summary_real_20261020_2023.csv`. Typical error (points) / 90% bar h
   bit flips: bars hold 95% vs 86-90% at floor <= 0.1) or `docs/audit_loop.png`.
 
 ## 5. Discussion and limits (0.3 page)
-- Rare classes under a badly wrong model at mid budgets: 90% bars hold only ~80-87% (tuned: 82-98%).
-  Fix to try: finite-sample "betting" intervals (Waudby-Smith & Ramdas, JRSS-B 2024).
-- Truth for real photos = WorldCover 2021 + cloud map (a reference with its own errors, 2021 vs 2026).
+- **Two kinds of error bar (22 Oct).** "scaled+1" (bell-curve approximation) holds 94-98% on average with the
+  self-check, but a single class can drop to 71-81% in a 21-run cell. The **betting** bar (Waudby-Smith & Ramdas,
+  hedged capital, c = 0.75 chosen on made-up data) needs no approximation: held 100% on average and >= 90% for
+  every single class in every cell (EuroSAT and real). Price: 2.4x wider on EuroSAT (0.25 Mbps self-check: ±5.9
+  vs ±2.5 points); on real photos at 0.25 Mbps only 1.1x (±7.7 vs ±7.0), at the tightest budgets ~2x.
+  Assumption: checks treated as draws with replacement (ours are without, less spread -> errs wide).
+  Files: `audit_summary_{eurosat,real}_20261022_13*.csv` (older columns identical to the 20 Oct run).
+- Truth for real photos = WorldCover 2021 + cloud map (2021 vs 2026). **Eye check (22 Oct, 150 photos, by an
+  AI from contact sheets; `experiments/label_check_real.csv`):** 119/123 right where the eye could tell (97%);
+  can't tell: snow vs cloud in RGB (12 of 20 SnowIce), half-cloudy photos labelled as land (8). Wrong: 4.
+  TODO: a person re-checks; SWIR band would separate snow from cloud.
 - People reading checked photos (or thumbnails) is assumed correct; at scale a stronger ground model could do it.
 - Per-pass budgets are modelled; uplink of the 30 KB head is assumed free; no Jetson numbers yet.
 - EuroSAT replay photos repeat across days (2,000-photo pool): closed-loop accuracy is inflated there; the real
@@ -155,7 +163,10 @@ File: `audit_summary_real_20261020_2023.csv`. Typical error (points) / 90% bar h
 ## TODO before submitting (in order)
 1. ~~Real replay numbers (Table 2) and the real closed loop~~ **done** (20 Oct).
 2. ~~Fall back to uniform checks when the checks show the model is broken~~ **done**: the self-check (20 Oct).
-   Still open: finite-sample (betting) error bars for the tightest budgets, or report the gap honestly.
-3. Jetson Orin Nano: time and energy of encoder + head + sampler.
+   ~~Finite-sample (betting) error bars~~ **done** (22 Oct): valid for every class, 1.1-2.4x wider. Report both.
+3. Jetson Orin Nano: time and energy of encoder + head + sampler. Script ready: `python -m src.eval.jetson_bench`
+   (Mac M2: 19 ms/photo at batch 8, power n/a). Needs the board.
+3a. ~~EuroSAT split by location~~ **done** (22 Oct): 10 km blocks 93.4% ± 0.6% vs random 92.7%: no leak.
+3b. ~~Truth labels by eye~~ first pass done by an AI (97%); a person should re-check `experiments/label_check_real.csv`.
 4. Write sections 3-4 first (IEEE template), then 1, 2, 5, 6, abstract last.
 5. Ask a statistician (or teacher) to check Section 3.3.

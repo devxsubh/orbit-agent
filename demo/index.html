@@ -133,6 +133,7 @@
   .key.lost { background: repeating-linear-gradient(135deg, #3a3f47 0 2px, #1c1f24 2px 4px); }
   .note { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
   .note b { color: var(--text-2); }
+  .note a { color: var(--sat); }
 
   /* Latest photo */
   .photo-row { display: flex; gap: 14px; }
@@ -271,6 +272,9 @@
         </tbody>
       </table>
       <p class="note" id="score-note">--</p>
+      <p class="note"><b>Careful:</b> this score counts a 50-byte label the same as a full photo, so any good
+        labeller gets close to 100%, and so would plain JPEG compression at this speed.
+        <a href="audit.html">The fairer test: can the ground trust the numbers?</a></p>
     </section>
 
     <section class="card">

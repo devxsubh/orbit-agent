@@ -15,6 +15,10 @@ It returns an estimate per class, its variance, and whether its error bar is hon
   (PPI++ idea). Learned on one half of the audited photos, used on the other half (cross-fitting).
 - stratified: Olofsson et al. 2014: the average within each predicted class, weighted by its size.
 
+Error bars (`interval`): normal / t / safe / scaled / scaled+1 use the bell-curve approximation.
+"betting" (Waudby-Smith & Ramdas 2023) needs no approximation: valid for any number of checks,
+also for rare classes, if the checks are draws with known chances (see `betting_interval`).
+
 Self-test on made-up data (checks the honest methods are right on average and their error bars hold):
     python -m src.eval.estimate
 """
@@ -38,6 +42,13 @@ class Estimate:
     seen: float = 0.0       # weighted sum of squared mistakes on the audited photos ...
     expected: float = 0.0   # ... and what the model's chances expected there (seen/expected ~ 1 if honest)
     photos: int = 0         # photos the estimate is about
+    # for the betting error bar (None = this method can't give one): each checked photo's mistake
+    # divided by its chance (one row per checked photo), the part that needs no check (mean of the
+    # chances), and the smallest / largest value a row could have had (known before checking)
+    terms: np.ndarray | None = None
+    base: np.ndarray | None = None
+    lowest: np.ndarray | None = None
+    highest: np.ndarray | None = None
 
 
 def one_hot(P: np.ndarray) -> np.ndarray:
@@ -88,7 +99,12 @@ def raw_mean(P_shape: tuple[int, int], sent: Sent, Y_full: np.ndarray) -> Estima
     var = (1 - n / N) * Y_full.var(0, ddof=1) / n if n > 1 else np.full(K, np.inf)
     # predicted variance if we knew nothing else: m(1-m), floored so a class never seen still counts
     floor = np.maximum(m * (1 - m), 1 / (n + 2) * (1 - 1 / (n + 2)))
-    return Estimate(m, var, (1 - n / N) * floor / n, sent.policy == "raw random", n, photos=N)
+    random = sent.policy == "raw random"
+    e = Estimate(m, var, (1 - n / N) * floor / n, random, n, photos=N)
+    if random:  # same as a difference estimate with all chances 0, every photo checked with chance n/N
+        e.terms, e.base = Y_full * N / n, np.zeros(K)
+        e.lowest, e.highest = np.zeros(K), np.full(K, N / n)
+    return e
 
 
 def difference(P: np.ndarray, sent: Sent, Y_full: np.ndarray) -> Estimate:
@@ -101,7 +117,11 @@ def difference(P: np.ndarray, sent: Sent, Y_full: np.ndarray) -> Estimate:
     value = P.mean(0) + (z / chance[full, None]).sum(0) / N
     var = _rosen_var(z, chance[full], N)
     seen, expected = _seen_expected(z, P[full], chance[full])
-    return Estimate(value, var, _model_var(P, chance), True, len(full), seen, expected, N)
+    could = chance > 0
+    return Estimate(value, var, _model_var(P, chance), True, len(full), seen, expected, N,
+                    terms=z / chance[full, None], base=P.mean(0),
+                    lowest=(-P[could] / chance[could, None]).min(0),
+                    highest=((1 - P[could]) / chance[could, None]).max(0))
 
 
 def _seen_expected(z: np.ndarray, P_s: np.ndarray, c: np.ndarray, lam=1.0) -> tuple[float, float]:
@@ -201,8 +221,71 @@ def combine(parts: list[Estimate], sizes: list[int]) -> Estimate:
     value = sum(wi * e.value for wi, e in zip(w, parts))
     var = sum(wi ** 2 * e.var for wi, e in zip(w, parts))
     var_model = sum(wi ** 2 * e.var_model for wi, e in zip(w, parts))
-    return Estimate(value, var, var_model, all(e.honest for e in parts), sum(e.checked for e in parts),
-                    sum(e.seen for e in parts), sum(e.expected for e in parts), sum(e.photos for e in parts))
+    day = Estimate(value, var, var_model, all(e.honest for e in parts), sum(e.checked for e in parts),
+                   sum(e.seen for e in parts), sum(e.expected for e in parts), sum(e.photos for e in parts))
+    if all(e.terms is not None for e in parts):  # the day's value = its base + (sum of all terms) / photos
+        day.terms = np.concatenate([e.terms for e in parts])
+        day.base = sum(wi * e.base for wi, e in zip(w, parts))
+        day.lowest = np.min([e.lowest for e in parts], axis=0)
+        day.highest = np.max([e.highest for e in parts], axis=0)
+    return day
+
+
+def betting_interval(e: Estimate, level: float = 0.9, c: float = 0.75) -> tuple[np.ndarray, np.ndarray]:
+    """Error bar from a betting game (Waudby-Smith & Ramdas 2023, "hedged capital", JRSSB).
+
+    Idea: for each candidate share m, imagine betting against "the true share is m", one checked photo
+    at a time. If m is wrong, the bets win and the money grows. Every m where the money would pass
+    1 / (1 - level) is ruled out; what is left is the error bar. This holds for ANY number of checks
+    (no bell-curve approximation), and a class the checks rarely see gets a wide bar automatically.
+
+    Each checked photo gives W = mistake / chance x checks / photos: its average is exactly the
+    correction the difference estimate adds. W must stay between known limits (`lowest`, `highest`,
+    known before checking from the chances sent down). Assumption: the checks behave like independent
+    draws with these chances. Our checks are drawn without putting photos back, which has less spread,
+    so the bar should err on the wide side (tested in the self-test and src/eval/audit_test.py).
+    """
+    K = len(e.value)
+    if e.terms is None or len(e.terms) == 0:
+        return np.zeros(K), np.ones(K)
+    n, N = len(e.terms), e.photos
+    a, b = e.lowest * n / N, e.highest * n / N
+    span = np.maximum(b - a, 1e-12)
+    order = np.random.default_rng(0).permutation(n)  # the bets need the photos in a random order
+    X = (e.terms[order] * n / N - a) / span          # each between 0 and 1
+    # running mean and spread from the photos BEFORE each bet (so a bet never peeks at its photo)
+    t = np.arange(1, n + 1)[:, None]
+    mean = (0.5 + np.cumsum(X, 0)) / (t + 1)
+    mean_before = np.vstack([np.full((1, K), 0.5), mean[:-1]])
+    spread = (0.25 + np.cumsum((X - mean_before) ** 2, 0)) / (t + 1)
+    spread_before = np.vstack([np.full((1, K), 0.25), spread[:-1]])
+    lam = np.sqrt(2 * np.log(2 / (1 - level)) / (n * spread_before))
+    limit = np.log(1 / (1 - level))
+
+    def ruled_out(m: np.ndarray) -> np.ndarray:
+        up = np.minimum(lam, c / m)          # bet on "the share is above m"
+        down = np.minimum(lam, c / (1 - m))  # bet on "the share is below m"
+        log_up = np.log1p(up * (X - m)).sum(0)
+        log_down = np.log1p(-down * (X - m)).sum(0)
+        return np.logaddexp(log_up, log_down) + np.log(0.5) >= limit
+
+    # shares from 0 to 1, in the 0-1 betting scale
+    edge_low = np.clip((0 - e.base - a) / span, 1e-9, 1 - 1e-9)
+    edge_high = np.clip((1 - e.base - a) / span, 1e-9, 1 - 1e-9)
+    centre = np.clip(X.mean(0), edge_low, edge_high)
+    ends = []
+    for edge in (edge_low, edge_high):  # walk from the centre to each edge (bisection, per class)
+        inside, outside = centre.copy(), edge.copy()
+        stop = ~ruled_out(edge)
+        inside[stop] = edge[stop]       # nothing ruled out up to the edge
+        for _ in range(30):
+            mid = (inside + outside) / 2
+            out = ruled_out(mid)
+            outside = np.where(out & ~stop, mid, outside)
+            inside = np.where(~out & ~stop, mid, inside)
+        ends.append(inside)
+    low, high = (e.base + a + ends[0] * span, e.base + a + ends[1] * span)
+    return np.clip(low, 0, 1), np.clip(high, 0, 1)
 
 
 def interval(e: Estimate, how: str = "safe", level: float = 0.9) -> tuple[np.ndarray, np.ndarray]:
@@ -218,9 +301,15 @@ def interval(e: Estimate, how: str = "safe", level: float = 0.9) -> tuple[np.nda
     scaled+1: like scaled, and never narrower than "one checked photo we didn't see might have
             belonged to this class" (plus-one rule, no model needed: protects rare classes when
             the model itself is broken)
+    betting: no bell-curve approximation (see betting_interval); falls back to scaled+1 for
+            methods that can't give one (tuned, stratified)
     """
     if not e.honest:
         how = "normal"  # labels only / triage: only the "pretend every label is right" bar exists
+    if how == "betting":
+        if e.terms is not None:
+            return betting_interval(e, level)
+        how = "scaled+1"  # tuned / stratified: no betting bar, use the default instead
     if how in ("normal", "t"):
         var = e.var
     elif how == "safe":
@@ -271,11 +360,11 @@ def selftest(reps: int = 2000) -> None:
     for model, (acc, over) in {"honest model, 80% right": (0.8, False),
                                "overconfident model, 60% right": (0.6, True)}.items():
         print(f"== {model} ==")
-        print(f"{'method':<24} {'bias (pts)':>10} {'RMSE (pts)':>10} {'holds: normal':>14} {'t':>5} {'safe':>5} {'scaled':>7} {'scaled+1':>9}")
+        print(f"{'method':<24} {'bias (pts)':>10} {'RMSE (pts)':>10} {'holds: normal':>14} {'t':>5} {'safe':>5} {'scaled':>7} {'scaled+1':>9} {'betting':>8}")
         Y, P = _fake_population(N, K, rng, acc, over)
         truth = Y.mean(0)
         for name, (policy, how) in methods.items():
-            errors, held = [], {"normal": [], "t": [], "safe": [], "scaled": [], "scaled+1": []}
+            errors, held = [], {"normal": [], "t": [], "safe": [], "scaled": [], "scaled+1": [], "betting": []}
             for _ in range(reps):
                 sent = policy(P, budget, tile, rng)
                 e = estimate(P, sent, Y[sent.full], how, rng)
@@ -285,7 +374,7 @@ def selftest(reps: int = 2000) -> None:
                     held[kind].append((lo - 1e-9 <= truth) & (truth <= hi + 1e-9))
             err = np.array(errors)
             print(f"{name:<24} {100 * np.abs(err.mean(0)).max():>10.2f} {100 * np.sqrt((err ** 2).mean()):>10.2f} "
-                  + "".join(f"{np.mean(held[k]):>{w}.0%}" for k, w in (("normal", 14), ("t", 6), ("safe", 6), ("scaled", 8), ("scaled+1", 10))))
+                  + "".join(f"{np.mean(held[k]):>{w}.0%}" for k, w in (("normal", 14), ("t", 6), ("safe", 6), ("scaled", 8), ("scaled+1", 10), ("betting", 9))))
         print()
 
 
