@@ -32,20 +32,21 @@ from src.model.confidence import class_trust, fit_right_chance, is_unsure, right
 from src.model.vlm import labels_mentioned
 from src.orbit.contact_windows import load_satellite
 from src.orbit.replay import build_replay
+from src.paths import find, result
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def newest_aid_answers() -> Path:
     """The AID baseline CSV with the most photos (newest if tied)."""
-    files = sorted((ROOT / "experiments").glob("baseline_aid_*.csv"))
+    files = sorted(find("baseline_aid_*.csv"))
     if not files:
         raise SystemExit("No AID answers yet. Run: python -m src.eval.baseline_eurosat --dataset aid")
     return max(files, key=lambda f: (sum(1 for _ in open(f)), f.name))
 
 
-TUNING = ROOT / "experiments" / "confidence_aid_test_gemma3-4b_r3_n10.csv"       # photos 11-20
-FINAL = ROOT / "experiments" / "confidence_aid_test_gemma3-4b_r3_n10_skip20.csv"  # photos 21-30
+TUNING = result("confidence_aid_test_gemma3-4b_r3_n10.csv")       # photos 11-20
+FINAL = result("confidence_aid_test_gemma3-4b_r3_n10_skip20.csv")  # photos 21-30
 
 
 def _rows(path: Path) -> list[dict]:
@@ -68,7 +69,7 @@ def photo_set_name(path: Path) -> str:
 def head_answers(path: Path) -> Path | None:
     """The newest decision-head CSV for the same photo set (agent v4), if there is one."""
     which = {FINAL: "final", TUNING: "tuning"}.get(path.resolve())
-    files = sorted((ROOT / "experiments").glob(f"head_aid_*_{which}.csv"),
+    files = sorted(find(f"head_aid_*_{which}.csv"),
                    key=lambda f: f.stat().st_mtime) if which else []
     return files[-1] if files else None
 
@@ -198,7 +199,7 @@ def main() -> None:
                          "correct_per_mb": round(s["per_mb"], 2)})
 
     which = "final" if answers.resolve() == FINAL else "tuning" if answers.resolve() == TUNING else "first"
-    out = ROOT / "experiments" / (f"agents_{args.station}_{which}_{args.sizes}_"
+    out = result(f"agents_{args.station}_{which}_{args.sizes}_"
                                   f"{datetime.now():%Y%m%d_%H%M}.csv")
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))

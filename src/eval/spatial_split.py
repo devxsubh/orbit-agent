@@ -13,8 +13,8 @@ Run from the orbit-agent folder (needs python -m src.data.eurosat_geo first; mak
 embeddings the first time, a few minutes on the Mac):
     python -m src.eval.spatial_split
 
-Saves experiments/spatial_split_eurosat_<time>.csv (one row per block size x seed) and
-experiments/head_eurosat_siglip-base_n100_spatial_final.csv (seed 42, 10 km: answers in head format).
+Saves results/spatial_split_eurosat_<time>.csv (one row per block size x seed) and
+results/head_eurosat_siglip-base_n100_spatial_final.csv (seed 42, 10 km: answers in head format).
 """
 from __future__ import annotations
 
@@ -30,6 +30,7 @@ from src.data.eurosat import CLASSES, dataset_dir
 from src.data.eurosat_geo import OUT as COORDS
 from src.eval.overfit_check import TWIN, bootstrap, nearest
 from src.model.head import calibration_error, embed, fit_head, save_answers
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 SIZES = {"final": 100, "tuning": 50, "train": 100}  # photos per class, as in src/eval/sentinel_test.py
@@ -99,7 +100,7 @@ def main() -> None:
                   f"calibration error {r['calibration_error']:.3f}, near-twins in training "
                   f"{r['final_with_twin']}/1000 (without them {r['accuracy_without_twins']:.1%})")
             if km == BLOCK_KM[0] and not saved:
-                out = ROOT / "experiments" / "head_eurosat_siglip-base_n100_spatial_final.csv"
+                out = result("head_eurosat_siglip-base_n100_spatial_final.csv")
                 save_answers(out, final, head, x["final"], float("nan"))
                 saved = True
 
@@ -110,7 +111,7 @@ def main() -> None:
         print(f"  {km:>3} km blocks: {np.mean(acc):.1%} ± {np.std(acc):.1%} "
               f"(near-twins {np.mean([r['final_with_twin'] for r in mine]):.0f}/1000, "
               f"calibration error {np.mean([r['calibration_error'] for r in mine]):.3f})")
-    out = ROOT / "experiments" / f"spatial_split_eurosat_{datetime.now():%Y%m%d_%H%M}.csv"
+    out = result(f"spatial_split_eurosat_{datetime.now():%Y%m%d_%H%M}.csv")
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(results[0]))
         writer.writeheader()

@@ -5,8 +5,8 @@ Here every combination of 7 days x 3 stations x 3 seeds is replayed (63 runs per
 rate), so we can say how much the numbers move. Uses saved answers: no model calls, seconds.
 
 Run from the orbit-agent folder:
-    python -m src.eval.replay_bars             # table + experiments/replay_bars_<date>.csv
-    python -m src.eval.replay_bars --plot      # also draws docs/replay_bars.png
+    python -m src.eval.replay_bars             # table + results/replay_bars_<date>.csv
+    python -m src.eval.replay_bars --plot      # also draws docs/figures/replay_bars.png
 
 Photo sets: AID final test photos (21-30) and EuroSAT (Sentinel-2) final test photos.
 """
@@ -24,15 +24,15 @@ from src.eval.run_agent import FINAL, load_views, score
 from src.eval.sentinel_test import PHOTO_BYTES
 from src.orbit.contact_windows import GROUND_STATIONS, load_satellite
 from src.orbit.replay import build_replay
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
-EXP = ROOT / "experiments"
 FIRST_DAY = datetime(2026, 10, 19, tzinfo=timezone.utc)  # the day of the main results
 SEEDS = [42, 43, 44]                                       # 42 = the main results' photo order
 HEADS = {  # agent v4's answers: (decision head, tiny CNN), same training photos
-    "aid": (EXP / "head_aid_siglip-base_n20_final.csv", EXP / "cnn_aid_mobilenet_v3_small_n20_final.csv"),
-    "eurosat": (EXP / "head_eurosat_siglip-base_n100_final.csv",
-                EXP / "cnn_eurosat_mobilenet_v3_small_n100_final.csv"),
+    "aid": (result("head_aid_siglip-base_n20_final.csv"), result("cnn_aid_mobilenet_v3_small_n20_final.csv")),
+    "eurosat": (result("head_eurosat_siglip-base_n100_final.csv"),
+                result("cnn_eurosat_mobilenet_v3_small_n100_final.csv")),
 }
 
 
@@ -108,7 +108,7 @@ def plot(rows: list[dict], out: Path) -> None:
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    # Same colours as docs/results.png and docs/label_curve.png (checked with the palette validator)
+    # Same colours as docs/figures/results.png and docs/figures/label_curve.png (checked with the palette validator)
     lines = {"send all raw": ("Send all raw", "#8b8b94", ":"), "agent v3": ("Agent v3 (Gemma)", "#199e70", "-"),
              "agent v4 (head)": ("Agent v4, frozen head", "#c98500", "-"),
              "agent v4 (CNN)": ("Agent v4, tiny CNN", "#d55181", "-")}
@@ -158,19 +158,19 @@ def main() -> None:
     parser.add_argument("--datasets", nargs="+", default=["aid", "eurosat"], choices=list(HEADS))
     parser.add_argument("--days", type=int, default=7)
     parser.add_argument("--rates", type=float, nargs="+", default=[0.25, 0.5, 1, 2])
-    parser.add_argument("--plot", action="store_true", help="also draw docs/replay_bars.png")
+    parser.add_argument("--plot", action="store_true", help="also draw docs/figures/replay_bars.png")
     args = parser.parse_args()
 
     rows = run(args.datasets, args.days, args.rates)
     print_tables(rows, args.rates)
-    out = EXP / f"replay_bars_{datetime.now():%Y%m%d_%H%M%S}.csv"  # seconds: no clash between quick runs
+    out = result(f"replay_bars_{datetime.now():%Y%m%d_%H%M%S}.csv")  # seconds: no clash between quick runs
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
     print(f"\nSaved {out.relative_to(ROOT)}")
     if args.plot:
-        plot(rows, ROOT / "docs" / "replay_bars.png")
+        plot(rows, ROOT / "docs" / "figures" / "replay_bars.png")
 
 
 if __name__ == "__main__":

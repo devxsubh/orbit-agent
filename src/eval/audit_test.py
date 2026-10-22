@@ -18,7 +18,7 @@ Run from the orbit-agent folder:
     python -m src.eval.audit_test                    # eurosat, about 5 min the first time
     python -m src.eval.audit_test --data real        # needs python -m src.data.s2_real first
 
-Saves experiments/audit_summary_<data>_<time>.csv (the tables) and every single estimate in
+Saves results/audit_summary_<data>_<time>.csv (the tables) and every single estimate in
 data/processed/audit_runs_<data>_<time>.csv.gz (big, not in git).
 """
 from __future__ import annotations
@@ -35,9 +35,9 @@ import numpy as np
 from src.agent.audit import POLICIES, audit, label_bytes
 from src.agent.self_check import SelfCheck
 from src.eval.estimate import combine, estimate, interval
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
-EXP = ROOT / "experiments"
 TILE = 300_000  # one full photo: 224 x 224 px x 4 bands (red, green, blue, near-infrared) x 12 bits
 THUMB = 6_400   # a 160 px JPEG thumbnail (measured on AID photos, src/eval/compress_test.py)
 FIRST_DAY = datetime(2026, 10, 19, tzinfo=timezone.utc)
@@ -150,8 +150,10 @@ def eurosat_days(pop: Population, station: str, rate: float, days: int, seed: in
         yield f"{start:%Y-%m-%d}", passes
 
 
-def real_population(train_days: list[str], test_days: list[str], keep=None) -> Population:
-    """Real Sentinel-2A photos: head trained on train_days, every scenario on test_days."""
+def real_population(train_days: list[str], test_days: list[str], keep=None, recipe: dict | None = None) -> Population:
+    """Real Sentinel-2A photos: head trained on train_days, every scenario on test_days.
+    recipe: an experiment-12 recipe (src/model/retrain.py), e.g. infrared bands + more training days.
+    The broken scenarios are then made from that head too (damaged camera only for the SigLIP-base backbone)."""
     from src.data import s2_real
     from src.model import faults
     from src.model.head import embed, fit_head
@@ -166,11 +168,32 @@ def real_population(train_days: list[str], test_days: list[str], keep=None) -> P
         return embed([(r["day"], r["name"]) for r in part], "siglip-base", root=s2_real.OUT_DIR,
                      dataset="s2real")[0]
 
-    x_train, x_tuning, x_test = xs(train), xs(tuning), xs(test)
-    head = fit_head(x_train, [r["label"] for r in train], x_tuning, [r["label"] for r in tuning],
-                    verbose=False)
+    if recipe is None:
+        x_train, x_tuning, x_test = xs(train), xs(tuning), xs(test)
+        head = fit_head(x_train, [r["label"] for r in train], x_tuning, [r["label"] for r in tuning],
+                        verbose=False)
+
+        def head_chances(h, x):
+            return _head_chances(h, x, classes)
+    else:
+        from src.model.retrain import Recipe
+        r_ = Recipe(**recipe)
+        if r_.more_days:
+            train += [r for r in s2_real.load_chips(s2_real.EXTRA_DAYS) if keep is None or keep(r)]
+        head = r_.fit(train, tuning)
+        x_test = r_.inputs(test)
+
+        def head_chances(h, x):
+            P = faults.chances(h, x)
+            if r_.corrected:
+                P = P * r_.prior[None, :]
+                P /= P.sum(1, keepdims=True)
+            out = np.zeros((len(x), len(classes)))
+            for j, c in enumerate(h.classes_):
+                out[:, classes.index(c)] = P[:, j]
+            return out
     truth = np.array([classes.index(r["label"]) for r in test])
-    good = _head_chances(head, x_test, classes)
+    good = head_chances(head, x_test)
 
     from src.data.eurosat import dataset_dir
     from src.eval.sentinel_test import photo_sets
@@ -179,18 +202,21 @@ def real_population(train_days: list[str], test_days: list[str], keep=None) -> P
           for k, v in (("train", e_train), ("tuning", e_tuning))}
     eurosat_head = fit_head(xe["train"], [l for l, _ in e_train], xe["tuning"],
                             [l for l, _ in e_tuning], verbose=False)
-    camera = faults.mapped_chances(faults.chances(eurosat_head, x_test), list(eurosat_head.classes_),
+    x_rgb = x_test if recipe is None else xs(test)  # the EuroSAT head only knows SigLIP-base colour embeddings
+    camera = faults.mapped_chances(faults.chances(eurosat_head, x_rgb), list(eurosat_head.classes_),
                                    EUROSAT_TO_REAL, classes)
     labels = np.array([r["label"] for r in test])
     flipped, seed = faults.harmful_flips(head, x_test, labels, n_flips=8)
     swap = faults.silent_swap(good, truth, classes.index("Cropland"), classes.index("ShrubGrass"),
                               0.3, np.random.default_rng(7))
     scenarios = {"healthy head": good, "new place (EuroSAT head)": camera, "silent swap": swap,
-                 "bit flips": _head_chances(flipped, x_test, classes)}
+                 "bit flips": head_chances(flipped, x_test)}
     test_photos = [(r["day"], r["name"]) for r in test]
     for kind in ("blur", "noise"):
-        scenarios[f"damaged camera: {kind}"] = _head_chances(
-            head, faults.damaged_embeddings(test_photos, s2_real.OUT_DIR, "s2real", kind), classes)
+        if recipe is not None and recipe.get("backbone", "siglip-base") != "siglip-base":
+            continue  # damaged photos would need the big model on a GPU
+        damaged = faults.damaged_embeddings(test_photos, s2_real.OUT_DIR, "s2real", kind)
+        scenarios[f"damaged camera: {kind}"] = head_chances(head, damaged if recipe is None else r_.inputs(test, damaged))
     notes = {name: f"{np.mean(P.argmax(1) == truth):.1%} right" for name, P in scenarios.items()}
     notes["healthy head"] += f" (trained on {len(train):,} real photos of {train_days[0]}..{train_days[-2]})"
     notes["new place (EuroSAT head)"] += " (trained on EuroSAT, Europe; has no cloud/bare/snow class)"
@@ -350,7 +376,7 @@ def main() -> None:
         days, seeds = args.days, SEEDS
     else:
         from src.data import s2_real
-        all_days = sorted({r["day"] for r in s2_real.load_chips()})
+        all_days = s2_real.MAIN_DAYS  # 6-19 Oct (extra September days are for experiment 12 only)
         train_days, test_days = all_days[:-args.days], all_days[-args.days:]
         pop = real_population(train_days, test_days)
         rates = args.rates or [0.01, 0.02, 0.05, 0.1, 0.25]
@@ -368,7 +394,7 @@ def main() -> None:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
-    out = EXP / f"audit_summary_{args.data}_{stamp}.csv"
+    out = result(f"audit_summary_{args.data}_{stamp}.csv")
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(summary[0]))
         writer.writeheader()

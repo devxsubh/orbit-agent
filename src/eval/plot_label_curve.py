@@ -1,7 +1,7 @@
 """Chart: accuracy vs number of labelled training photos, frozen head vs tiny CNN.
 
-Run:  python -m src.eval.plot_label_curve       (uses the newest experiments/label_curve_*.csv)
-Saves docs/label_curve.png (dark, like docs/results.png).
+Run:  python -m src.eval.plot_label_curve       (uses the newest results/label_curve_*.csv)
+Saves docs/figures/label_curve.png (dark, like docs/figures/results.png).
 """
 import argparse
 import csv
@@ -12,9 +12,11 @@ import matplotlib
 matplotlib.use("Agg")  # no window, just save the file
 import matplotlib.pyplot as plt
 
+from src.paths import find
+
 ROOT = Path(__file__).resolve().parents[2]
 
-# Model name in the CSV -> (label, colour). Head = same yellow as agent v4 in docs/results.png.
+# Model name in the CSV -> (label, colour). Head = same yellow as agent v4 in docs/figures/results.png.
 # Colours checked with the dataviz palette validator on the black background.
 MODELS = {
     "head (frozen SigLIP-base)": ("Frozen SigLIP-base + head", "#c98500"),
@@ -28,10 +30,10 @@ TITLES = {"aid": "AID (sharp aerial photos, 30 classes)", "eurosat": "Sentinel-2
 def main() -> None:
     parser = argparse.ArgumentParser(description="Label-curve chart")
     parser.add_argument("--csv", help="label_curve_*.csv (default: newest)")
-    parser.add_argument("--out", default=str(ROOT / "docs" / "label_curve.png"))
+    parser.add_argument("--out", default=str(ROOT / "docs" / "figures" / "label_curve.png"))
     args = parser.parse_args()
 
-    path = Path(args.csv) if args.csv else max((ROOT / "experiments").glob("label_curve_2*.csv"))
+    path = Path(args.csv) if args.csv else max(find("label_curve_2*.csv"))
     rows = list(csv.DictReader(open(path)))
     plt.rcParams.update({
         "figure.facecolor": "black", "axes.facecolor": "black", "savefig.facecolor": "black",

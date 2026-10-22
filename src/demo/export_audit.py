@@ -54,7 +54,7 @@ def main() -> None:
     data = args.data or ("real" if s2_real.CHIPS_CSV.exists() else "eurosat")
     sat = load_satellite(tle_path=str(ROOT / "data" / "raw" / "tle" / "40697.tle"))
     if data == "real":
-        days_all = sorted({r["day"] for r in s2_real.load_chips()})
+        days_all = s2_real.MAIN_DAYS
         train, test = days_all[:-7], days_all[-7:]
         pop = real_population(train, test)
         rate, day_iter = 0.1, lambda: real_days(pop, args.station, 0.1, test, sat)

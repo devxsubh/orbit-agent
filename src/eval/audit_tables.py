@@ -4,7 +4,7 @@ Run from the orbit-agent folder (no models, a second):
     python -m src.eval.audit_tables
     python -m src.eval.audit_tables --rate 0.1
 
-Prints, ready to paste into docs/experiment_log.md or the paper:
+Prints, ready to paste into the notebooks or the paper:
 1. Can the ground trust the numbers? (EuroSAT replay, and the real Sentinel-2A replay if run)
 2. How much should a satellite check itself? (floor sweep)
 3. When does onboard AI beat compression? (R sweep)
@@ -22,12 +22,14 @@ from pathlib import Path
 
 import numpy as np
 
+from src.paths import find
+
 ROOT = Path(__file__).resolve().parents[2]
 MAIN = ["labels only", "triage (v4)", "raw random", "stratified", "audit, floor 0.5", "audit, self-check"]
 
 
 def newest(pattern: str) -> Path | None:
-    files = sorted(glob.glob(str(ROOT / "experiments" / pattern)), key=os.path.getmtime)
+    files = [str(f) for f in find(pattern)]
     return Path(files[-1]) if files else None
 
 
