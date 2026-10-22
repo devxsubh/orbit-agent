@@ -23,6 +23,7 @@ from src.data import aid
 from src.eval.run_agent import newest_aid_answers
 from src.model.confidence import MARGIN_SURE, check_photo, class_trust, is_unsure
 from src.model.vlm import MODEL, check_ready
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 FIELDS = ["file", "truth", "guess", "correct", "answer", "seconds", "photo_bytes", "label_bytes",
@@ -181,7 +182,7 @@ def evaluate(out: Path, repeats: int) -> None:
 def results_path(model: str = MODEL, repeats: int = 3, per_class: int = 10, skip: int = 10) -> Path:
     """Where a run's answers are saved. (Photos 11-20 keep the original file name.)"""
     tag = f"{model.replace(':', '-')}_r{repeats}_n{per_class}" + (f"_skip{skip}" if skip != 10 else "")
-    return ROOT / "experiments" / f"confidence_aid_test_{tag}.csv"
+    return result(f"confidence_aid_test_{tag}.csv")
 
 
 def main() -> None:

@@ -2,7 +2,7 @@
 
     python -m src.eval.plot_audit
 
-Draws (in docs/):
+Draws (in docs/figures/):
 - audit_honesty.png  every onboard model, healthy or broken: how far off each policy's numbers are,
                      and how often its 90% error bar held (src/eval/audit_test.py)
 - audit_floor.png    how much to spend on checking photos the model is sure about (src/eval/audit_floor.py)
@@ -23,14 +23,16 @@ from pathlib import Path
 
 import numpy as np
 
+from src.paths import find
+
 ROOT = Path(__file__).resolve().parents[2]
-DOCS = ROOT / "docs"
+DOCS = ROOT / "docs" / "figures"
 GREY, BLUE, YELLOW, MAGENTA = "#8b8b94", "#3987e5", "#c98500", "#d55181"
 INK, MUTED = "#e6e6e6", "#9a9a9a"
 
 
 def newest(pattern: str) -> Path:
-    files = sorted(glob.glob(str(ROOT / "experiments" / pattern)), key=os.path.getmtime)
+    files = [str(f) for f in find(pattern)]
     if not files:
         raise SystemExit(f"No {pattern} yet: run the experiment first.")
     return Path(files[-1])

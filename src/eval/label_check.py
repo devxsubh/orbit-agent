@@ -11,7 +11,7 @@ Run from the orbit-agent folder:
     python -m src.eval.label_check            # makes the sheets + an empty verdict column
     python -m src.eval.label_check --summary  # after filling in the verdicts
 
-Sheets: data/processed/label_check/sheet_<n>.png (not in git). Verdicts: experiments/label_check_real.csv,
+Sheets: data/processed/label_check/sheet_<n>.png (not in git). Verdicts: results/label_check_real.csv,
 column `by_eye` = agree / disagree / unsure, `seen_as` = what it looks like, `checked_by` = who looked.
 """
 from __future__ import annotations
@@ -25,10 +25,11 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from src.data import s2_real
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 SHEETS = ROOT / "data" / "processed" / "label_check"
-OUT = ROOT / "experiments" / "label_check_real.csv"
+OUT = result("label_check_real.csv")
 TEST_DAYS = [f"2026-10-{d}" for d in range(13, 20)]
 PER_CLASS, TOTAL, PER_SHEET, TILE = 20, 150, 25, 224
 

@@ -27,9 +27,9 @@ Metrics (all from sklearn, the usual definitions):
 Run from the orbit-agent folder (uses saved answers and embeddings; about 1 min):
     python -m src.eval.metrics_report
 
-Saves (in experiments/): metrics_summary_<time>.csv (one row per test set x model),
+Saves (in results/11_metrics/): metrics_summary_<time>.csv (one row per test set x model),
 metrics_per_class_<time>.csv, and confusion/<test set>__<model>.csv (rows = truth, columns = label given).
-Charts: docs/confusion_{real,eurosat,aid}.png.
+Charts: docs/figures/confusion_{real,eurosat,aid}.png.
 """
 from __future__ import annotations
 
@@ -40,9 +40,10 @@ from pathlib import Path
 
 import numpy as np
 
+from src.paths import result
+
 ROOT = Path(__file__).resolve().parents[2]
-EXP = ROOT / "experiments"
-DOCS = ROOT / "docs"
+DOCS = ROOT / "docs" / "figures"
 
 # (test set, model name, answers CSV, where its full chances come from or None)
 SAVED = [
@@ -210,7 +211,7 @@ def draw(panels, out: Path, title: str, cell_text: bool = True) -> None:
 
 def main() -> None:
     stamp = f"{datetime.now():%Y%m%d_%H%M}"
-    (EXP / "confusion").mkdir(exist_ok=True)
+    (result("confusion")).mkdir(exist_ok=True)
     summary, classes_rows, matrices = [], [], {}
 
     def record(test_set, model, truth, guess, classes, top_p=None, P=None):
@@ -219,7 +220,7 @@ def main() -> None:
         classes_rows.extend({"test_set": test_set, "model": model, **r} for r in per_class(truth, guess, classes))
         M, cols = confusion(truth, guess, classes)
         matrices[(test_set, model)] = (M, classes, cols)
-        with open(EXP / "confusion" / f"{test_set}__{slug(model)}.csv", "w", newline="") as f:
+        with open(result("confusion") / f"{test_set}__{slug(model)}.csv", "w", newline="") as f:
             w = csv.writer(f)
             w.writerow(["true \\ given"] + cols)
             for c, row in zip(classes, M):
@@ -227,7 +228,7 @@ def main() -> None:
 
     # 1. AID and EuroSAT: saved answers (+ full chances where they can be remade exactly)
     for test_set, model, name, how in SAVED:
-        rows = list(csv.DictReader(open(EXP / name)))
+        rows = list(csv.DictReader(open(result(name))))
         if test_set == "aid":
             from src.data.aid import LABELS
         else:
@@ -252,7 +253,7 @@ def main() -> None:
     from src.data import s2_real
     from src.eval.audit_test import real_population
 
-    days = sorted({r["day"] for r in s2_real.load_chips()})
+    days = s2_real.MAIN_DAYS
     pop = real_population(days[:-7], days[-7:])
     truth = [pop.classes[t] for t in pop.truth]
     for scenario, P in pop.scenarios.items():
@@ -260,12 +261,12 @@ def main() -> None:
         record("real", scenario, truth, guess, list(pop.classes), P.max(1), P)
 
     # ---- save ----
-    out = EXP / f"metrics_summary_{stamp}.csv"
+    out = result(f"metrics_summary_{stamp}.csv")
     with open(out, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(summary[0]))
         w.writeheader()
         w.writerows(summary)
-    out2 = EXP / f"metrics_per_class_{stamp}.csv"
+    out2 = result(f"metrics_per_class_{stamp}.csv")
     with open(out2, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(classes_rows[0]))
         w.writeheader()
@@ -311,8 +312,8 @@ def main() -> None:
     draw([("Small head (trained, 95.7% right)", *matrices[("aid", SAVED[0][1])]),
           ("Gemma 3 4B (no training)", *matrices[("aid", SAVED[4][1])])],
          DOCS / "confusion_aid.png", "AID final photos (300, 30 classes): which classes get mixed up")
-    print(f"\nSaved {out.relative_to(ROOT)}, {out2.relative_to(ROOT)}, experiments/confusion/*.csv, "
-          "docs/confusion_{real,eurosat,aid}.png")
+    print(f"\nSaved {out.relative_to(ROOT)}, {out2.relative_to(ROOT)}, results/11_metrics/confusion/*.csv, "
+          "docs/figures/confusion_{real,eurosat,aid}.png")
 
 
 if __name__ == "__main__":

@@ -16,8 +16,8 @@ Two versions:
 Run from the orbit-agent folder (needs the saved embeddings from src.model.head / sentinel_test):
     python -m src.model.zeroshot
 
-Saves experiments/zeroshot_{aid,eurosat}_siglip-base_final.csv in the head format, so it plugs in:
-    python -m src.eval.run_agent --head experiments/zeroshot_aid_siglip-base_final.csv
+Saves results/zeroshot_{aid,eurosat}_siglip-base_final.csv in the head format, so it plugs in:
+    python -m src.eval.run_agent --head results/zeroshot_aid_siglip-base_final.csv
 """
 from __future__ import annotations
 
@@ -29,6 +29,7 @@ from src.data import aid, eurosat
 from src.data.aid import AID_DIR, pick
 from src.eval.sentinel_test import photo_sets
 from src.model.head import BACKBONES, calibration_error, embed, write_answers
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE = "a satellite photo of {}."
@@ -95,7 +96,7 @@ def run(name: str, labels: dict[str, str], tuning, final, root: Path, dataset: s
         right = chances.argmax(1) == truth_final
         print(f"  {version:<18} {right.mean():.1%} right, calibration error "
               f"{calibration_error(chances.max(1), right):.3f}")
-    out = ROOT / "experiments" / f"zeroshot_{dataset}_siglip-base_final.csv"
+    out = result(f"zeroshot_{dataset}_siglip-base_final.csv")
     write_answers(out, final, classes, softmax(final_scores / t), float("nan"))
     print(f"  saved {out.relative_to(ROOT)} (temperature version)")
 

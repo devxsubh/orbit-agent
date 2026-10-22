@@ -49,7 +49,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT_DIR = ROOT / "data" / "raw" / "s2_real"
+OUT_DIR = Path(os.environ.get("S2_REAL_DIR", ROOT / "data" / "raw" / "s2_real"))  # S2_REAL_DIR: e.g. on Kaggle
 SLOTS_CSV = OUT_DIR / "slots.csv"
 CHIPS_CSV = OUT_DIR / "chips.csv"
 TLE_FILE = ROOT / "data" / "raw" / "tle" / "40697.tle"  # Sentinel-2A, saved copy (repeatable runs)
@@ -61,6 +61,10 @@ CHIP_PX = 224            # chip size in pixels (the frozen image model's own inp
 HALF_M = CHIP_PX * 10 / 2  # half the chip width in metres (10 m per pixel)
 SEARCH_MINUTES = 5       # how far from the slot time a real image may be
 FIRST_DAY = "2026-10-06"
+# The day split every experiment uses (fixed: never picked by position, since more days can be added)
+MAIN_DAYS = [f"2026-10-{d:02d}" for d in range(6, 20)]       # the main replay, 6-19 Oct
+TRAIN_DAYS, TUNING_DAY, TEST_DAYS = MAIN_DAYS[:6], MAIN_DAYS[6], MAIN_DAYS[7:]  # 6-11 / 12 / 13-19 Oct
+EXTRA_DAYS = [f"2026-09-{d}" for d in range(15, 31)] + [f"2026-10-0{d}" for d in range(1, 6)]  # training only
 
 # The 8 classes of the real replay, and plain words for printing
 CLASSES = ["Cloud", "Trees", "ShrubGrass", "Cropland", "BuiltUp", "Bare", "SnowIce", "Water"]

@@ -21,7 +21,8 @@ from pathlib import Path
 import numpy as np
 
 from src.agent.audit import audit
-from src.eval.audit_test import EXP, SEEDS, eurosat_population, run, summarise
+from src.eval.audit_test import SEEDS, eurosat_population, run, summarise
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 FLOORS = [0.02, 0.05, 0.1, 0.2, 0.35, 0.5, 0.75, 1.0]
@@ -41,7 +42,7 @@ def main() -> None:
     rows = run(pop, "eurosat", ["delhi", "bengaluru", "svalbard"], [args.rate], args.days, SEEDS,
                list(pop.scenarios), methods)
     summary = summarise(rows)
-    out = EXP / f"audit_floor_{datetime.now():%Y%m%d_%H%M}.csv"
+    out = result(f"audit_floor_{datetime.now():%Y%m%d_%H%M}.csv")
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(summary[0]))
         writer.writeheader()

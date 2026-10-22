@@ -2,7 +2,7 @@
 
 Run from the orbit-agent folder:
     python -m src.eval.sentinel_test                 (small head, siglip-base; about 10 min first time)
-    python -m src.eval.sentinel_test --head-csv experiments/cnn_eurosat_..._final.csv
+    python -m src.eval.sentinel_test --head-csv results/cnn_eurosat_..._final.csv
                                                      (test 3 only, with another model's answers)
 
 Three tests:
@@ -35,9 +35,10 @@ from src.model.head import aid_head, calibration_error, embed, fit_head, save_an
 from src.model.vlm import labels_mentioned
 from src.orbit.contact_windows import load_satellite
 from src.orbit.replay import build_replay
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
-GEMMA = ROOT / "experiments" / "baseline_eurosat_gemma3-4b_v1_448px_20261018_1528.csv"  # 29%
+GEMMA = result("baseline_eurosat_gemma3-4b_v1_448px_20261018_1528.csv")  # 29%
 
 # Test 1: AID class -> EuroSAT class. Fixed BEFORE looking at any result.
 # EuroSAT "PermanentCrop" (orchards) and "HerbaceousVegetation" have no AID match.
@@ -99,7 +100,7 @@ def test_aid_head(backbone: str, final, x_final, gemma_files: set[str]) -> None:
         ok = right[np.array(truths) == label].mean()
         print(f"  {label:<21} {ok:>4.0%} right | says " + ", ".join(f"{a} {n}x" for a, n in said))
 
-    out = ROOT / "experiments" / f"sentinel_test1_aid_head_{backbone}.csv"
+    out = result(f"sentinel_test1_aid_head_{backbone}.csv")
     with open(out, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["file", "truth", "aid_guess", "guess", "correct"])
@@ -118,7 +119,7 @@ def test_new_head(backbone, final, x_final, tuning, x_tuning, train, x_train, ge
     print(f"FINAL 1,000 photos:  {right.mean():.1%} right, calibration error "
           f"{calibration_error(chances, right):.3f}")
     print(f"Gemma's 100 photos:  {right[gemma].mean():.1%}  (Gemma 3 itself: 29%)")
-    out = ROOT / "experiments" / f"head_eurosat_{backbone}_n{len(train) // len(CLASSES)}_final.csv"
+    out = result(f"head_eurosat_{backbone}_n{len(train) // len(CLASSES)}_final.csv")
     save_answers(out, final, head, x_final, float("nan"))
     print(f"Saved {out.relative_to(ROOT)}")
     return head
@@ -164,7 +165,7 @@ def test_replay(final, answers: dict[str, tuple[str, float]], rates: list[float]
         for name in policies:
             print(f"{name:<14}" + "".join(f"{cell:>13}" for cell in results[name]))
 
-    out = ROOT / "experiments" / f"sentinel_test3_replay_{tag}_{datetime.now():%Y%m%d_%H%M}.csv"
+    out = result(f"sentinel_test3_replay_{tag}_{datetime.now():%Y%m%d_%H%M}.csv")
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer.writeheader()

@@ -11,8 +11,8 @@ data/processed/*
 papers/**/*.pdf
 
 # Experiment outputs (keep summaries, skip heavy files)
-experiments/**/*.npy
-experiments/**/*.tif
+results/**/*.npy
+results/**/*.tif
 
 # Mac / editors
 .DS_Store
@@ -25,5 +25,12 @@ demo/thumbs/
 # Website built by python -m src.demo.build_site (GitHub Pages)
 site/
 
-# Downloads from Kaggle runs (logs + embeddings; the CSVs are copied to experiments/)
-experiments/kaggle/
+# Downloads from Kaggle runs (logs + embeddings; the CSVs are copied into results/<experiment>/)
+results/kaggle_downloads/
+
+# Old PDFs (kept locally, not in git)
+archive/*.pdf
+
+# Report outputs (rebuild with: python report/build.py)
+report/report.html
+report/*.pdf

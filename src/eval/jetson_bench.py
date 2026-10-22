@@ -13,7 +13,7 @@ Run from the orbit-agent folder:
     python -m src.eval.jetson_bench                  # 200 photos, batch 1 and 8
     python -m src.eval.jetson_bench --photos 50      # quicker
 
-Saves experiments/bench_<computer>_<time>.csv.
+Saves results/bench_<computer>_<time>.csv.
 """
 from __future__ import annotations
 
@@ -32,6 +32,7 @@ import numpy as np
 
 from src.agent.audit import audit, label_bytes
 from src.model.head import BACKBONES, best_device
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -158,7 +159,7 @@ def main() -> None:
     total = rows[1]["ms_per_photo"] + rows[2]["ms_per_photo"] + rows[3]["ms_per_photo"]
     print(f"\nAll onboard steps (batch 8): {total:.1f} ms per photo; a photo is taken every 30 s in the replay.")
 
-    out = ROOT / "experiments" / f"bench_{re.sub(r'[^A-Za-z0-9]+', '-', computer)}_{datetime.now():%Y%m%d_%H%M}.csv"
+    out = result(f"bench_{re.sub(r'[^A-Za-z0-9]+', '-', computer)}_{datetime.now():%Y%m%d_%H%M}.csv")
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["computer", "device", "idle_watts"] + list(rows[0]))
         writer.writeheader()

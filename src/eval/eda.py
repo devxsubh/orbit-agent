@@ -17,9 +17,9 @@ For the real replay (the one the main results use) it also:
 Run from the orbit-agent folder (uses saved photos and embeddings; about 2 min):
     python -m src.eval.eda
 
-Saves experiments/eda_real_chips.csv (one row per real photo with its flags), eda_summary_<time>.csv
+Saves results/eda_real_chips.csv (one row per real photo with its flags), eda_summary_<time>.csv
 (every number printed), eda_sensitivity_real_<time>.csv, eda_audit_clean_<time>.csv (the audit on all vs
-clean photos), and charts docs/eda_{classes,quality,sensitivity,map}.png.
+clean photos), and charts docs/figures/eda_{classes,quality,sensitivity,map}.png.
 """
 from __future__ import annotations
 
@@ -33,8 +33,10 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+from src.paths import result
+
 ROOT = Path(__file__).resolve().parents[2]
-EXP, DOCS = ROOT / "experiments", ROOT / "docs"
+DOCS = ROOT / "docs" / "figures"
 BLUE, YELLOW, GREY = "#3987e5", "#c98500", "#8b8b94"  # validated set used by the other charts
 INK, MUTED = "#e6e6e6", "#9a9a9a"
 
@@ -59,7 +61,7 @@ def real_table():
     """One row per real photo with its numbers and data-problem flags."""
     from src.data import s2_real
 
-    rows = s2_real.load_chips()
+    rows = s2_real.load_chips(s2_real.MAIN_DAYS)  # the main replay, 6-19 Oct
     C = s2_real.CLASSES
     out = []
     for r in rows:
@@ -144,7 +146,7 @@ def real_eda(stamp: str) -> dict:
 
     print("\n================ Real Sentinel-2A replay (6-19 Oct 2026) ================")
     table, C = real_table()
-    days = sorted({r["day"] for r in table})
+    days = s2_real.MAIN_DAYS
     train_days, tuning_day, test_days = days[:6], days[6], days[7:]
     x = embed([(r["day"], r["name"]) for r in table], "siglip-base", root=s2_real.OUT_DIR, dataset="s2real")[0]
     labels = np.array([r["label"] for r in table])
@@ -188,7 +190,7 @@ def real_eda(stamp: str) -> dict:
     suspect = agree <= 0.2
     note("real", "photos whose label at most 2 of 10 neighbours share (suspect)", f"{suspect.sum()} ({suspect.mean():.1%})",
          f"{(suspect & ~clean).sum()} of them are flagged")
-    eye = {r["name"]: r for r in csv.DictReader(open(EXP / "label_check_real.csv"))} if (EXP / "label_check_real.csv").exists() else {}
+    eye = {r["name"]: r for r in csv.DictReader(open(result("label_check_real.csv")))} if (result("label_check_real.csv")).exists() else {}
     if eye:
         by_name = {r["name"]: i for i, r in enumerate(table)}
         for verdict in ("agree", "unsure", "disagree"):
@@ -271,19 +273,19 @@ def real_eda(stamp: str) -> dict:
                 a = [r for r in audit_rows if r["scenario"] == scenario and r["rate_mbps"] == rate and r["method"] == method]
                 cells.append(f"{method}: " + " -> ".join(f"{r['rmse_pts']:.1f}/{r['bar_held']:.0%}" for r in a))
             print(f"  {scenario}, {rate:g} Mbps (all -> clean, error pts / bar held): " + " | ".join(cells))
-    with open(EXP / f"eda_audit_clean_{stamp}.csv", "w", newline="") as f:
+    with open(result(f"eda_audit_clean_{stamp}.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(audit_rows[0]))
         w.writeheader()
         w.writerows(audit_rows)
 
     # charts
     charts(table, C, labels, is_train, is_test, quality, variants)
-    with open(EXP / "eda_real_chips.csv", "w", newline="") as f:
+    with open(result("eda_real_chips.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(table[0]) + ["neighbour_agreement"])
         w.writeheader()
         for r, a in zip(table, agree):
             w.writerow({**r, "neighbour_agreement": round(float(a), 2)})
-    with open(EXP / f"eda_sensitivity_real_{stamp}.csv", "w", newline="") as f:
+    with open(result(f"eda_sensitivity_real_{stamp}.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(variants[0]))
         w.writeheader()
         w.writerows(variants)
@@ -324,7 +326,7 @@ def eurosat_eda() -> None:
     note("eurosat", "brightness by class (0-255)", ", ".join(f"{c} {np.mean([b for _, b, *_ in v]):.0f}" for c, v in stats.items()))
     dark = {c: sum(b < 15 for _, b, *_ in v) for c, v in stats.items()}
     note("eurosat", "very dark photos (mean < 15)", sum(dark.values()), ", ".join(f"{c} {n}" for c, n in dark.items() if n))
-    coords = EXP.parent / "data" / "processed" / "eurosat_coords.csv"
+    coords = ROOT / "data" / "processed" / "eurosat_coords.csv"
     if coords.exists():
         rows = list(csv.DictReader(open(coords)))
         lat, lon = np.array([float(r["lat"]) for r in rows]), np.array([float(r["lon"]) for r in rows])
@@ -451,13 +453,13 @@ def main() -> None:
     real_eda(stamp)
     eurosat_eda()
     aid_eda()
-    out = EXP / f"eda_summary_{stamp}.csv"
+    out = result(f"eda_summary_{stamp}.csv")
     with open(out, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["section", "what", "value", "detail"])
         w.writeheader()
         w.writerows(found)
-    print(f"\nSaved {out.relative_to(ROOT)}, experiments/eda_real_chips.csv, experiments/eda_sensitivity_real_{stamp}.csv, "
-          "docs/eda_{classes,quality,sensitivity,map}.png")
+    print(f"\nSaved {out.relative_to(ROOT)}, results/eda_real_chips.csv, results/eda_sensitivity_real_{stamp}.csv, "
+          "docs/figures/eda_{classes,quality,sensitivity,map}.png")
 
 
 if __name__ == "__main__":

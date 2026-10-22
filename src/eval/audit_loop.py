@@ -28,9 +28,10 @@ from pathlib import Path
 import numpy as np
 
 from src.agent.audit import POLICIES, audit
-from src.eval.audit_test import (EXP, LEVEL, SEEDS, TILE, eurosat_days, eurosat_population,
+from src.eval.audit_test import (LEVEL, SEEDS, TILE, eurosat_days, eurosat_population,
                                  real_days, real_population)
 from src.eval.estimate import combine, estimate, interval
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 C = 300      # head setting (no tuning photos exist at launch; 300 was picked on EuroSAT tuning photos)
@@ -116,7 +117,7 @@ def main() -> None:
         pop, days, rate = eurosat_population(), args.days, args.rate or 0.25
     else:
         from src.data import s2_real
-        all_days = sorted({r["day"] for r in s2_real.load_chips()})
+        all_days = s2_real.MAIN_DAYS
         pop = real_population(all_days[:-args.days], all_days[-args.days:])
         days, rate = all_days[-args.days:], args.rate or 0.05
     print(f"\nLaunch head: {pop.launch} ({pop.notes[pop.launch]}). "
@@ -146,7 +147,7 @@ def main() -> None:
               f"worst error {max(r['worst_error_pts'] for r in mine):5.1f}   "
               f"mean ± {np.mean([r['halfwidth_pts'] for r in mine]):.2f}")
 
-    out = EXP / f"audit_loop_{args.data}_{rate:g}mbps_{datetime.now():%Y%m%d_%H%M}.csv"
+    out = result(f"audit_loop_{args.data}_{rate:g}mbps_{datetime.now():%Y%m%d_%H%M}.csv")
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer.writeheader()

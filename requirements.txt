@@ -17,3 +17,9 @@ transformers
 sentencepiece   # SigLIP's text side (zero-shot rival, src/model/zeroshot.py)
 scikit-learn
 kaggle          # run training on a free Kaggle GPU (src/cloud/kaggle_run.py)
+
+# Notebooks and the report
+pandas
+nbconvert       # run the notebooks: jupyter nbconvert --execute --inplace notebooks/01_data.ipynb
+ipykernel
+markdown        # report/build.py
