@@ -92,7 +92,7 @@ smart compression (FOOL paper).
 | `src/demo/export.py` + `demo/index.html` | Demo: export runs replay + agent once → `demo/data.js` + `demo/thumbs/` (gitignored); index.html plays it back (map with night side, timeline, stacked score bars, photo card, queue). Rebuilt minimal on 19 Oct (plain words, IBM Plex fonts, `docs/logo.svg`); tested with puppeteer (all controls, phone width). 20 Oct: default is now **real Sentinel-2 photos** (`--photos sentinel`, EuroSAT final 1,000, head `head_eurosat_siglip-base_n100_final.csv`, agent v4 only, photos counted as 280 KB); `--photos aid` for AID (any agent). Page text comes from `D.model`, `D.model_about`, `D.photo_about`. `build_site.py` gets EuroSAT thumbs from Zenodo (names with a capital = EuroSAT) | **done, works** |
 | `src/demo/build_site.py` + `.github/workflows/pages.yml` | Website for GitHub Pages: copies demo page + saved `data.js` + logo into `site/` (gitignored), remakes the thumbnails from Hugging Face (retries 3x). No model or replay. Workflow runs on push to `main`. Live at https://devxsubh.github.io/orbit-agent/ | **done, tested locally** (clean copy, all files load) |
 | `src/eval/plot_results.py` | Draws `docs/results.png` (dark) from the final agents CSV (20 Oct: `..._20261020_0947.csv`, with agent v4 small head). Colour-blind-safe set checked with the dataviz validator; v4 = thick yellow, its wrong-label numbers written on the bars | **done, works** |
-| `docs/` | README images (`results.png`, `demo_pass.png`, `demo_end.png`) + `experiment_log.md` (full history, moved out of README on 19 Oct) | done |
+| `docs/` | README images (`audit_*.png`, `label_curve.png`, `demo_pass.png`; `results.png` + `replay_bars.png` kept for history, not in the README) + `experiment_log.md` (full history, moved out of README on 19 Oct) | done |
 | `src/eval/confidence_test.py` | Runs the signals on 300 NEW AID photos (11-20/class), resumable; prints AUROC + wrong caught at 10/20/30% flagged; saves CSV + chart. `--evaluate-only` | **done, works** (quick 30-photo run done) |
 | `src/model/head.py` | Agent v4 "decision head" (Jev-style): frozen image model (`--backbone siglip` 400M / `siglip-base` 90M / `dinov2`) makes embeddings (cached in `data/processed/`), logistic regression trained on AID photos 31+ (`--train-per-class`, 0 = all 9,100), C picked on tuning by log-loss. Saves `experiments/head_aid_<backbone>_{tuning,final}.csv`; `run_agent` adds agent v4 when one exists | **done, works** (quick Mac test) |
 | `src/eval/sentinel_test.py` | Agent v4 on real Sentinel-2 (EuroSAT): test 1 AID head as is (30 AID classes matched to 10 EuroSAT via `MATCH`, fixed before testing), test 2 new head on EuroSAT (final 1,000 incl. Gemma's 100, tuning 500, train 100/class), test 3 replay (photos counted as 280 KB) | **done, works** |
@@ -288,7 +288,10 @@ python -m src.demo.export_audit && open demo/audit.html  # second demo page (?mo
   stay ~67% even 50 km apart, so the old "88.4% without twins" was a selection effect, not a leak.
 - **Git:** PR #3 (audited downlink, branch `audited-downlink`) and the self-check PR #4 (branch `self-check-audit`,
   stacked on #3) wait for Subham to merge (auto-merge was blocked: merges need his review). GitHub Pages deploys from main.
-  The 22 Oct fixes are on branch `fix-100-flaws` (stacked on `self-check-audit`).
+  PRs #3-#5 merged by Subham (22 Oct).
+- **Old per-photo score removed (22 Oct, Subham's choice):** gone from README and `demo/index.html` (score card -> link card
+  to audit.html; `demo_end.png` deleted). Code (`run_agent`, `replay_bars`, `plot_results`) and the experiment log keep it
+  as history. Don't bring it back as a headline: it saturates at ~100% and compress-to-fit ties it.
 
 ## Key decisions
 - Satellites: Sentinel-2A (NORAD 40697), Sentinel-2B (42063). Default ground station: Delhi.

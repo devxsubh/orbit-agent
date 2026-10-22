@@ -108,29 +108,6 @@
   .meter { position: relative; height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
   .meter > div { position: absolute; inset: 0 auto 0 0; transition: width .2s; }
 
-  /* Score: one stacked bar per policy. Green = correct, red = wrong, amber = not sure,
-     striped grey = nothing arrived (the rest of the bar). */
-  .policy { margin-bottom: 12px; }
-  .policy-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; font-size: 13px; }
-  .policy-head .who { color: var(--text-2); }
-  .policy-head .who.agent { color: var(--text); font-weight: 600; }
-  .policy-head .pct { font-size: 15px; font-weight: 600; }
-  .stack { height: 12px; border-radius: 3px; display: flex;
-    background: repeating-linear-gradient(135deg, #2a2e35 0 4px, #1c1f24 4px 8px); overflow: hidden; }
-  .stack.empty { background: var(--surface-2); }
-  .stack i { height: 100%; transition: width .2s; }
-  .stack .ok { background: var(--sure); } .stack .bad { background: var(--wrong); } .stack .uns { background: var(--unsure); }
-  .stack.raw .ok { background: var(--raw); }
-  table.score { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 12.5px; }
-  table.score th { text-align: right; font: 600 10.5px var(--mono); color: var(--muted); padding: 0 0 6px;
-    text-transform: uppercase; letter-spacing: .8px; }
-  table.score td { padding: 5px 0; border-top: 1px solid var(--border); text-align: right; color: var(--text-2); }
-  table.score th:first-child, table.score td:first-child { text-align: left; }
-  table.score td.agent { color: var(--text); font-weight: 600; }
-  .key { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; }
-  .key.ok { background: linear-gradient(90deg, var(--raw) 50%, var(--sure) 50%); }
-  .key.bad { background: var(--wrong); } .key.uns { background: var(--unsure); }
-  .key.lost { background: repeating-linear-gradient(135deg, #3a3f47 0 2px, #1c1f24 2px 4px); }
   .note { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
   .note b { color: var(--text-2); }
   .note a { color: var(--sat); }
@@ -253,28 +230,10 @@
 
   <aside>
     <section class="card">
-      <h2>Score so far <span id="score-rate">--</span></h2>
-      <div class="policy">
-        <div class="policy-head"><span class="who">Send all raw</span><span class="pct num" id="raw-pct">--</span></div>
-        <div class="stack raw empty" id="raw-stack"><i class="ok"></i><i class="bad"></i><i class="uns"></i></div>
-      </div>
-      <div class="policy">
-        <div class="policy-head"><span class="who agent" id="agent-name">Agent</span><span class="pct num" id="ag-pct" style="color: var(--sure)">--</span></div>
-        <div class="stack empty" id="ag-stack"><i class="ok"></i><i class="bad"></i><i class="uns"></i></div>
-      </div>
-      <table class="score">
-        <thead><tr><th>Photos</th><th>Raw</th><th id="agent-col">Agent</th></tr></thead>
-        <tbody>
-          <tr><td><i class="key ok"></i>Correct info</td><td class="num" id="raw-ok">0</td><td class="num agent" id="ag-ok">0</td></tr>
-          <tr><td><i class="key bad"></i>Wrong label</td><td class="num" id="raw-bad">0</td><td class="num agent" id="ag-bad">0</td></tr>
-          <tr id="row-uns"><td><i class="key uns"></i>Marked not sure</td><td class="num" id="raw-uns">0</td><td class="num agent" id="ag-uns">0</td></tr>
-          <tr><td><i class="key lost"></i>Nothing arrived</td><td class="num" id="raw-lost">0</td><td class="num agent" id="ag-lost">0</td></tr>
-        </tbody>
-      </table>
-      <p class="note" id="score-note">--</p>
-      <p class="note"><b>Careful:</b> this score counts a 50-byte label the same as a full photo, so any good
-        labeller gets close to 100%, and so would plain JPEG compression at this speed.
-        <a href="audit.html">The fairer test: can the ground trust the numbers?</a></p>
+      <h2>Can the ground trust the numbers?</h2>
+      <p class="note" style="margin-top: 0">This page shows what the satellite sees and decides. Whether the
+        ground's numbers can be trusted, even when the onboard model is broken, is on the second page.
+        <a href="audit.html">Open the audit page</a></p>
     </section>
 
     <section class="card">
@@ -335,7 +294,6 @@ const leftOver = photos.filter(p => p.window === -1);                      // ta
 const DAY = D.hours * 3600;
 const START = new Date(D.start_utc).getTime();
 const label = name => D.labels[name] || name;
-const agentName = D.agent.replace("agent", "Agent");
 // Agent decision code -> [chip text, chip style]
 const DECISION = {
   F: ["Full photo", "full"], L: ["Label only", "sure"], U: ["Label, marked not sure", "unsure"],
@@ -344,10 +302,7 @@ const DECISION = {
 };
 
 // ---- Fixed text ----
-$("agent-name").textContent = agentName;
 if (D.model) $("step-model").textContent = D.model;
-$("agent-col").textContent = agentName.replace("Agent ", "");
-$("score-rate").textContent = `same ${D.rate_mbps} Mbps downlink`;
 $("lg-station").textContent = D.station + " ground station";
 $("tl-station").textContent = D.station;
 $("about").innerHTML =
@@ -356,9 +311,6 @@ $("about").innerHTML =
   `${D.photo_about || `each photo is an AID aerial photo (${D.photo_kb} KB each), not the real view at that spot`}. ` +
   `The model's answers are real ` +
   `(${D.model_about || "gemma3:4b on a laptop"}, ${D.photo_set}).`;
-// Hide the "not sure" score row when the agent never sent a not-sure label (e.g. budget covers them all)
-const anyUnsure = passes.some(p => p.agent_unsure + p.raw_unsure > 0);
-$("row-uns").hidden = !anyUnsure;
 
 // ---- Time ----
 let t = 0, playing = false, lastFrame = null;
@@ -577,43 +529,6 @@ function showPhoto(last) {
     `${right ? "✓ right" : "✗ wrong"}</span>. ${effect}`;
 }
 
-// Score at time t: passes that are over count fully, the pass in progress counts in part
-function score() {
-  const s = { n: 0 };
-  for (const k of ["correct", "wrong", "unsure", "mb"]) s["raw_" + k] = s["agent_" + k] = 0;
-  passes.forEach((p, i) => {
-    const f = t >= p.end ? 1 : t > p.start ? (t - p.start) / (p.end - p.start) : 0;
-    if (!f) return;
-    s.n += f * perPass[i].length;
-    for (const k in s) if (k !== "n") s[k] += f * p[k];
-  });
-  return s;
-}
-
-function showScore() {
-  const s = score(), n = s.n, r = Math.round;
-  for (const [who, id] of [["raw", "raw"], ["agent", "ag"]]) {
-    const ok = s[who + "_correct"], bad = s[who + "_wrong"], uns = s[who + "_unsure"];
-    const lost = Math.max(0, n - ok - bad - uns);
-    const stack = $(id + "-stack");
-    stack.classList.toggle("empty", !n);
-    const [iOk, iBad, iUns] = stack.children;
-    iOk.style.width = (n ? ok / n * 100 : 0) + "%";
-    iBad.style.width = (n ? bad / n * 100 : 0) + "%";
-    iUns.style.width = (n ? uns / n * 100 : 0) + "%";
-    $(id + "-pct").textContent = n ? r(ok / n * 100) + "%" : "--";
-    $(id + "-ok").textContent = r(ok).toLocaleString();
-    $(id + "-bad").textContent = r(bad).toLocaleString();
-    $(id + "-uns").textContent = r(uns).toLocaleString();
-    $(id + "-lost").textContent = r(lost).toLocaleString();
-  }
-  $("score-note").innerHTML = n
-    ? `Of <b>${r(n).toLocaleString()}</b> photos due at passes so far, <b>${r(s.agent_correct).toLocaleString()}</b> ` +
-      `reached the ground correctly with ${agentName}, <b>${r(s.raw_correct).toLocaleString()}</b> with raw sending. ` +
-      `Both sent ${r(s.agent_mb)} MB.`
-    : `The score starts at the first pass (${clockText(passes[0].start)} IST). Until then nothing has reached the ground.`;
-}
-
 function showQueue(live) {
   const ni = nextPass();
   const kb = D.photo_kb;
@@ -684,7 +599,6 @@ function updatePanel() {
   steps.forEach((s, i) => s.classList.toggle("on", live >= 0 ? i === 3 : Boolean(capturing) && i < 3));
 
   showPhoto(last);
-  showScore();
   showQueue(live);
 }
 

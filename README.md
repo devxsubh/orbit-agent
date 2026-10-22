@@ -13,7 +13,8 @@ Frozen SigLIP + a 30 KB head onboard · random checks with known chances · real
 > holds only **9-27%** of the time. With the same bytes, the **self-checking audit** is 5-6 points off and its
 > 90% error bar holds **97-98%** of the time.
 
-Why not just "send the photos the model is unsure about" (agent v4, below)? Because then the photos it is
+Why not just "send the photos the model is unsure about" (the usual onboard-AI design, and this project's
+agent v4)? Because then the photos it is
 **sure** about are never checked. When the model is wrong in a **confident** way (a new camera, a radiation
 bit flip, damaged optics), nothing on the ground can see it. Full reasoning:
 [research review](notes/research_review_2026-10-20.md).
@@ -83,85 +84,55 @@ station for a few minutes per pass. Sentinel-2A can talk to Delhi only **1.4% of
 (2 passes a day, about 10 minutes each). So most photos are dropped or arrive late.
 
 ## The idea
-Put a small AI model on the satellite. For each photo it gives a short label, like "airport" or
-"farmland", and the chance that the label is right. Labels are tiny (about 50 bytes vs 280 KB for a photo), so all of them fit.
-The agent then decides what else to send:
-
-- **Sure about the label?** The label is enough.
-- **Not sure?** Mark the label "unsure", so nobody on the ground trusts a guess.
-- **Budget left?** Send full photos where they add the most, starting with the ones the model is least sure about.
+Put a small AI model on the satellite. For each photo it gives a short label, like "farmland" or "cloud",
+and a chance for every class. Labels are tiny (about 60 bytes vs 300 KB for a photo), so all of them fit.
+Then the rest of each pass goes to **checks**: full photos picked at random with known chances (unsure
+photos more likely, every photo keeps a minimum chance). On the ground, the checked photos show how wrong
+the labels are, so the ground can correct the day's numbers and say how sure it is.
 
 ## How it works
 
 ```
- Real orbit data ──> Photo queue ──> Label + chance it's right ──> Agent ──> Ground pass
-   (TLE, Delhi)      (every 30 s)    v4: decision head (26 ms)     decides     (budget =
-                                     v1-v3: Gemma 3 4B (7.5 s)     what goes   pass time
-                                                                   down        x speed)
+ Real orbit data ──> Photo queue ──> Label + chances ──> Random checks ──> Ground pass ──> Class shares
+   (TLE, Delhi)      (every 30 s)    (frozen SigLIP       with known         (budget =       + 90% error bar
+                                      + 30 KB head)       chances            pass time        (corrected with
+                                                                             x speed)          the checks)
 ```
 
 1. **Orbit** (`src/orbit/`): real orbit data for Sentinel-2A gives the exact times the satellite can talk to Delhi.
-2. **Photo replay** (`src/orbit/replay.py`): a photo every 30 s in daylight gives 1,088 photos (304 MB) per day.
-   At 1 Mbps, raw sending fits only 60% of them.
-3. **Decision head, agent v4** (`src/model/head.py`): the idea comes from "decision models" like
-   TypeSafe's Jev. The answers are fixed in advance (30 classes), and one quick pass gives a chance
-   for every answer, with no text generated. A **frozen** SigLIP image model turns each photo into
-   numbers, and a small classifier trained on top picks the class. 26 ms per photo on a MacBook.
-4. **Gemma 3, agents v1-v3** (`src/model/vlm.py`, `src/model/confidence.py`): Gemma 3 4B (Ollama, 4-bit)
-   labels each photo with no training, about 7.5 s per photo. Its chance of being right comes from
-   a free signal (classes it often mixes up) plus whether 3 shuffled asks agree.
-5. **Agent** (`src/agent/decide.py`): plain label if the chance is at least 50%, else an "unsure" label.
-   Leftover budget goes to full photos, best value per byte first (v3 and v4 plan the same way).
-6. **Score** (`src/eval/`): correct info, wrong labels and MB sent, always reported together.
+2. **Photos** (`src/data/s2_real.py`): what Sentinel-2A really photographed at each 30 s slot of its real path
+   (6-19 Oct 2026), or EuroSAT photos as stand-ins (`src/eval/audit_test.py`).
+3. **Labeller** (`src/model/head.py`): a **frozen** SigLIP image model turns each photo into numbers, and a
+   small classifier (30 KB) gives a chance for every class. 26 ms per photo on a MacBook.
+4. **Audit** (`src/agent/audit.py`): labels for every photo, then random checks with known chances, exactly
+   as many as fit in the pass.
+5. **Ground** (`src/eval/estimate.py`): the day's class shares, corrected with the checks, with a 90% error bar.
+   **Self-check** (`src/agent/self_check.py`): if the checks show the model is broken, switch to safe mode.
+6. **Score** (`src/eval/audit_test.py`): how far the class shares are from the truth (points), and how often
+   the 90% error bar really held.
 
-## Older result: the per-photo score (it saturates)
+## Onboard labellers: how often is each one right?
 
-> **Read this with care.** This score counts a 50-byte label the same as a 280 KB photo, so any good
-> labeller gets close to 100%. **Plain compression with no onboard AI** (re-save every photo as a smaller
-> JPEG until the pass fits) also scores 100% / 0 wrong at every speed in this table, because here the data
-> taken is only 1.4-6.7x what a pass can send (`python -m src.eval.compress_test`). So the table compares
-> *labellers*; it does not show that onboard AI is needed. That is what the audit section above tests.
+Same 300 final test photos (AID, 30 classes). This is accuracy only; the audit above is what makes the
+ground's numbers trustworthy whichever labeller is on board.
 
-Same day of orbit (1,088 photos), same budget for every policy. Each cell: **correct info / wrong labels**.
+| Labeller | Image model | Training photos | Labelled right | Calibration error (0 = perfect) | Speed |
+|---|---|---|---|---|---|
+| **Small head** (used on the real replay and in the demo) | SigLIP-base, 90M | 600 | 95.7% | 0.036 | 26 ms/photo (MacBook M2) |
+| Big head | SigLIP so400m, 400M | 9,100 | **98.3%** | 0.021 | 420 ms/photo (Kaggle T4) |
+| Tiny CNN, MobileNetV3-Small | 1.5M, all trained | 600 | 85.0% | 0.049 | ~1/300 of the small head's compute |
+| SigLIP-base zero-shot (class names only) | 90M | 0 | 66.3% | 0.048 | 26 ms/photo |
+| Gemma 3 4B (no training, like NAVI-Orbital) | 4B | 0 | 63% | | 7,500 ms/photo (MacBook) |
 
-| Downlink | Send all raw | Caption every photo | Agent v1 (rules) | Agent v2 | Agent v3-lite (1 call) | Agent v3 (3 calls) | **Agent v4** (decision head) |
-|---|---|---|---|---|---|---|---|
-| 0.25 Mbps | 15% / 0 | 63% / 404 | 70% / 331 | 58% / 132 | 65% / 204 | 68% / 192 | **100% / 3** |
-| 0.5 Mbps | 30% / 0 | 63% / 404 | 74% / 282 | 72% / 129 | 78% / 167 | 79% / 164 | **100% / 0** |
-| **1 Mbps** | **60% / 0** | 63% / 404 | 84% / 173 | 89% / 85 | 91% / 99 | 92% / 90 | **100% / 0** |
-| 2 Mbps | 89% / 0 | 63% / 404 | 95% / 51 | 97% / 29 | 99% / 7 | 99% / 6 | **100% / 0** |
-| 4 Mbps | 100% / 0 | 63% / 404 | 100% / 0 | 100% / 0 | 100% / 0 | 100% / 0 | 100% / 0 |
-| *any* | *Compress to fit: 100% / 0* | | | | | | |
-
-Files: `experiments/agents_delhi_final_equal_20261019_1229.csv` (v1-v3),
-`experiments/agents_delhi_final_equal_20261020_0947.csv` (v4, small head)
-
-**A fair zero-shot rival for Gemma** (`python -m src.model.zeroshot`, 22 Oct): SigLIP-base with class
-names only ("a satellite photo of forest."), no training photos, same frozen model as the head. AID:
-**66.3%** (Gemma 3: 63%), Sentinel-2: **40.8%** (Gemma 3: 29%), at 26 ms instead of 7.5 s. As agent v4's
-labeller at 1 Mbps: 94% / 67 wrong (Gemma agent v3: 92% / 90).
-
-**Does this hold on other days and stations?** Yes. Over 7 days x 3 ground stations x 3 photo orders
-(21 runs per station), at 1 Mbps over Delhi: raw 58.0 ± 5.3%, agent v3 91.1 ± 3.0% (83 ± 14 wrong),
-frozen head 100.0 ± 0.0% (0 wrong). The order of the policies never changes. At Svalbard (polar, 12 passes
-a day) raw already gets 83%, so the agent helps most at low-latitude stations like Delhi and Bengaluru.
-
-![Error bars over 7 days, 3 stations and 3 photo orders](docs/replay_bars.png)
-
-**Two decision heads** (same 300 final test photos):
-
-| Head | Image model | Training photos | Labelled right | Calibration error (0 = perfect) | Speed | Replay at 1 Mbps |
-|---|---|---|---|---|---|---|
-| **Small** (used above and in the demo) | SigLIP-base, 90M | 600 | 95.7% | 0.036 | 26 ms/photo (MacBook M2) | 100% / 0 wrong |
-| Big | SigLIP so400m, 400M | 9,100 | **98.3%** | 0.021 | 420 ms/photo (Kaggle T4) | 100% / 3 wrong |
-| *Tiny CNN, MobileNetV3-Small (baseline)* | *1.5M, all trained* | *600* | *85.0%* | *0.049* | *~1/300 of the small head's compute* | *99% / 12 wrong* |
-| *SigLIP-base zero-shot (class names only)* | *90M* | *0* | *66.3%* | *0.048* | *26 ms/photo* | *94% / 67 wrong* |
-| *Gemma 3 4B, for comparison* | | *0* | *63%* | | *7,500 ms/photo (MacBook)* | *92% / 90 wrong* |
+**A fair zero-shot rival for Gemma** (`python -m src.model.zeroshot`): SigLIP-base with class names only
+("a satellite photo of forest."), no training photos. AID: **66.3%** (Gemma 3: 63%), Sentinel-2: **40.8%**
+(Gemma 3: 29%), at 26 ms instead of 7.5 s.
 
 The big head was trained on a free Kaggle GPU (`python -m src.cloud.kaggle_run`).
-Files: `experiments/head_aid_siglip-base_n20_final.csv`, `experiments/head_aid_siglip_final.csv`
+Files: `experiments/head_aid_siglip-base_n20_final.csv`, `experiments/head_aid_siglip_final.csv`,
+`experiments/zeroshot_aid_siglip-base_final.csv`
 
-**How well can the agent tell when the model is wrong?** (300 final test photos; the model got 63% right)
+**How well can Gemma's answers tell when Gemma is wrong?** (300 final test photos; Gemma got 63% right)
 
 | Signal | Score (AUROC: 0.5 = guessing, 1 = perfect) | Wrong answers caught when flagging 10% / 20% / 30% | Extra cost |
 |---|---|---|---|
@@ -176,7 +147,7 @@ File: `experiments/confidence_aid_test_gemma3-4b_r3_n10_skip20.csv` (+ `.png` ch
 - **On real Sentinel-2 photos, the head must be trained on Sentinel-2 photos.** The AID-trained head
   gets only 33% on EuroSAT (Sentinel-2), about the same as Gemma (29%): it calls most blurry 64 px photos
   "bare land". Retraining just the small classifier on 1,000 Sentinel-2 photos (same frozen image model)
-  gives **92.8%**, and agent v4 then gets 100% of the info down at 1 Mbps vs 69% for Gemma's agent v1.
+  gives **92.8%**.
   The big image model (400M) gets 94.8% there: 2 points more for about 15-20x the compute.
 - **How many labelled photos are needed?** With only 5 per class, the frozen head gets 90% (AID) and
   79% (Sentinel-2); the tiny CNN gets 68% and 44%. On Sentinel-2 they meet at about 50 per class,
@@ -189,26 +160,15 @@ File: `experiments/confidence_aid_test_gemma3-4b_r3_n10_skip20.csv` (+ `.png` ch
   with 100 per class (head: 92.8%), at about 1/300 of the compute. The frozen head wins on label
   efficiency and on swapping missions with a 30 KB update; the CNN wins on compute.
   Details: [experiment log](docs/experiment_log.md#agent-v4-on-real-sentinel-2-photos-eurosat-20-oct-2026).
-- **A trained decision head beats a big model with no training.** Agent v4's head gets 95.7% right
-  vs Gemma's 63%, about 300x faster, and its chances are honest. All 13 photos it got wrong were among
-  its least-sure 20%, so the agent sent those as full photos and no wrong label reached the ground.
-- **More accurate is not the same as more trustworthy.** The big head gets 98.3% right, but all 5 of
-  its mistakes were over 96% sure, so a few wrong labels got through. The small head is the better
-  deal for a satellite: a quarter of the size, much faster, and fewer wrong labels sent.
-- **The agent helps most when the downlink is tight.** At 1 Mbps: 92% correct info vs 60% for raw.
-  When everything fits (4 Mbps), all policies are equal.
-- **Knowing when to say "not sure" is what makes v3 better.** It sends about half the wrong labels of
-  v1 and still gets more correct info through.
-- **The best "not sure" signal is free.** "Is this a class the model often gets wrong?" needs no extra
-  model call. v3-lite (free signal only) is almost as good as v3 (91% vs 92% at 1 Mbps).
-  That matters on a satellite with little power.
-- **The model is overconfident.** Its token probability is about 100% even when it's wrong, so that
-  signal is weak. Asking 3 times and checking agreement works better.
-- **The chances are honest.** When v3 says about 75%, 77% of those labels are right; at about 94%, 91% are right.
-- **At very tight budgets there is a trade-off.** At 0.25 Mbps, v1 gets a bit more correct info
-  (70% vs 68%), but v3 sends 42% fewer wrong labels. Which is better depends on how costly a wrong label is.
-- **"Correct per MB" alone is misleading.** Captioning every photo scores very high per MB because it
-  sends almost nothing, but 404 of its labels are wrong. So we always report correct, wrong and MB together.
+- **A trained head beats a big model with no training.** The small head gets 95.7% right vs Gemma's 63%,
+  about 300x faster, and its chances are honest: all 13 photos it got wrong were among its least-sure 20%.
+- **More accurate is not the same as more trustworthy.** The big head gets 98.3% right, but all 5 of its
+  mistakes were over 96% sure. A rule like "check only the unsure photos" can never catch those. That is
+  why the audit keeps a minimum chance of checking every photo.
+- **The best "not sure" signal for Gemma is free.** "Is this a class the model often gets wrong?" needs
+  no extra model call and scores best (AUROC 0.77). That matters on a satellite with little power.
+- **Gemma is overconfident.** Its token probability is about 100% even when it's wrong, so that signal
+  is weak. Asking 3 times and checking agreement works better.
 
 ## Fair testing
 The AID photos are split into three sets that never mix:
@@ -217,11 +177,11 @@ The AID photos are split into three sets that never mix:
 |---|---|
 | 1–10 | First baseline. Signal B learns which classes the model confuses here |
 | 11–20 | Tuning: agent v3 learns its weights here; the v4 head picks its setting here |
-| **21–30** | **Final test.** Only used once per model, for the results above |
-| 31+ | Training photos for the v4 head only (Gemma never used them) |
+| **21–30** | **Final test.** Only used once per model, for the accuracy results above |
+| 31+ | Training photos for the heads only (Gemma never used them) |
 
 **Overfitting check** (`python -m src.eval.overfit_check`): on 900 AID and 1,000 Sentinel-2 photos that
-no model, setting or decision ever touched, agent v4's head scores the same as on the final test
+no model, setting or decision ever touched, the small head scores the same as on the final test
 (AID 94.4% vs 94.3%, Sentinel-2 92.5% vs 92.7%). One honest caveat: the AID number moves between about
 94% and 96% with tiny details (95% range ±2.5 points).
 
@@ -231,23 +191,16 @@ same scenes, so we feared a leak. Each photo's real coordinates (`src/data/euros
 92.5% ± 0.3%) vs 92.7% with the random split. **No leak.** Even 50 km apart, two thirds of test photos have
 a "near-twin" in training, so near-twins were just typical photos, not neighbours.
 
-All photos get the same size (`--sizes equal`), because real satellite tiles are all the same size.
-With real JPEG sizes, the agent could look better just by picking photos that compress well.
-
 ## Honest limits
-- **Photos are stand-ins in the main results.** Time, position and budget are real, but each photo is a
-  random photo, not the real view at that spot: AID aerial photos in the main results, real Sentinel-2
-  photos (EuroSAT) in the Sentinel-2 test and the demo. **Fixed for the audit work:** `src/data/s2_real.py`
-  replays what Sentinel-2A really photographed at each slot (6-19 Oct 2026, real clouds), labelled by its
+- **The EuroSAT replay uses stand-ins.** Time, position and budget are real, but each photo slot gets a
+  random EuroSAT photo with ASSUMED India-like class shares. The real replay (`src/data/s2_real.py`) fixes
+  this: what Sentinel-2A really photographed at each slot (6-19 Oct 2026, real clouds), labelled by its
   cloud map and ESA WorldCover 2021 (a reference map with its own errors).
-- **The old score can't fail, and plain compression ties it** in the main replay's range (see the audit
-  section). The class-share product with honest error bars is the fairer test.
 - **The real replay's labels come from maps, not people.** Eye check of 150 real photos
   (`python -m src.eval.label_check`, 22 Oct, done by an AI from contact sheets, so a person should re-check
   `experiments/label_check_real.csv`): where the eye could tell, **119 of 123 labels were right (97%)**. In
   RGB, snow and cloud can't be told apart (12 of 20 "SnowIce" photos), and half-cloudy photos get their land class.
-- **Agent v4 learned from labelled AID photos; Gemma saw none.** v4 is "supervised", v1-v3 are
-  "zero-shot", so compare them with that in mind. The fair zero-shot rival (SigLIP with class names) gets 66%
+- **The heads learned from labelled photos; Gemma saw none.** Compare them with that in mind. The fair zero-shot rival (SigLIP with class names) gets 66%
   on AID, a little above Gemma. On real Sentinel-2 photos (EuroSAT) the AID head drops
   to 33%; it needs about 1,000 labelled photos from the same kind of camera to reach 92.8%.
 - **Gemma's accuracy is 61–65%** on AID's 30 classes, vs 88.16% for NASA JPL's NAVI-Orbital. NAVI cut AID
@@ -256,16 +209,16 @@ With real JPEG sizes, the agent could look better just by picking photos that co
 - **Laptop, not flight hardware.** Speeds are from a MacBook M2 and a Kaggle T4. Speed and power
   on a Jetson Orin are not measured yet. The script is ready: `python -m src.eval.jetson_bench` (image model
   + head + audit sampler; reads the Jetson's power meter). MacBook M2: 19 ms per photo at batch 8.
-- **Scoring assumes a full photo always counts as correct** (people on the ground can look at it).
-- **One satellite.** Results hold over 7 days, 3 ground stations and 3 photo orders (error bars above).
+- **A checked photo is assumed to be read right on the ground** (by a person, or a stronger ground model).
+- **One satellite.** Results hold over 7 days, 3 ground stations and 3 photo orders.
   Skipping cloudy photos and sending crops are not built yet.
 
 ## Demo
 A web page that plays back one day of the satellite, using **real Sentinel-2 photos** (the EuroSAT
-final test photos) and agent v4 with the head trained on Sentinel-2. It shows the older per-photo score
-(it saturates, see above); the second page, `demo/audit.html`, shows the audit.
+final test photos) and the small head trained on Sentinel-2: what the satellite sees, labels and queues.
+The second page, `demo/audit.html`, shows the audit: can the ground trust its numbers?
 
-![Demo with real Sentinel-2 photos: the first pass over Delhi, the queue and the score so far](docs/demo_pass.png)
+![Demo with real Sentinel-2 photos: the satellite's path, the latest photo and its label, and the queue for the next pass over Delhi](docs/demo_pass.png)
 
 Live: **https://devxsubh.github.io/orbit-agent/**
 
@@ -280,8 +233,6 @@ What you see:
 - **Map:** the satellite's path, the night side (no photos there), and the zone where it can talk to Delhi.
   Each photo is a dot: filled green = sure, amber ring = not sure.
 - **Timeline:** drag it, or click a pass time (orange) to jump there.
-- **Score so far:** one bar for "send all raw" and one for agent v4, on the same downlink.
-  Green = correct info, red = wrong label, striped = nothing arrived.
 - **Latest photo:** what the model says, the chance it's right (50% line = sure from here),
   the agent's choice, and the real answer (for checking only).
 - **Waiting on the satellite:** photos queued for the next pass, and how many fit as full photos.
@@ -291,10 +242,7 @@ Keys: Space = play/pause, N = next pass, ← → = 1 minute. Passes play slower 
 `index.html?t=60000` opens at a set time (seconds after the start).
 
 **Colours mean the same thing everywhere on the demo page:** blue = satellite and downlink,
-orange = ground station and passes, green = sure or correct, amber = not sure, red = wrong, grey = send all raw.
-The results chart uses its own colour-blind-safe set, with grey still meaning "send all raw".
-
-![End of the day with Sentinel-2 photos, per-photo score: agent v4 100% vs raw 60% (compression would also reach 100%)](docs/demo_end.png)
+orange = ground station and passes, green = sure or correct, amber = not sure, red = wrong.
 
 ## Run it yourself
 Tested on macOS (Apple Silicon, 8 GB). Needs Python 3.10+, and [Ollama](https://ollama.com) with a Gemma 3 model (`ollama pull gemma3:4b`).
@@ -310,10 +258,7 @@ python -m src.data.aid --skip 20        # download the final test photos 21-30
 python -m src.eval.confidence_test --skip 20   # model + "not sure" signals (~2 h, resumable)
 python -m src.model.head --backbone siglip-base --train-per-class 20   # agent v4 head (~15 min first time)
 python -m src.cloud.kaggle_run          # or: big head on a free Kaggle GPU (push your code first)
-python -m src.eval.run_agent            # all policies at 0.25-4 Mbps (seconds, no model calls)
-python -m src.eval.sentinel_test        # agent v4 on real Sentinel-2 photos (EuroSAT, ~10 min)
-python -m src.eval.replay_bars --plot   # error bars: 7 days x 3 stations x 3 photo orders (40 s)
-python -m src.eval.plot_results         # redraws docs/results.png
+python -m src.eval.sentinel_test        # the head on real Sentinel-2 photos (EuroSAT, ~10 min)
 
 # Audited downlink (20 Oct)
 python -m src.data.s2_real              # what Sentinel-2A really photographed, 6-19 Oct (~1-2 h, resumable)
@@ -345,7 +290,7 @@ More commands (EuroSAT, prompts, image sizes, replay options) are in [docs/exper
 | `src/model/` | Gemma 3 via Ollama, the "not sure" signals, and the v4 decision head |
 | `src/agent/` | The agents (v1-v4), the baselines, and the audited downlink (`audit.py`) |
 | `src/cloud/` + `kaggle/` | Runs the decision-head training on a free Kaggle GPU |
-| `src/eval/` | Baseline tests, agent runs, scoring, charts |
+| `src/eval/` | Accuracy tests, the audit experiments, error bars, charts |
 | `src/demo/` + `demo/` | Demo export and the playback page |
 | `experiments/` | Every run's results (CSV + charts) |
 | `docs/` | README images and the full experiment log |
@@ -356,8 +301,7 @@ More commands (EuroSAT, prompts, image sizes, replay options) are in [docs/exper
 - [x] Model running locally: EuroSAT (about 30%, photos too small) and AID (61–65%)
 - [x] Photo replay along the real orbit
 - [x] Agent v1 (rules), v2 and v3 ("not sure"-aware)
-- [x] Final test on unseen photos: **v3 92% vs raw 60% at 1 Mbps**
-- [x] Agent v4 with a decision head (frozen SigLIP + small classifier): 100% / 0 wrong on the per-photo score (saturates; compression ties it)
+- [x] Decision head (frozen SigLIP + small classifier): 95.7% right on unseen AID photos
 - [x] Test the decision head on real Sentinel-2 photos (EuroSAT): AID head 33%, retrained head **92.8%**
 - [x] Demo page
 - [x] Check NAVI's setup to compare accuracy fairly (their 18 classes: our Gemma 76.5%); fair zero-shot rival (SigLIP 66%)
