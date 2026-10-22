@@ -917,3 +917,8 @@ go to final / tuning / training (40/20/40% of blocks), same sizes as before (100
 **6. Jetson script** (`python -m src.eval.jetson_bench`): times image model (batch 1 and 8) + head + audit sampler,
 reads the Jetson's power meter (`tegrastats`, VDD_IN) for energy per photo. MacBook M2 (MPS, no power meter):
 26.9 ms/photo at batch 1, 19.1 at batch 8; head 0.004 ms; sampler 0.001 ms per photo. `experiments/bench_Darwin-arm64_20261022_1320.csv`.
+
+**7. Old per-photo score removed from the README and demo** (Subham's choice, 22 Oct). It saturates (~100%
+for any good labeller, and compress-to-fit ties it), so it can't tell methods apart. The README now reports
+the audit as the result and the labellers' accuracy separately; the demo's score card is now a link to the
+audit page. The code and the numbers above stay as history.
