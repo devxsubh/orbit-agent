@@ -20,7 +20,9 @@ Frozen SigLIP + a 30 KB head onboard · random checks with known chances · test
   are 10-20 points off and their 90% error bars hold only 9-27% of the time. The self-checking audit is 5-6
   points off and its bars hold 97-98%, with the same bytes.
 
-<!-- EXP12-SUMMARY -->
+- **Data first, then retraining.** The data analysis showed the real photos are uneven and that snow looks like
+  cloud in colour. Retraining with 3 more weeks of real photos and infrared bands lifted balanced accuracy on
+  real photos from 67% to 73%, and made the audit's numbers about 25% more precise at 0.25 Mbps (little change at the tightest budget). The audit stays honest either way.
 
 ## How to read this project
 
@@ -47,9 +49,31 @@ Frozen SigLIP + a 30 KB head onboard · random checks with known chances · test
 | 9 | 20 Oct | Can random checks keep the ground's numbers honest? | Yes, on real photos, whatever the model; plus a self-check |
 | 10 | 22 Oct | Fair rivals, guaranteed error bars, hardware? | SigLIP zero-shot 66% > Gemma 63%; betting bars hold everywhere; 19 ms per photo |
 | 11 | 22 Oct | Beyond accuracy? | Real photos: 82% accurate but 67% balanced; snow is never found |
-| 12 | 22 Oct | Retrain using what the data showed? | <!-- EXP12-ROW --> |
+| 12 | 22 Oct | Retrain using what the data showed? | More real training days + infrared: balanced accuracy 67% -> 73% (75% with a 4.5x bigger model); the audit's error -25% at 0.25 Mbps |
 
-<!-- EXP12-SECTION -->
+## Retraining with what the data showed (experiment 12)
+
+The data analysis ([01_data](notebooks/01_data.ipynb)) found three fixable problems: rare classes drowned by
+cloud, snow and cloud identical in colour, and too few rare-class training photos. Each fix was tried one at a
+time, on the same test days, with every setting picked on training data only:
+
+| Real Sentinel-2A photos, test 13-19 Oct | Accuracy | Balanced accuracy | Macro-F1 | Snow found | Calibration error |
+|---|---|---|---|---|---|
+| Baseline (experiments 9-11) | 82.3% | 67.0% | 66.4% | 0% | 0.029 |
+| + balanced classes | 63.9% | 69.1% | 62.4% | 50% | 0.165 |
+| + chances corrected to the real class mix | 81.1% | 64.8% | 64.9% | 0% | 0.050 |
+| + infrared bands | 82.2% | 67.0% | 68.1% | 7% | 0.052 |
+| **+ 3 more weeks of training photos** | **84.7%** | **73.1%** | **75.9%** | **32%** | **0.012** |
+| + bigger image model (SigLIP 400M, Kaggle) | 85.6% | 74.7% | 77.5% | 32% | 0.012 |
+
+![Retraining with what the data showed](docs/figures/retrain.png)
+
+- **More real data is the biggest win.** Balancing alone only made the model *guess* rare classes more (and its
+  chances dishonest); infrared helps a little (thick ice clouds also look snow-like in infrared).
+- **A better onboard model makes the audit more precise** (0.25 Mbps: 1.10 -> 0.83 points off, bars still hold
+  96%), **but not honest by itself:** labels alone still mislead (bar held 87%), and with a broken model labels
+  and triage still fail (9% and 20%).
+
 
 ## Honest limits
 

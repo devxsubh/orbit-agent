@@ -8,7 +8,7 @@ Report, 22 October 2026 · Subham Mahapatra · [github.com/devxsubh/orbit-agent]
 > **full photos picked at random with known chances**; the ground corrects the labels with them and gets honest
 > error bars whatever the onboard model is like. On what Sentinel-2A really photographed (13-19 Oct 2026), with
 > a broken model, labels alone were 10-20 points off and their error bars held 9-27% of the time; the
-> self-checking audit was 5-6 points off and held 97-98%. <!-- EXP12-SHORT -->
+> self-checking audit was 5-6 points off and held 97-98%. Retraining with what the data analysis found (3 more weeks of real photos, infrared bands) lifted the onboard model's balanced accuracy from 67% to 73% and made the audit about 25% more precise at 0.25 Mbps; it stays honest either way.
 
 ## 1. The problem
 
@@ -67,7 +67,7 @@ Full detail, code and every table: `notebooks/02_experiments.ipynb`. Results: `r
 | 9 | 20 Oct | Do random checks keep the ground honest? | Yes, on real photos, healthy or broken model; a self-check adds a safe mode |
 | 10 | 22 Oct | Fair rivals, guaranteed error bars, hardware? | SigLIP with class names only beats Gemma (66% vs 63%); betting error bars hold for every class; 19 ms per photo |
 | 11 | 22 Oct | Beyond accuracy? | Real photos: 82% accurate, 67% balanced; snow never found |
-| 12 | 22 Oct | Retrain using what the data showed? | <!-- EXP12-ROW --> |
+| 12 | 22 Oct | Retrain using what the data showed? | More real training days + infrared: balanced accuracy 67% -> 73% (75% with a 4.5x bigger model); the audit's error -25% at 0.25 Mbps |
 
 **Experiments 1-7: labelling photos.** The project started as "an agent that labels photos and sends the unsure
 ones". Gemma 3, the model NASA flew, was 61-65% right on sharp aerial photos with no training and too slow
@@ -114,7 +114,36 @@ photos) and random raw photos, with a healthy model and five broken ones.
 - **A new camera learns from its own checks:** checked photos become training labels; from 46% to 83% right in
   4 days.
 
-<!-- EXP12-SECTION -->
+## 5. Retraining with what the data showed
+
+The data analysis pointed at three fixable problems, so each fix was tried one at a time (experiment 12), with
+the test days fixed and every setting picked on training data only. The recipe for the audit was chosen before
+seeing any result.
+
+| Real Sentinel-2A photos, test 13-19 Oct | Accuracy | Balanced accuracy | Macro-F1 | Snow found | Calibration error |
+|---|---|---|---|---|---|
+| Baseline (experiments 9-11) | 82.3% | 67.0% | 66.4% | 0% | 0.029 |
+| + balanced classes | 63.9% | 69.1% | 62.4% | 50% | 0.165 |
+| + chances corrected to the real class mix | 81.1% | 64.8% | 64.9% | 0% | 0.050 |
+| + infrared bands | 82.2% | 67.0% | 68.1% | 7% | 0.052 |
+| **+ 3 more weeks of training photos** | **84.7%** | **73.1%** | **75.9%** | **32%** | **0.012** |
+| + bigger image model (SigLIP 400M, Kaggle) | 85.6% | 74.7% | 77.5% | 32% | 0.012 |
+
+[[FIGURE retrain.png | Figure 4. Accuracy and balanced accuracy (with 95% range) of each recipe on real Sentinel-2A photos, 13-19 Oct.]]
+
+- **More real data is the biggest win:** 3 more weeks (1,525 -> 7,158 training photos, snow 15 -> 120) lift balanced
+  accuracy by 3.5 points on their own; with the infrared bands, by 6 (to 73.1%), and snow is found for the first time (32%).
+- **Balancing alone is a trap:** it finds half the snow only by guessing rare classes far more often (accuracy 64%,
+  dishonest chances); corrected back to the real class mix, the gain disappears.
+- **Infrared helps a little, not a lot:** thick ice clouds also look snow-like in short-wave infrared.
+- **A bigger image model adds little** (+1.6 points for 4.5x the weights): better data beats a bigger model.
+- **Effect on the main result:** with the retrained head, the self-checking audit's error at 0.25 Mbps falls from
+  1.10 to 0.83 points (bars still hold 96%), and triage's from 0.67 to 0.45. Labels alone still mislead (bar held
+  87%), and with a broken model labels and triage still fail. Retraining improves the model; the audit keeps the
+  numbers honest.
+
+[[FIGURE confusion_retrained.png | Figure 5. Confusion matrices on real photos before and after retraining. Rows = true class, each row scaled to 100%.]]
+
 
 ## 6. Limits
 

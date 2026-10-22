@@ -93,7 +93,11 @@ An AI on a satellite decides what to send down to Earth, and the ground can chec
 10. **Rivals (22 Oct):** SigLIP zero-shot AID 66.3% / EuroSAT 40.8% (> Gemma); betting bars hold for every class
     (1.1-2.4x wider); 19 ms/photo on the Mac.
 11. **Beyond accuracy (22 Oct):** real healthy head 82.3% acc, 67.0% balanced (classes >= 5 test photos); snow never predicted.
-12. **Retraining (22 Oct):** <!-- EXP12-CLAUDE -->
+12. **Retraining (22 Oct):** recipes on real replay (test 13-19 Oct): baseline 82.3% / 67.0% bal; + balanced 63.9 / 69.1
+    (dishonest, ECE 0.17); + prior correction 81.1 / 64.8; + infrared (6 features, weight 0.1 by CV) 82.2 / 67.0;
+    **+ 3 more weeks (7,158 train, snow 120) 84.7 / 73.1, snow 32%, ECE 0.012**; + SigLIP 400M (Kaggle) 85.6 / 74.7.
+    Ice clouds look snow-like in SWIR (301/1,615 cloud photos), latitude didn't help. Audit with recipe 5 (fixed
+    beforehand): self-check 0.25 Mbps 1.10 -> 0.83 pts, bars 96%; labels still 87%; broken models still fail.
 
 **Old per-photo score:** removed from README/demo (it saturates; compression ties it). Don't bring it back as a headline.
 
