@@ -10,6 +10,7 @@ What the data showed, and the fix tried for each:
      (src/data/s2_bands.py: snow index NDSI, vegetation index NDVI, SWIR brightness).
 - Only 15 snow and 3 built-up photos in the training days
   -> "more days": 3 more weeks of what Sentinel-2A photographed (15 Sep - 5 Oct) for training.
+  The infrared weight is picked by cross-validation on the training photos (the tuning day has no snow).
 - Is the 90M image model the limit?
   -> "big model": SigLIP 400M embeddings (made on a Kaggle GPU: python -m src.model.retrain --embed siglip).
 
@@ -102,8 +103,6 @@ class Recipe:
         return P
 
     def fit(self, train, tuning, verbose=False):
-        from sklearn.metrics import log_loss
-
         weight = "balanced" if self.balanced else None
         y_train, y_tuning = [r["label"] for r in train], [r["label"] for r in tuning]
         labels = sorted(set(y_train))
@@ -112,17 +111,36 @@ class Recipe:
             return fit_head(self.inputs(train), y_train, self.inputs(tuning), y_tuning, verbose, weight)
         ir = infrared(train)
         self.ir_mean, self.ir_sd = ir.mean(0), ir.std(0) + 1e-9
-        best = None
-        for w in IR_WEIGHTS:  # how much the infrared numbers count: picked on the tuning day, never the test
-            self.ir_weight = w
-            head = fit_head(self.inputs(train), y_train, self.inputs(tuning), y_tuning, False, weight)
-            loss = log_loss(y_tuning, self.chances(head, self.inputs(tuning)), labels=head.classes_)
-            if best is None or loss < best[0]:
-                best = (loss, w, head)
-        self.ir_weight = best[1]
+        # How much the infrared numbers count: picked by 5-fold cross-validation on the TRAINING photos
+        # (the tuning day has no snow photos, so it can't show what infrared does for snow). Never the test days.
+        self.ir_weight = self._pick_ir_weight(train, weight)
         if verbose:
-            print(f"  infrared weight {best[1]} (lowest tuning log-loss)")
-        return best[2]
+            print(f"  infrared weight {self.ir_weight} (5-fold cross-validation on the training photos)")
+        return fit_head(self.inputs(train), y_train, self.inputs(tuning), y_tuning, False, weight)
+
+    def _pick_ir_weight(self, train, weight) -> float:
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.metrics import log_loss
+        from sklearn.model_selection import StratifiedKFold
+
+        y = np.array([r["label"] for r in train])
+        x_rgb = embeddings(train, self.backbone)
+        ir = (infrared(train) - self.ir_mean) / self.ir_sd
+        folds = StratifiedKFold(5, shuffle=True, random_state=0)
+        losses = {}
+        for w in IR_WEIGHTS:
+            x = np.hstack([x_rgb, w * ir])
+            loss = []
+            for fit_idx, val_idx in folds.split(x, y):
+                model = LogisticRegression(C=100, max_iter=3000, class_weight=weight).fit(x[fit_idx], y[fit_idx])
+                P = model.predict_proba(x[val_idx])
+                if self.corrected:
+                    prior = np.array([np.mean(y[fit_idx] == c) for c in model.classes_])
+                    P = P * prior[None, :]
+                    P /= P.sum(1, keepdims=True)
+                loss.append(log_loss(y[val_idx], P, labels=model.classes_))
+            losses[w] = np.mean(loss)
+        return min(losses, key=losses.get)
 
 
 def scores(truth, guess, P=None, classes=None, top_p=None) -> dict:

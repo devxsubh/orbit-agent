@@ -4,7 +4,7 @@
 Backup: IEEE GRSL (letter), or an ML-for-remote-sensing workshop.
 The first outline (`paper/outline.md`, calibrated triage) stays as is: its agent v4 is now the main **baseline**.
 
-Every number below comes from a file in `experiments/` and is explained in `docs/experiment_log.md`
+Every number below comes from a file in `results/` (one folder per experiment) and is explained in `archive/experiment_log.md`
 (section "Audited downlink", 20 Oct 2026). **TODO** = still to do.
 
 ---
@@ -127,14 +127,14 @@ File: `audit_summary_real_20261020_2023.csv`. Typical error (points) / 90% bar h
   new place 1.85 / 95%.
 - Self-check costs: EuroSAT damaged camera +0.1-0.3 points; 0.02 Mbps false switches (swap 9.1 vs 5.7).
 
-### Figure 1: `docs/audit_honesty_real.png` (Table 2 as a dot plot; `docs/audit_honesty.png` for Table 1).
-### Figure (closed loop): `docs/audit_loop_real.png`: from zero labels, 46% -> 83% right in 4 days (215 checked
+### Figure 1: `docs/figures/audit_honesty_real.png` (Table 2 as a dot plot; `docs/figures/audit_honesty.png` for Table 1).
+### Figure (closed loop): `docs/figures/audit_loop_real.png`: from zero labels, 46% -> 83% right in 4 days (215 checked
   photos), bars held 96%; launch head + triage held 12%.
-### Figure 2: `docs/audit_rsweep.png`: when onboard AI beats compression (same bytes, same human checks)
+### Figure 2: `docs/figures/audit_rsweep.png`: when onboard AI beats compression (same bytes, same human checks)
 - Compress-to-fit is exact for statistics up to R ~ 14 and shows every photo up to R ~ 6: onboard AI adds
   nothing there (honest negative result). At R = 140-560 the thumbnail audit's bar is ±0.4-1.1 vs ±1.8-4.5.
-### Figure 3 (if space): `docs/audit_floor.png` (floor 0.5: healthy error 0.47 vs 0.41-0.50 at lower floors;
-  bit flips: bars hold 95% vs 86-90% at floor <= 0.1) or `docs/audit_loop.png`.
+### Figure 3 (if space): `docs/figures/audit_floor.png` (floor 0.5: healthy error 0.47 vs 0.41-0.50 at lower floors;
+  bit flips: bars hold 95% vs 86-90% at floor <= 0.1) or `docs/figures/audit_loop.png`.
 
 ## 5. Discussion and limits (0.3 page)
 - **Two kinds of error bar (22 Oct).** "scaled+1" (bell-curve approximation) holds 94-98% on average with the
@@ -145,7 +145,7 @@ File: `audit_summary_real_20261020_2023.csv`. Typical error (points) / 90% bar h
   Assumption: checks treated as draws with replacement (ours are without, less spread -> errs wide).
   Files: `audit_summary_{eurosat,real}_20261022_13*.csv` (older columns identical to the 20 Oct run).
 - Truth for real photos = WorldCover 2021 + cloud map (2021 vs 2026). **Eye check (22 Oct, 150 photos, by an
-  AI from contact sheets; `experiments/label_check_real.csv`):** 119/123 right where the eye could tell (97%);
+  AI from contact sheets; `results/label_check_real.csv`):** 119/123 right where the eye could tell (97%);
   can't tell: snow vs cloud in RGB (12 of 20 SnowIce), half-cloudy photos labelled as land (8). Wrong: 4.
   TODO: a person re-checks; SWIR band would separate snow from cloud.
 - People reading checked photos (or thumbnails) is assumed correct; at scale a stronger ground model could do it.
@@ -167,6 +167,6 @@ File: `audit_summary_real_20261020_2023.csv`. Typical error (points) / 90% bar h
 3. Jetson Orin Nano: time and energy of encoder + head + sampler. Script ready: `python -m src.eval.jetson_bench`
    (Mac M2: 19 ms/photo at batch 8, power n/a). Needs the board.
 3a. ~~EuroSAT split by location~~ **done** (22 Oct): 10 km blocks 93.4% ± 0.6% vs random 92.7%: no leak.
-3b. ~~Truth labels by eye~~ first pass done by an AI (97%); a person should re-check `experiments/label_check_real.csv`.
+3b. ~~Truth labels by eye~~ first pass done by an AI (97%); a person should re-check `results/label_check_real.csv`.
 4. Write sections 3-4 first (IEEE template), then 1, 2, 5, 6, abstract last.
 5. Ask a statistician (or teacher) to check Section 3.3.
