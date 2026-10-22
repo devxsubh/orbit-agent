@@ -1,0 +1,49 @@
+photos,scenario,rate_mbps,method,rmse_pts,bar_held
+all photos,healthy head,0.05,labels only,1.89,0.804
+all photos,healthy head,0.05,triage (v4),1.54,0.839
+all photos,healthy head,0.05,raw random,5.89,0.964
+all photos,healthy head,0.05,"audit, self-check",3.56,0.982
+all photos,healthy head,0.25,labels only,1.89,0.804
+all photos,healthy head,0.25,triage (v4),0.67,0.958
+all photos,healthy head,0.25,raw random,2.22,0.917
+all photos,healthy head,0.25,"audit, self-check",1.1,0.97
+all photos,new place (EuroSAT head),0.05,labels only,19.54,0.089
+all photos,new place (EuroSAT head),0.05,triage (v4),16.63,0.202
+all photos,new place (EuroSAT head),0.05,raw random,5.89,0.964
+all photos,new place (EuroSAT head),0.05,"audit, self-check",5.34,0.978
+all photos,new place (EuroSAT head),0.25,labels only,19.54,0.089
+all photos,new place (EuroSAT head),0.25,triage (v4),9.08,0.577
+all photos,new place (EuroSAT head),0.25,raw random,2.22,0.917
+all photos,new place (EuroSAT head),0.25,"audit, self-check",1.85,0.954
+all photos,bit flips,0.05,labels only,10.63,0.274
+all photos,bit flips,0.05,triage (v4),10.78,0.274
+all photos,bit flips,0.05,raw random,5.89,0.964
+all photos,bit flips,0.05,"audit, self-check",5.5,0.972
+all photos,bit flips,0.25,labels only,10.63,0.274
+all photos,bit flips,0.25,triage (v4),6.66,0.554
+all photos,bit flips,0.25,raw random,2.22,0.917
+all photos,bit flips,0.25,"audit, self-check",1.73,0.962
+clean photos,healthy head,0.05,labels only,1.75,0.845
+clean photos,healthy head,0.05,triage (v4),1.22,0.881
+clean photos,healthy head,0.05,raw random,5.79,0.956
+clean photos,healthy head,0.05,"audit, self-check",2.96,0.99
+clean photos,healthy head,0.25,labels only,1.75,0.845
+clean photos,healthy head,0.25,triage (v4),0.57,0.952
+clean photos,healthy head,0.25,raw random,1.76,0.954
+clean photos,healthy head,0.25,"audit, self-check",1.13,0.95
+clean photos,new place (EuroSAT head),0.05,labels only,20.41,0.083
+clean photos,new place (EuroSAT head),0.05,triage (v4),17.02,0.232
+clean photos,new place (EuroSAT head),0.05,raw random,5.79,0.956
+clean photos,new place (EuroSAT head),0.05,"audit, self-check",5.67,0.97
+clean photos,new place (EuroSAT head),0.25,labels only,20.41,0.083
+clean photos,new place (EuroSAT head),0.25,triage (v4),9.29,0.661
+clean photos,new place (EuroSAT head),0.25,raw random,1.76,0.954
+clean photos,new place (EuroSAT head),0.25,"audit, self-check",1.77,0.944
+clean photos,bit flips,0.05,labels only,5.79,0.583
+clean photos,bit flips,0.05,triage (v4),6.46,0.524
+clean photos,bit flips,0.05,raw random,5.79,0.956
+clean photos,bit flips,0.05,"audit, self-check",5.02,0.978
+clean photos,bit flips,0.25,labels only,5.79,0.583
+clean photos,bit flips,0.25,triage (v4),3.94,0.732
+clean photos,bit flips,0.25,raw random,1.76,0.954
+clean photos,bit flips,0.25,"audit, self-check",1.65,0.931

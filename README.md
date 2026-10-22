@@ -166,7 +166,8 @@ Brier score (where every class's chance is known), plus the full confusion matri
 - **On real photos they don't.** The healthy head is 82.3% right, but its balanced accuracy is only **58.6%**:
   it **never** says SnowIce or BuiltUp. All 28 snow photos become Cloud (snow and cloud look alike in colour
   photos, as the eye check found), and the training days had only ~15 snow and 3 built-up photos. Without
-  those two classes its macro-F1 would be 77%. This is why the audit's class shares, with an error bar per
+  those two classes its macro-F1 would be 77%. (BuiltUp has just 1 test photo; over the classes with at least
+  5 test photos, balanced accuracy is 67.0%: see the data analysis below.) This is why the audit's class shares, with an error bar per
   class, are the product, not the labels.
 - Most mixed-up pairs: real photos ShrubGrass -> Trees, SnowIce -> Cloud, Water -> Cloud; Sentinel-2 River ->
   Highway; AID (Gemma) Playground -> Stadium, Meadow -> Farmland.
@@ -175,6 +176,22 @@ Brier score (where every class's chance is known), plus the full confusion matri
 
 More: `docs/confusion_eurosat.png` (small head vs tiny CNN), `docs/confusion_aid.png` (small head vs Gemma 3).
 Files: `experiments/metrics_summary_*.csv`, `experiments/metrics_per_class_*.csv`.
+
+## Is it a data problem? Exploratory data analysis
+
+`python -m src.eval.eda` looks at the photos themselves (full report: [docs/eda.md](docs/eda.md)).
+
+- **EuroSAT and AID are clean:** no duplicate photos, one photo size each, no broken files.
+- **14% of the real Sentinel-2A photos are messy:** a land label on a 20-50% cloudy photo, mixed land types,
+  no-data strips, or blown-out white. They are 14% of the test days but carry **30% of the mistakes**
+  (error rate 42-85% vs 14% on clean photos).
+- **Snow and cloud are both blown-out white** in 42 of 43 snow photos, so they can't be told apart in
+  colour photos: a data limit (the infrared band would fix it).
+- **The numbers are stable:** other day splits move accuracy by about 1 point (81.3-82.3%); cleaning the test
+  photos adds about 3.5 points (85.7%). **The audit gives the same conclusions on clean photos**: broken
+  models' labels still fail silently (bars hold 8-66%), the self-checking audit still holds 94-99%.
+
+![Mistakes pile up on messy photos](docs/eda_quality.png)
 
 ## What we learned
 - **On real Sentinel-2 photos, the head must be trained on Sentinel-2 photos.** The AID-trained head
@@ -312,6 +329,7 @@ python -m src.data.eurosat_geo          # where each EuroSAT photo is (one 2 GB 
 python -m src.eval.spatial_split        # Sentinel-2 accuracy with a test split by location (~5 min)
 python -m src.eval.jetson_bench         # time (and on a Jetson, energy) of the onboard steps
 python -m src.eval.metrics_report       # confusion matrices, per-class precision/recall/F1, kappa, Brier (~1 min)
+python -m src.eval.eda                  # exploratory data analysis: data problems, label checks, how much numbers move (~1 min)
 ```
 
 More commands (EuroSAT, prompts, image sizes, replay options) are in [docs/experiment_log.md](docs/experiment_log.md).

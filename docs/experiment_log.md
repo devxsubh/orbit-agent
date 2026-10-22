@@ -953,3 +953,20 @@ predicts those two classes (training days: ~15 snow, 3 built-up photos).
   (very sure and wrong: Cloud -> Water 556x); bit flips push everything to Bare (Cloud -> Bare 158x).
 - Files: `experiments/metrics_summary_*.csv`, `metrics_per_class_*.csv`, `experiments/confusion/*.csv`;
   charts `docs/confusion_{real,eurosat,aid}.png` (one blue ramp, rows normalised, counts in the cells).
+
+## Exploratory data analysis (22 Oct 2026)
+
+`python -m src.eval.eda`; full write-up `docs/eda.md`. Flags fixed before looking at results.
+- Real replay: 3,527 photos, every one from a different source image; train/test class mix differs by 5%
+  (SnowIce 15 vs 28). 86% clean; flagged: partly cloudy land 230, borderline cloud 128, mixed 75, no-data 57,
+  blown-out land 18. Cloud 1,131/1,615 and SnowIce 42/43 more than half pure white.
+- Neighbour agreement (10 nearest in SigLIP space): Cloud 86%, Water 84%, Bare 69%, Trees 54%, ShrubGrass 50%,
+  Cropland 47%, SnowIce 18%, BuiltUp 5%. Eye check: agree 71%, unsure 28%, disagree 5% -> the measure works.
+- Healthy head error: clean 14%, partly cloudy 42%, mixed 74%, blown-out 85%; flagged = 14% of test, 30% of mistakes.
+- Sensitivity (balanced acc / macro-F1 over classes with >= 5 test photos): as used 82.3% / 67.0% / 66.4%;
+  clean test 85.7 / 70.8 / 69.2; clean train+test 85.1 / 69.2 / 68.6; reversed days 81.8 / 65.7; even/odd
+  81.3-82.1 / 65.5-66.3. Bootstrap 95% range of accuracy about +-1.8 points.
+- Audit on clean photos (same random draws as the main run for "all photos"): same conclusions; self-check
+  holds 94-99%, labels/triage with a broken model 8-66%. `experiments/eda_audit_clean_*.csv`.
+- EuroSAT: 27,000 photos, 0 duplicates, all 64 px, Europe only (5,020 10 km blocks). AID: 2,400 downloaded,
+  0 duplicates, all 600 px; full set 220-420 per class; JPEG 139-720 KB by class.

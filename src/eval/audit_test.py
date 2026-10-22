@@ -150,14 +150,14 @@ def eurosat_days(pop: Population, station: str, rate: float, days: int, seed: in
         yield f"{start:%Y-%m-%d}", passes
 
 
-def real_population(train_days: list[str], test_days: list[str]) -> Population:
+def real_population(train_days: list[str], test_days: list[str], keep=None) -> Population:
     """Real Sentinel-2A photos: head trained on train_days, every scenario on test_days."""
     from src.data import s2_real
     from src.model import faults
     from src.model.head import embed, fit_head
 
     classes = s2_real.CLASSES
-    rows = s2_real.load_chips()
+    rows = [r for r in s2_real.load_chips() if keep is None or keep(r)]  # keep: optional photo filter (EDA)
     train = [r for r in rows if r["day"] in train_days[:-1]]
     tuning = [r for r in rows if r["day"] == train_days[-1]]
     test = [r for r in rows if r["day"] in test_days]
