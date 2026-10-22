@@ -61,8 +61,8 @@ except Exception:
     bad("Ollama is not running", "Open the Ollama app (or run: ollama serve)")
 
 print("\nFolders")
-for folder in ["papers", "notes", "data/raw", "data/processed",
-               "src/orbit", "src/model", "src/agent", "src/eval", "experiments"]:
+for folder in ["papers", "data/raw", "data/processed",
+               "src/orbit", "src/model", "src/agent", "src/eval", "results", "notebooks"]:
     if (ROOT / folder).is_dir():
         ok(folder)
     else:

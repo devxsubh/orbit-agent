@@ -22,6 +22,7 @@ from pathlib import Path
 
 from src.orbit.contact_windows import (GROUND_STATIONS, IST, SATELLITES, Pass, contact_windows,
                                        ground_track, load_satellite)
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -166,7 +167,7 @@ def main() -> None:
     if left_over:
         print(f"{len(left_over):,} photos were taken after the last pass (not counted).")
 
-    out = ROOT / "experiments" / f"replay_{args.station}_{start:%Y%m%d_%H%M}.csv"
+    out = result(f"replay_{args.station}_{start:%Y%m%d_%H%M}.csv")
     save_csv(windows, out)
     print(f"\nEvery photo saved to: {out}")
 

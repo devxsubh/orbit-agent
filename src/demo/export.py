@@ -29,6 +29,7 @@ from src.eval.run_agent import default_answers, load_views, photo_set_name, scor
 from src.eval.sentinel_test import PHOTO_BYTES
 from src.orbit.contact_windows import GROUND_STATIONS, ground_track, load_satellite
 from src.orbit.replay import build_replay
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 DEMO = ROOT / "demo"
@@ -37,9 +38,9 @@ LAND_FILE = ROOT / "data" / "raw" / "land-110m.json"
 USER_AGENT = "orbit-agent/0.1 (student research project)"
 
 # Agent v4's heads for the demo: the small ones (SigLIP-base, 90M). They suit a satellite better and
-# let fewer wrong labels through than the big head (see docs/experiment_log.md).
-SMALL_HEAD = ROOT / "experiments" / "head_aid_siglip-base_n20_final.csv"            # AID photos
-SENTINEL_HEAD = ROOT / "experiments" / "head_eurosat_siglip-base_n100_final.csv"     # Sentinel-2
+# let fewer wrong labels through than the big head (see notebooks/02_experiments.ipynb).
+SMALL_HEAD = result("head_aid_siglip-base_n20_final.csv")            # AID photos
+SENTINEL_HEAD = result("head_eurosat_siglip-base_n100_final.csv")     # Sentinel-2
 
 # Which model makes the labels, as shown on the page: (short, longer)
 MODEL_TEXT = {

@@ -14,9 +14,9 @@ Run from the orbit-agent folder:
     python -m src.model.cnn --datasets eurosat --epochs 2 --train-per-class 5    # quick check
     python -m src.cloud.kaggle_run --command "src.model.cnn"                     # on a Kaggle GPU
 
-Saves experiments/cnn_<dataset>_<arch>_n<N>_final.csv. Then, for the satellite replay:
-    python -m src.eval.run_agent --head experiments/cnn_aid_..._final.csv
-    python -m src.eval.sentinel_test --head-csv experiments/cnn_eurosat_..._final.csv
+Saves results/cnn_<dataset>_<arch>_n<N>_final.csv. Then, for the satellite replay:
+    python -m src.eval.run_agent --head results/cnn_aid_..._final.csv
+    python -m src.eval.sentinel_test --head-csv results/cnn_eurosat_..._final.csv
 """
 from __future__ import annotations
 
@@ -31,6 +31,7 @@ from PIL import Image
 
 from src.data.aid import AID_DIR, pick
 from src.model.head import best_device, calibration_error, download_all, write_answers
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 SIZE = 224  # input size (ImageNet-trained CNNs expect this)
@@ -173,7 +174,7 @@ def run(dataset: str, arch: str, train_per_class: int, epochs: int, device: str)
           f"{calibration_error(chances.max(1), right):.3f} after temperature {temperature:.2f}")
     print(f"  size: {weights / 1e6:.2f}M weights ({weights * 2 / 1e6:.1f} MB in half precision); "
           f"speed: {ms:.1f} ms per photo on {device}")
-    out = ROOT / "experiments" / f"cnn_{dataset}_{arch}_n{train_per_class}_final.csv"
+    out = result(f"cnn_{dataset}_{arch}_n{train_per_class}_final.csv")
     write_answers(out, final_set, classes, chances, ms)
     print(f"Saved {out.relative_to(ROOT)}")
 

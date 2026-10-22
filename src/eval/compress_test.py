@@ -35,6 +35,7 @@ from PIL import Image
 
 from src.agent.audit import POLICIES, Sent, label_bytes, n_full
 from src.eval.estimate import Estimate, combine, estimate, interval
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 CACHE = ROOT / "data" / "processed" / "compress_aid_siglip-base.npz"
@@ -214,7 +215,7 @@ def main() -> None:
             cells.append(f"{np.mean([r['strict_pct'] for r in rs]):5.1f}/{np.mean([r['lenient_pct'] for r in rs]):5.1f}  "
                          f"±{np.mean([r['halfwidth_pts'] for r in rs]):4.1f} ({np.mean([r['holds'] for r in rs]):.0%})")
         print(f"{R:>7.1f} {rate:>7g}" + "".join(f"{c:>30}" for c in cells))
-    out = ROOT / "experiments" / f"compress_sweep_{datetime.now():%Y%m%d_%H%M}.csv"
+    out = result(f"compress_sweep_{datetime.now():%Y%m%d_%H%M}.csv")
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer.writeheader()

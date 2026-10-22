@@ -8,7 +8,7 @@ What it does:
 1. Downloads the latest orbit data (TLE) for the satellite from CelesTrak
 2. Finds every pass over a ground station (the only time they can "talk")
 3. Works out how much data can be sent down in each pass
-4. Saves a map of the satellite's path to experiments/orbit_map.png
+4. Saves a map of the satellite's path to results/orbit_map.png
 """
 from __future__ import annotations
 
@@ -22,6 +22,8 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from skyfield.api import EarthSatellite, load, wgs84
+
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 TLE_DIR = ROOT / "data" / "raw" / "tle"
@@ -228,7 +230,7 @@ def main() -> None:
     parser.add_argument("--rate", type=float, default=100, help="downlink speed in Mbps")
     parser.add_argument("--min-elevation", type=float, default=10, help="degrees above horizon")
     parser.add_argument("--tle", help="use a saved TLE file instead of downloading")
-    parser.add_argument("--map", default=str(ROOT / "experiments" / "orbit_map.png"))
+    parser.add_argument("--map", default=str(result("orbit_map.png")))
     parser.add_argument("--no-map", action="store_true")
     args = parser.parse_args()
 

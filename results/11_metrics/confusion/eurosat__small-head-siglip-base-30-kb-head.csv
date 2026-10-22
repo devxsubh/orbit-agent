@@ -1,0 +1,11 @@
+true \ given,AnnualCrop,Forest,HerbaceousVegetation,Highway,Industrial,Pasture,PermanentCrop,Residential,River,SeaLake
+AnnualCrop,94,1,0,1,0,1,3,0,0,0
+Forest,0,97,1,0,0,2,0,0,0,0
+HerbaceousVegetation,0,2,88,0,0,2,4,2,2,0
+Highway,3,1,0,88,2,0,2,0,4,0
+Industrial,0,0,0,1,98,0,0,1,0,0
+Pasture,1,3,1,0,0,91,3,0,1,0
+PermanentCrop,0,0,5,4,1,1,85,4,0,0
+Residential,0,0,0,0,1,0,0,99,0,0
+River,1,0,1,7,1,0,0,0,90,0
+SeaLake,0,1,0,0,0,0,0,0,1,98

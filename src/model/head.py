@@ -19,7 +19,7 @@ Run from the orbit-agent folder:
     python -m src.model.head --backbone siglip-base --train-per-class 20   # quick Mac test
     python -m src.model.head                                               # full run (Kaggle GPU)
 
-Saves experiments/head_aid_<backbone>_tuning.csv and ..._final.csv. run_agent uses them for agent v4.
+Saves results/head_aid_<backbone>_tuning.csv and ..._final.csv. run_agent uses them for agent v4.
 """
 from __future__ import annotations
 
@@ -33,6 +33,7 @@ import numpy as np
 from PIL import Image
 
 from src.data.aid import AID_DIR, _download, pick
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 CACHE = ROOT / "data" / "processed"  # saved embeddings (gitignored)
@@ -177,9 +178,10 @@ def write_answers(path: Path, photos, classes: list[str], chances: np.ndarray,
 
 
 def fit_head(x_train: np.ndarray, y_train: list[str], x_tuning: np.ndarray, y_tuning: list[str],
-             verbose: bool = True):
+             verbose: bool = True, class_weight=None):
     """Train the small classifier. The setting C (how strongly to hold it back) is picked on the
-    TUNING photos by log-loss, which rewards honest chances, not just right answers."""
+    TUNING photos by log-loss, which rewards honest chances, not just right answers.
+    class_weight="balanced": every class counts the same in training, however rare (experiment 12)."""
     from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import log_loss
 
@@ -188,7 +190,7 @@ def fit_head(x_train: np.ndarray, y_train: list[str], x_tuning: np.ndarray, y_tu
     y_tuning = np.array(y_tuning)
     best = None
     for c in [1, 10, 100, 300, 1000, 3000]:
-        classifier = LogisticRegression(C=c, max_iter=3000).fit(x_train, y_train)
+        classifier = LogisticRegression(C=c, max_iter=3000, class_weight=class_weight).fit(x_train, y_train)
         loss = log_loss(y_tuning, classifier.predict_proba(x_tuning), labels=classifier.classes_)
         accuracy = (classifier.predict(x_tuning) == y_tuning).mean()
         say(f"  C={c:<5} tuning accuracy {accuracy:.1%}, log-loss {loss:.3f}")
@@ -230,7 +232,7 @@ def main() -> None:
         right = classifier.predict(x) == np.array([label for label, _ in photos])
         print(f"{name:>6} photos: accuracy {right.mean():.1%} ({right.sum()}/{len(right)}), "
               f"calibration error {calibration_error(chances, right):.3f}")
-        out = ROOT / "experiments" / f"head_aid_{tag}_{name}.csv"
+        out = result(f"head_aid_{tag}_{name}.csv")
         save_answers(out, photos, classifier, x, ms_final)
         print(f"        saved {out.relative_to(ROOT)}")
     if not np.isnan(ms_final):

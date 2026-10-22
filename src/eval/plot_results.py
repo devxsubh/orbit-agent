@@ -15,10 +15,12 @@ import matplotlib
 matplotlib.use("Agg")  # no window, just save the file
 import matplotlib.pyplot as plt
 
+from src.paths import result
+
 ROOT = Path(__file__).resolve().parents[2]
 # Final test photos, agent v4 with the small head (siglip-base, 600 training photos)
-DEFAULT_CSV = ROOT / "experiments" / "agents_delhi_final_equal_20261020_0947.csv"
-DEFAULT_OUT = ROOT / "docs" / "results.png"
+DEFAULT_CSV = result("agents_delhi_final_equal_20261020_0947.csv")
+DEFAULT_OUT = ROOT / "docs" / "figures" / "results.png"
 
 # Policy name in the CSV -> (label, line style, marker, colour)
 # Colours: grey = no AI; the rest in a fixed order that stays readable for colour-blind

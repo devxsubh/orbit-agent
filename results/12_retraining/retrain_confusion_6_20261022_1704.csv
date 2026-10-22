@@ -1,0 +1,9 @@
+true \ given,Cloud,Trees,ShrubGrass,Cropland,BuiltUp,Bare,SnowIce,Water
+Cloud,718,16,8,8,0,8,0,14
+Trees,18,138,19,1,0,0,0,1
+ShrubGrass,19,29,175,4,0,11,0,1
+Cropland,9,4,10,58,0,2,0,0
+BuiltUp,0,0,1,0,0,0,0,0
+Bare,6,1,10,0,0,121,0,1
+SnowIce,17,0,0,0,0,2,9,0
+Water,27,1,4,0,0,0,0,278

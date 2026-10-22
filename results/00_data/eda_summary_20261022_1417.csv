@@ -1,0 +1,57 @@
+section,what,value,detail
+real,photos,3527,"14 days, 2026-10-06..2026-10-19"
+real,share Cloud (train days / test days),47.4% / 44.1%,843 / 772 photos
+real,share Trees (train days / test days),11.7% / 10.1%,208 / 177 photos
+real,share ShrubGrass (train days / test days),11.2% / 13.7%,200 / 239 photos
+real,share Cropland (train days / test days),5.1% / 4.7%,91 / 83 photos
+real,share BuiltUp (train days / test days),0.2% / 0.1%,3 / 1 photos
+real,share Bare (train days / test days),7.6% / 7.9%,135 / 139 photos
+real,share SnowIce (train days / test days),0.8% / 1.6%,15 / 28 photos
+real,share Water (train days / test days),15.9% / 17.7%,283 / 310 photos
+real,"class-mix difference train vs test (total variation, 0 = same)",0.053,
+real,flag nodata: more than 5% no-data (black strips),57 (1.6%),"Cloud 28, Water 13, Trees 6, ShrubGrass 6"
+real,flag partly_cloudy: land label but 20%-50% cloud,230 (6.5%),"Water 78, Trees 72, ShrubGrass 46, Bare 18"
+real,flag border_cloud: cloud label but only 50-70% cloud,128 (3.6%),Cloud 128
+real,flag mixed: land label covers under 50% of the photo,75 (2.1%),"ShrubGrass 26, Cropland 22, Trees 16, Bare 5"
+real,flag blown_out: land label but over 50% pure white pixels,18 (0.5%),"Bare 12, Trees 3, ShrubGrass 2, Cropland 1"
+real,clean photos (no flag),3043 (86.3%),
+real,Cloud photos more than half pure white,1131 of 1615,blown-out: no texture left to tell snow from cloud
+real,SnowIce photos more than half pure white,42 of 43,blown-out: no texture left to tell snow from cloud
+real,Bare photos more than half pure white,12 of 274,
+real,brightness by class (0-255),"Cloud 221, Trees 67, ShrubGrass 113, Cropland 100, BuiltUp 100, Bare 199, SnowIce 248, Water 50",
+real,latitude range,-56 to 78,400 photos beyond 60 degrees
+real,neighbour agreement Cloud,86%,1615 photos
+real,neighbour agreement Trees,54%,385 photos
+real,neighbour agreement ShrubGrass,50%,439 photos
+real,neighbour agreement Cropland,47%,174 photos
+real,neighbour agreement BuiltUp,5%,4 photos
+real,neighbour agreement Bare,69%,274 photos
+real,neighbour agreement SnowIce,18%,43 photos
+real,neighbour agreement Water,84%,593 photos
+real,photos whose label at most 2 of 10 neighbours share (suspect),395 (11.2%),140 of them are flagged
+real,neighbour agreement of eye-check 'agree' photos,71%,119 photos
+real,neighbour agreement of eye-check 'unsure' photos,28%,27 photos
+real,neighbour agreement of eye-check 'disagree' photos,5%,4 photos
+real,test photos within 10 km of a training photo,93 of 1749,median distance to the nearest training photo 198 km
+real,test photos with a near-twin (cosine > 0.95) in training,931 (53%),
+real,healthy head error rate on clean test photos,14.3%,1510 photos
+real,healthy head error rate on partly_cloudy test photos,41.9%,117 photos
+real,healthy head error rate on border_cloud test photos,22.8%,57 photos
+real,healthy head error rate on mixed test photos,74.3%,35 photos
+real,healthy head error rate on nodata test photos,16.7%,30 photos
+real,healthy head error rate on blown_out test photos,84.6%,13 photos
+real,share of all mistakes that are on flagged photos,30%,flagged photos are 14% of the test days
+real,SnowIce / BuiltUp test photos and what they were called,29,"[(('SnowIce', np.str_('Cloud')), 27), (('BuiltUp', np.str_('Cropland')), 1), (('SnowIce', np.str_('Bare')), 1)]"
+eurosat,photos,27000,"AnnualCrop 3000, Forest 3000, HerbaceousVegetation 3000, Highway 2500, Industrial 2500, Pasture 2000, PermanentCrop 2500, Residential 3000, River 2500, SeaLake 3000"
+eurosat,exact duplicate photos (same pixels),0,
+eurosat,identical photos filed under two classes,0,
+eurosat,photo sizes,"{(64, 64): 27000}",
+eurosat,brightness by class (0-255),"AnnualCrop 122, Forest 60, HerbaceousVegetation 100, Highway 96, Industrial 128, Pasture 82, PermanentCrop 117, Residential 106, River 84, SeaLake 70",
+eurosat,very dark photos (mean < 15),0,
+eurosat,where,"latitude 28 to 65, longitude -21 to 34","5,020 different 10 km blocks"
+eurosat,photos at exactly the same spot as another photo,0,
+aid,"full dataset (all 10,000)",10000,"smallest class BaseballField 220, biggest Pond 420"
+aid,photos downloaded here,2400,
+aid,exact duplicate photos (same pixels),0,
+aid,photo sizes,"{(600, 600): 2400}",
+aid,JPEG size by class (KB): smallest / biggest,Port 139 / SparseResidential 720,why the replay gives every photo the same size: small files are easy scenes

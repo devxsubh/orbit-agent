@@ -7,7 +7,7 @@ Run from the orbit-agent folder:
     python -m src.eval.baseline_eurosat --size 896      (try another image size)
     python -m src.eval.baseline_eurosat --dataset aid   (AID: sharper photos, 30 classes, as in NAVI)
 
-Saves every answer to experiments/baseline_<dataset>_<model>_<prompt>_<size>px_<date>.csv
+Saves every answer to results/baseline_<dataset>_<model>_<prompt>_<size>px_<date>.csv
 """
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ from tqdm import tqdm
 from src.data import aid, eurosat
 from src.eval.metrics import accuracy
 from src.model.vlm import MODEL, PROMPTS, check_ready, classify_image
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 DATASETS = {"eurosat": eurosat, "aid": aid}
@@ -68,7 +69,7 @@ def main() -> None:
 
     # Settings go in the file name so runs don't get mixed up (":" isn't safe in file names)
     tag = f"{model.replace(':', '-')}_{args.prompt}_{args.size}px"
-    out = ROOT / "experiments" / f"baseline_{args.dataset}_{tag}_{datetime.now():%Y%m%d_%H%M}.csv"
+    out = result(f"baseline_{args.dataset}_{tag}_{datetime.now():%Y%m%d_%H%M}.csv")
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))

@@ -1,0 +1,7 @@
+variant,train_photos,test_photos,accuracy,balanced_accuracy,macro_f1,accuracy_low,balanced_accuracy_low,macro_f1_low,accuracy_high,balanced_accuracy_high,macro_f1_high
+"as used: train 6-11, tune 12, test 13-19",1525,1749,0.8228,0.6697,0.6637,0.805,0.6466,0.6415,0.8399,0.6905,0.6838
+"same head, clean test photos only",1525,1510,0.857,0.708,0.6925,0.8391,0.6862,0.6707,0.8742,0.7299,0.7136
+clean training + clean test photos,1318,1510,0.851,0.6923,0.6855,0.8331,0.6671,0.6607,0.8682,0.715,0.7052
+"reversed: train 13-18, tune 19, test 6-12",1489,1778,0.8183,0.6565,0.6625,0.7987,0.5627,0.5646,0.8358,0.6861,0.6979
+"interleaved: train even days, test odd days",1456,1793,0.8126,0.6547,0.6517,0.7942,0.6313,0.6287,0.8299,0.6761,0.6714
+"interleaved: train odd days, test even days",1533,1734,0.8212,0.663,0.668,0.8028,0.5701,0.5687,0.8397,0.6918,0.7046

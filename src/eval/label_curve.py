@@ -10,9 +10,9 @@ The tuning and FINAL photos never change; tuning picks each model's settings, as
 Run from the orbit-agent folder:
     python -m src.cloud.kaggle_run --command "src.eval.label_curve"   # full run on a Kaggle GPU
     python -m src.eval.label_curve --quick                            # tiny check on the Mac
-    python -m src.eval.plot_label_curve                               # chart -> docs/label_curve.png
+    python -m src.eval.plot_label_curve                               # chart -> docs/figures/label_curve.png
 
-Saves experiments/label_curve_<date>.csv (one row per dataset, model, size and seed).
+Saves results/label_curve_<date>.csv (one row per dataset, model, size and seed).
 """
 from __future__ import annotations
 
@@ -26,6 +26,7 @@ import numpy as np
 
 from src.model import cnn
 from src.model.head import best_device, calibration_error, embed, fit_head
+from src.paths import result
 
 ROOT = Path(__file__).resolve().parents[2]
 SIZES = [5, 10, 20, 50, 100]  # training photos per class
@@ -105,7 +106,7 @@ def main() -> None:
     for dataset in args.datasets:
         rows += run_dataset(dataset, sizes, seeds, epochs, device)
 
-    out = ROOT / "experiments" / f"label_curve{'_quick' if args.quick else ''}_{datetime.now():%Y%m%d_%H%M}.csv"
+    out = result(f"label_curve{'_quick' if args.quick else ''}_{datetime.now():%Y%m%d_%H%M}.csv")
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer.writeheader()

@@ -922,3 +922,51 @@ reads the Jetson's power meter (`tegrastats`, VDD_IN) for energy per photo. MacB
 for any good labeller, and compress-to-fit ties it), so it can't tell methods apart. The README now reports
 the audit as the result and the labellers' accuracy separately; the demo's score card is now a link to the
 audit page. The code and the numbers above stay as history.
+## Beyond accuracy: confusion matrices and per-class scores (22 Oct 2026)
+
+`python -m src.eval.metrics_report` (saved answers + embeddings, ~1 min). Same final photos as before.
+Metrics: accuracy, balanced accuracy, macro precision / recall / F1, weighted F1, Cohen's kappa, calibration
+error (ECE, from the top chance), Brier score and log-loss (only where every class's chance is known: zero-shot
+and the real replay; the small heads' chances can't be remade exactly because two C settings tie on tuning:
+96.7% / 99.5% same answers, so they are left out). Gemma gives no chances.
+
+| | Accuracy | Balanced accuracy | Macro-F1 | Cohen's kappa | Calibration error | Brier |
+|---|---|---|---|---|---|---|
+| AID: small head | 95.7% | 95.7% | 95.6% | 0.955 | 0.036 | - |
+| AID: tiny CNN | 85.0% | 85.0% | 84.9% | 0.845 | 0.049 | - |
+| AID: SigLIP zero-shot | 66.3% | 66.3% | 63.8% | 0.652 | 0.046 | 0.452 |
+| AID: Gemma 3 4B | 63.0% | 63.0% | 60.8% | 0.617 | - | - |
+| Sentinel-2: small head | 92.8% | 92.8% | 92.8% | 0.920 | 0.016 | - |
+| Sentinel-2: tiny CNN | 94.6% | 94.6% | 94.5% | 0.940 | 0.016 | - |
+| **Real Sentinel-2A: healthy head** | 82.3% | 58.6% | 58.1% | 0.756 | 0.029 | 0.266 |
+| Real: new place (EuroSAT head) | 20.0% | 34.1% | 14.1% | 0.072 | 0.652 | 1.391 |
+| Real: bit flips | 57.5% | 34.6% | 36.7% | 0.442 | 0.331 | 0.798 |
+
+Real replay, healthy head, per class (photos / precision / recall): Cloud 772 / 87% / 92%, Water 310 / 92% / 89%,
+ShrubGrass 239 / 71% / 63%, Trees 177 / 70% / 72%, Bare 139 / 79% / 83%, Cropland 83 / 63% / 70%,
+**SnowIce 28 / - / 0%** (all 27 -> Cloud, 1 -> Bare), **BuiltUp 1 / - / 0%** (-> Cropland). The head never
+predicts those two classes (training days: ~15 snow, 3 built-up photos).
+
+- Balanced sets: every metric tracks accuracy (AID small head 95.7 / 95.7 / 95.6%).
+- Real photos: accuracy 82.3% but balanced accuracy 58.6%, macro-F1 58.1% (77% without SnowIce and BuiltUp).
+- Broken models on real photos: new place 20.0% right, kappa 0.07 (barely better than chance), ECE 0.65
+  (very sure and wrong: Cloud -> Water 556x); bit flips push everything to Bare (Cloud -> Bare 158x).
+- Files: `experiments/metrics_summary_*.csv`, `metrics_per_class_*.csv`, `experiments/confusion/*.csv`;
+  charts `docs/confusion_{real,eurosat,aid}.png` (one blue ramp, rows normalised, counts in the cells).
+
+## Exploratory data analysis (22 Oct 2026)
+
+`python -m src.eval.eda`; full write-up `docs/eda.md`. Flags fixed before looking at results.
+- Real replay: 3,527 photos, every one from a different source image; train/test class mix differs by 5%
+  (SnowIce 15 vs 28). 86% clean; flagged: partly cloudy land 230, borderline cloud 128, mixed 75, no-data 57,
+  blown-out land 18. Cloud 1,131/1,615 and SnowIce 42/43 more than half pure white.
+- Neighbour agreement (10 nearest in SigLIP space): Cloud 86%, Water 84%, Bare 69%, Trees 54%, ShrubGrass 50%,
+  Cropland 47%, SnowIce 18%, BuiltUp 5%. Eye check: agree 71%, unsure 28%, disagree 5% -> the measure works.
+- Healthy head error: clean 14%, partly cloudy 42%, mixed 74%, blown-out 85%; flagged = 14% of test, 30% of mistakes.
+- Sensitivity (balanced acc / macro-F1 over classes with >= 5 test photos): as used 82.3% / 67.0% / 66.4%;
+  clean test 85.7 / 70.8 / 69.2; clean train+test 85.1 / 69.2 / 68.6; reversed days 81.8 / 65.7; even/odd
+  81.3-82.1 / 65.5-66.3. Bootstrap 95% range of accuracy about +-1.8 points.
+- Audit on clean photos (same random draws as the main run for "all photos"): same conclusions; self-check
+  holds 94-99%, labels/triage with a broken model 8-66%. `experiments/eda_audit_clean_*.csv`.
+- EuroSAT: 27,000 photos, 0 duplicates, all 64 px, Europe only (5,020 10 km blocks). AID: 2,400 downloaded,
+  0 duplicates, all 600 px; full set 220-420 per class; JPEG 139-720 KB by class.
