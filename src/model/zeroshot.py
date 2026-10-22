@@ -69,17 +69,27 @@ def fit_temperature(scores: np.ndarray, truth: np.ndarray) -> float:
     return float(best[1])
 
 
-def run(name: str, labels: dict[str, str], tuning, final, root: Path, dataset: str) -> None:
+def scores(labels: dict[str, str], tuning, final, root: Path, dataset: str):
+    """SigLIP's scores for every class: (classes, tuning scores, final scores, temperature)."""
     classes = list(labels)
     text, scale, bias = text_side(list(labels.values()))
     x_tuning, _ = embed(tuning, "siglip-base", root=root, dataset=dataset)
     x_final, _ = embed(final, "siglip-base", root=root, dataset=dataset)
     tuning_scores = x_tuning @ text.T * scale + bias
     final_scores = x_final @ text.T * scale + bias
-    truth_tuning = np.array([classes.index(l) for l, _ in tuning])
-    truth_final = np.array([classes.index(l) for l, _ in final])
+    t = fit_temperature(tuning_scores, np.array([classes.index(l) for l, _ in tuning]))
+    return classes, tuning_scores, final_scores, t
 
-    t = fit_temperature(tuning_scores, truth_tuning)
+
+def chances(labels: dict[str, str], tuning, final, root: Path, dataset: str):
+    """(classes, chance of every class for every final photo), temperature version."""
+    classes, _, final_scores, t = scores(labels, tuning, final, root, dataset)
+    return classes, softmax(final_scores / t)
+
+
+def run(name: str, labels: dict[str, str], tuning, final, root: Path, dataset: str) -> None:
+    classes, _, final_scores, t = scores(labels, tuning, final, root, dataset)
+    truth_final = np.array([classes.index(l) for l, _ in final])
     print(f"\n=== {name}: SigLIP-base zero-shot, {len(final):,} final photos ===")
     for version, chances in [("plain", softmax(final_scores)), (f"temperature {t:.2f}", softmax(final_scores / t))]:
         right = chances.argmax(1) == truth_final

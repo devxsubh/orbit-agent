@@ -117,6 +117,7 @@ smart compression (FOOL paper).
 | `src/eval/label_check.py` | Real labels by eye: 150 real test-day photos (~20/class, seed 0), 6 contact sheets in `data/processed/label_check/`, verdicts in `experiments/label_check_real.csv`; `--summary` | **done** (first pass by Claude, Subham to re-check) |
 | `src/data/eurosat_geo.py` | EuroSAT coordinates: streams `EuroSAT_MS.zip` (2 GB) from Zenodo once, keeps the first 4 KB of each GeoTIFF (geo tags), -> `data/processed/eurosat_coords.csv`. Zenodo gives 429 after ~100 small range requests, so one stream | **done, works** |
 | `src/eval/spatial_split.py` | EuroSAT head with a split by location: 10 km blocks (50 km check), whole blocks to train/tuning/final, same sizes, 3 seeds | **done, works** |
+| `src/eval/metrics_report.py` | Beyond accuracy: confusion matrix (CSV per test set x model in `experiments/confusion/`), per-class P/R/F1, balanced acc, macro/weighted F1, kappa, ECE, Brier/log-loss (where full chances exist) for AID, EuroSAT, real replay (healthy + broken); charts `docs/confusion_*.png` | **done, works** |
 | `src/eval/jetson_bench.py` | Time (+ energy via `tegrastats` on a Jetson) of image model (batch 1/8) + head + audit sampler; saves `experiments/bench_<board>_*.csv` (board name, never the host name) | **done** (Mac only) |
 
 ## How to run
@@ -156,6 +157,7 @@ python -m src.eval.audit_floor                           # floor sweep (~5 min)
 python -m src.eval.compress_test                         # R sweep vs compress-to-fit (~3 min)
 python -m src.eval.audit_loop --data real                # closed loop: new camera, zero labels
 python -m src.eval.audit_tables                          # markdown tables from the newest CSVs
+python -m src.eval.metrics_report                        # confusion matrices + per-class / balanced metrics (~1 min)
 python -m src.eval.plot_audit                            # docs/audit_*.png
 python -m src.demo.export_audit && open demo/audit.html  # second demo page (?model=1&day=3)
 ```
@@ -289,6 +291,9 @@ python -m src.demo.export_audit && open demo/audit.html  # second demo page (?mo
 - **Git:** PR #3 (audited downlink, branch `audited-downlink`) and the self-check PR #4 (branch `self-check-audit`,
   stacked on #3) wait for Subham to merge (auto-merge was blocked: merges need his review). GitHub Pages deploys from main.
   PRs #3-#5 merged by Subham (22 Oct).
+- **Beyond accuracy (22 Oct):** real replay healthy head 82.3% acc but balanced acc 58.6%, macro-F1 58.1%: it never predicts
+  SnowIce (28 -> Cloud) or BuiltUp (1); training days had 15 SnowIce, 3 BuiltUp. Balanced sets: all metrics = accuracy.
+  New place kappa 0.07, ECE 0.65. Report balanced acc + macro-F1 next to accuracy from now on.
 - **Old per-photo score removed (22 Oct, Subham's choice):** gone from README and `demo/index.html` (score card -> link card
   to audit.html; `demo_end.png` deleted). Code (`run_agent`, `replay_bars`, `plot_results`) and the experiment log keep it
   as history. Don't bring it back as a headline: it saturates at ~100% and compress-to-fit ties it.

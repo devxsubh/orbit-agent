@@ -1,0 +1,249 @@
+test_set,model,class,photos,labelled_as_this,precision,recall,f1
+aid,small head (SigLIP-base + 30 KB head),Airport,10,10,1.0,1.0,1.0
+aid,small head (SigLIP-base + 30 KB head),BareLand,10,13,0.7692,1.0,0.8696
+aid,small head (SigLIP-base + 30 KB head),BaseballField,10,10,1.0,1.0,1.0
+aid,small head (SigLIP-base + 30 KB head),Beach,10,10,1.0,1.0,1.0
+aid,small head (SigLIP-base + 30 KB head),Bridge,10,10,1.0,1.0,1.0
+aid,small head (SigLIP-base + 30 KB head),Center,10,8,1.0,0.8,0.8889
+aid,small head (SigLIP-base + 30 KB head),Church,10,9,1.0,0.9,0.9474
+aid,small head (SigLIP-base + 30 KB head),Commercial,10,11,0.9091,1.0,0.9524
+aid,small head (SigLIP-base + 30 KB head),DenseResidential,10,10,1.0,1.0,1.0
+aid,small head (SigLIP-base + 30 KB head),Desert,10,8,1.0,0.8,0.8889
+aid,small head (SigLIP-base + 30 KB head),Farmland,10,10,1.0,1.0,1.0
+aid,small head (SigLIP-base + 30 KB head),Forest,10,10,0.9,0.9,0.9
+aid,small head (SigLIP-base + 30 KB head),Industrial,10,10,1.0,1.0,1.0
+aid,small head (SigLIP-base + 30 KB head),Meadow,10,10,1.0,1.0,1.0
+aid,small head (SigLIP-base + 30 KB head),MediumResidential,10,9,1.0,0.9,0.9474
+aid,small head (SigLIP-base + 30 KB head),Mountain,10,11,0.9091,1.0,0.9524
+aid,small head (SigLIP-base + 30 KB head),Park,10,8,1.0,0.8,0.8889
+aid,small head (SigLIP-base + 30 KB head),Parking,10,10,1.0,1.0,1.0
+aid,small head (SigLIP-base + 30 KB head),Playground,10,11,0.9091,1.0,0.9524
+aid,small head (SigLIP-base + 30 KB head),Pond,10,10,1.0,1.0,1.0
+aid,small head (SigLIP-base + 30 KB head),Port,10,10,1.0,1.0,1.0
+aid,small head (SigLIP-base + 30 KB head),RailwayStation,10,10,1.0,1.0,1.0
+aid,small head (SigLIP-base + 30 KB head),Resort,10,11,0.9091,1.0,0.9524
+aid,small head (SigLIP-base + 30 KB head),River,10,11,0.9091,1.0,0.9524
+aid,small head (SigLIP-base + 30 KB head),School,10,11,0.8182,0.9,0.8571
+aid,small head (SigLIP-base + 30 KB head),SparseResidential,10,10,0.9,0.9,0.9
+aid,small head (SigLIP-base + 30 KB head),Square,10,11,0.9091,1.0,0.9524
+aid,small head (SigLIP-base + 30 KB head),Stadium,10,8,1.0,0.8,0.8889
+aid,small head (SigLIP-base + 30 KB head),StorageTanks,10,10,1.0,1.0,1.0
+aid,small head (SigLIP-base + 30 KB head),Viaduct,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Airport,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),BareLand,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),BaseballField,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Beach,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Bridge,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Center,10,9,1.0,0.9,0.9474
+aid,big head (SigLIP 400M + head),Church,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Commercial,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),DenseResidential,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Desert,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Farmland,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Forest,10,11,0.9091,1.0,0.9524
+aid,big head (SigLIP 400M + head),Industrial,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Meadow,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),MediumResidential,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Mountain,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Park,10,9,1.0,0.9,0.9474
+aid,big head (SigLIP 400M + head),Parking,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Playground,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Pond,10,11,0.9091,1.0,0.9524
+aid,big head (SigLIP 400M + head),Port,10,9,1.0,0.9,0.9474
+aid,big head (SigLIP 400M + head),RailwayStation,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Resort,10,12,0.8333,1.0,0.9091
+aid,big head (SigLIP 400M + head),River,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),School,10,11,0.9091,1.0,0.9524
+aid,big head (SigLIP 400M + head),SparseResidential,10,9,1.0,0.9,0.9474
+aid,big head (SigLIP 400M + head),Square,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Stadium,10,9,1.0,0.9,0.9474
+aid,big head (SigLIP 400M + head),StorageTanks,10,10,1.0,1.0,1.0
+aid,big head (SigLIP 400M + head),Viaduct,10,10,1.0,1.0,1.0
+aid,tiny CNN (MobileNetV3-Small),Airport,10,11,0.7273,0.8,0.7619
+aid,tiny CNN (MobileNetV3-Small),BareLand,10,9,1.0,0.9,0.9474
+aid,tiny CNN (MobileNetV3-Small),BaseballField,10,10,1.0,1.0,1.0
+aid,tiny CNN (MobileNetV3-Small),Beach,10,11,0.9091,1.0,0.9524
+aid,tiny CNN (MobileNetV3-Small),Bridge,10,10,0.9,0.9,0.9
+aid,tiny CNN (MobileNetV3-Small),Center,10,13,0.6923,0.9,0.7826
+aid,tiny CNN (MobileNetV3-Small),Church,10,8,1.0,0.8,0.8889
+aid,tiny CNN (MobileNetV3-Small),Commercial,10,12,0.5833,0.7,0.6364
+aid,tiny CNN (MobileNetV3-Small),DenseResidential,10,13,0.6923,0.9,0.7826
+aid,tiny CNN (MobileNetV3-Small),Desert,10,10,0.9,0.9,0.9
+aid,tiny CNN (MobileNetV3-Small),Farmland,10,10,0.9,0.9,0.9
+aid,tiny CNN (MobileNetV3-Small),Forest,10,8,1.0,0.8,0.8889
+aid,tiny CNN (MobileNetV3-Small),Industrial,10,8,0.625,0.5,0.5556
+aid,tiny CNN (MobileNetV3-Small),Meadow,10,11,0.9091,1.0,0.9524
+aid,tiny CNN (MobileNetV3-Small),MediumResidential,10,9,0.8889,0.8,0.8421
+aid,tiny CNN (MobileNetV3-Small),Mountain,10,9,1.0,0.9,0.9474
+aid,tiny CNN (MobileNetV3-Small),Park,10,9,0.8889,0.8,0.8421
+aid,tiny CNN (MobileNetV3-Small),Parking,10,11,0.9091,1.0,0.9524
+aid,tiny CNN (MobileNetV3-Small),Playground,10,11,0.8182,0.9,0.8571
+aid,tiny CNN (MobileNetV3-Small),Pond,10,9,1.0,0.9,0.9474
+aid,tiny CNN (MobileNetV3-Small),Port,10,9,1.0,0.9,0.9474
+aid,tiny CNN (MobileNetV3-Small),RailwayStation,10,11,0.7273,0.8,0.7619
+aid,tiny CNN (MobileNetV3-Small),Resort,10,13,0.6154,0.8,0.6957
+aid,tiny CNN (MobileNetV3-Small),River,10,11,0.9091,1.0,0.9524
+aid,tiny CNN (MobileNetV3-Small),School,10,4,1.0,0.4,0.5714
+aid,tiny CNN (MobileNetV3-Small),SparseResidential,10,12,0.8333,1.0,0.9091
+aid,tiny CNN (MobileNetV3-Small),Square,10,9,0.7778,0.7,0.7368
+aid,tiny CNN (MobileNetV3-Small),Stadium,10,11,0.7273,0.8,0.7619
+aid,tiny CNN (MobileNetV3-Small),StorageTanks,10,8,1.0,0.8,0.8889
+aid,tiny CNN (MobileNetV3-Small),Viaduct,10,10,1.0,1.0,1.0
+aid,SigLIP zero-shot,Airport,10,10,1.0,1.0,1.0
+aid,SigLIP zero-shot,BareLand,10,17,0.5294,0.9,0.6667
+aid,SigLIP zero-shot,BaseballField,10,10,0.9,0.9,0.9
+aid,SigLIP zero-shot,Beach,10,10,1.0,1.0,1.0
+aid,SigLIP zero-shot,Bridge,10,8,1.0,0.8,0.8889
+aid,SigLIP zero-shot,Center,10,6,0.1667,0.1,0.125
+aid,SigLIP zero-shot,Church,10,9,0.5556,0.5,0.5263
+aid,SigLIP zero-shot,Commercial,10,1,1.0,0.1,0.1818
+aid,SigLIP zero-shot,DenseResidential,10,9,0.5556,0.5,0.5263
+aid,SigLIP zero-shot,Desert,10,10,0.8,0.8,0.8
+aid,SigLIP zero-shot,Farmland,10,14,0.7143,1.0,0.8333
+aid,SigLIP zero-shot,Forest,10,13,0.5385,0.7,0.6087
+aid,SigLIP zero-shot,Industrial,10,10,0.7,0.7,0.7
+aid,SigLIP zero-shot,Meadow,10,1,1.0,0.1,0.1818
+aid,SigLIP zero-shot,MediumResidential,10,1,0.0,0.0,0.0
+aid,SigLIP zero-shot,Mountain,10,12,0.6667,0.8,0.7273
+aid,SigLIP zero-shot,Park,10,6,0.6667,0.4,0.5
+aid,SigLIP zero-shot,Parking,10,10,1.0,1.0,1.0
+aid,SigLIP zero-shot,Playground,10,4,0.75,0.3,0.4286
+aid,SigLIP zero-shot,Pond,10,14,0.7143,1.0,0.8333
+aid,SigLIP zero-shot,Port,10,10,0.9,0.9,0.9
+aid,SigLIP zero-shot,RailwayStation,10,9,1.0,0.9,0.9474
+aid,SigLIP zero-shot,Resort,10,10,0.8,0.8,0.8
+aid,SigLIP zero-shot,River,10,10,0.9,0.9,0.9
+aid,SigLIP zero-shot,School,10,5,0.6,0.3,0.4
+aid,SigLIP zero-shot,SparseResidential,10,15,0.0,0.0,0.0
+aid,SigLIP zero-shot,Square,10,19,0.3684,0.7,0.4828
+aid,SigLIP zero-shot,Stadium,10,23,0.3913,0.9,0.5455
+aid,SigLIP zero-shot,StorageTanks,10,12,0.75,0.9,0.8182
+aid,SigLIP zero-shot,Viaduct,10,12,0.8333,1.0,0.9091
+aid,Gemma 3 4B (no training),Airport,10,10,1.0,1.0,1.0
+aid,Gemma 3 4B (no training),BareLand,10,12,0.6667,0.8,0.7273
+aid,Gemma 3 4B (no training),BaseballField,10,9,1.0,0.9,0.9474
+aid,Gemma 3 4B (no training),Beach,10,10,1.0,1.0,1.0
+aid,Gemma 3 4B (no training),Bridge,10,8,1.0,0.8,0.8889
+aid,Gemma 3 4B (no training),Center,10,10,0.1,0.1,0.1
+aid,Gemma 3 4B (no training),Church,10,5,0.8,0.4,0.5333
+aid,Gemma 3 4B (no training),Commercial,10,0,0.0,0.0,0.0
+aid,Gemma 3 4B (no training),DenseResidential,10,20,0.35,0.7,0.4667
+aid,Gemma 3 4B (no training),Desert,10,10,0.7,0.7,0.7
+aid,Gemma 3 4B (no training),Farmland,10,20,0.5,1.0,0.6667
+aid,Gemma 3 4B (no training),Forest,10,25,0.36,0.9,0.5143
+aid,Gemma 3 4B (no training),Industrial,10,14,0.6429,0.9,0.75
+aid,Gemma 3 4B (no training),Meadow,10,2,1.0,0.2,0.3333
+aid,Gemma 3 4B (no training),MediumResidential,10,6,0.1667,0.1,0.125
+aid,Gemma 3 4B (no training),Mountain,10,9,0.8889,0.8,0.8421
+aid,Gemma 3 4B (no training),Park,10,10,0.5,0.5,0.5
+aid,Gemma 3 4B (no training),Parking,10,16,0.625,1.0,0.7692
+aid,Gemma 3 4B (no training),Playground,10,2,0.5,0.1,0.1667
+aid,Gemma 3 4B (no training),Pond,10,7,0.8571,0.6,0.7059
+aid,Gemma 3 4B (no training),Port,10,9,0.8889,0.8,0.8421
+aid,Gemma 3 4B (no training),RailwayStation,10,6,1.0,0.6,0.75
+aid,Gemma 3 4B (no training),Resort,10,12,0.75,0.9,0.8182
+aid,Gemma 3 4B (no training),River,10,5,1.0,0.5,0.6667
+aid,Gemma 3 4B (no training),School,10,11,0.6364,0.7,0.6667
+aid,Gemma 3 4B (no training),SparseResidential,10,6,0.0,0.0,0.0
+aid,Gemma 3 4B (no training),Square,10,7,0.7143,0.5,0.5882
+aid,Gemma 3 4B (no training),Stadium,10,22,0.4091,0.9,0.5625
+aid,Gemma 3 4B (no training),StorageTanks,10,10,0.9,0.9,0.9
+aid,Gemma 3 4B (no training),Viaduct,10,7,0.8571,0.6,0.7059
+eurosat,small head (SigLIP-base + 30 KB head),AnnualCrop,100,99,0.9495,0.94,0.9447
+eurosat,small head (SigLIP-base + 30 KB head),Forest,100,105,0.9238,0.97,0.9463
+eurosat,small head (SigLIP-base + 30 KB head),HerbaceousVegetation,100,96,0.9167,0.88,0.898
+eurosat,small head (SigLIP-base + 30 KB head),Highway,100,101,0.8713,0.88,0.8756
+eurosat,small head (SigLIP-base + 30 KB head),Industrial,100,103,0.9515,0.98,0.9655
+eurosat,small head (SigLIP-base + 30 KB head),Pasture,100,97,0.9381,0.91,0.9239
+eurosat,small head (SigLIP-base + 30 KB head),PermanentCrop,100,97,0.8763,0.85,0.8629
+eurosat,small head (SigLIP-base + 30 KB head),Residential,100,106,0.934,0.99,0.9612
+eurosat,small head (SigLIP-base + 30 KB head),River,100,98,0.9184,0.9,0.9091
+eurosat,small head (SigLIP-base + 30 KB head),SeaLake,100,98,1.0,0.98,0.9899
+eurosat,big head (SigLIP 400M + head),AnnualCrop,100,97,1.0,0.97,0.9848
+eurosat,big head (SigLIP 400M + head),Forest,100,102,0.9314,0.95,0.9406
+eurosat,big head (SigLIP 400M + head),HerbaceousVegetation,100,104,0.8942,0.93,0.9118
+eurosat,big head (SigLIP 400M + head),Highway,100,105,0.8952,0.94,0.9171
+eurosat,big head (SigLIP 400M + head),Industrial,100,99,0.9899,0.98,0.9849
+eurosat,big head (SigLIP 400M + head),Pasture,100,96,0.9375,0.9,0.9184
+eurosat,big head (SigLIP 400M + head),PermanentCrop,100,99,0.9192,0.91,0.9146
+eurosat,big head (SigLIP 400M + head),Residential,100,102,0.9804,1.0,0.9901
+eurosat,big head (SigLIP 400M + head),River,100,98,0.9592,0.94,0.9495
+eurosat,big head (SigLIP 400M + head),SeaLake,100,98,0.9796,0.96,0.9697
+eurosat,tiny CNN (MobileNetV3-Small),AnnualCrop,100,85,1.0,0.85,0.9189
+eurosat,tiny CNN (MobileNetV3-Small),Forest,100,99,0.9798,0.97,0.9749
+eurosat,tiny CNN (MobileNetV3-Small),HerbaceousVegetation,100,83,0.9759,0.81,0.8852
+eurosat,tiny CNN (MobileNetV3-Small),Highway,100,111,0.8829,0.98,0.9289
+eurosat,tiny CNN (MobileNetV3-Small),Industrial,100,105,0.9524,1.0,0.9756
+eurosat,tiny CNN (MobileNetV3-Small),Pasture,100,96,0.9583,0.92,0.9388
+eurosat,tiny CNN (MobileNetV3-Small),PermanentCrop,100,113,0.8673,0.98,0.9202
+eurosat,tiny CNN (MobileNetV3-Small),Residential,100,104,0.9615,1.0,0.9804
+eurosat,tiny CNN (MobileNetV3-Small),River,100,103,0.932,0.96,0.9458
+eurosat,tiny CNN (MobileNetV3-Small),SeaLake,100,101,0.9802,0.99,0.9851
+eurosat,SigLIP zero-shot,AnnualCrop,100,90,0.2333,0.21,0.2211
+eurosat,SigLIP zero-shot,Forest,100,167,0.1856,0.31,0.2322
+eurosat,SigLIP zero-shot,HerbaceousVegetation,100,43,0.1628,0.07,0.0979
+eurosat,SigLIP zero-shot,Highway,100,153,0.4771,0.73,0.5771
+eurosat,SigLIP zero-shot,Industrial,100,202,0.495,1.0,0.6623
+eurosat,SigLIP zero-shot,Pasture,100,6,0.6667,0.04,0.0755
+eurosat,SigLIP zero-shot,PermanentCrop,100,0,0.0,0.0,0.0
+eurosat,SigLIP zero-shot,Residential,100,9,0.5556,0.05,0.0917
+eurosat,SigLIP zero-shot,River,100,134,0.5672,0.76,0.6496
+eurosat,SigLIP zero-shot,SeaLake,100,196,0.4643,0.91,0.6149
+eurosat,"Gemma 3 4B (no training, its 100 photos)",AnnualCrop,10,9,0.2222,0.2,0.2105
+eurosat,"Gemma 3 4B (no training, its 100 photos)",Forest,10,45,0.1778,0.8,0.2909
+eurosat,"Gemma 3 4B (no training, its 100 photos)",HerbaceousVegetation,10,5,0.0,0.0,0.0
+eurosat,"Gemma 3 4B (no training, its 100 photos)",Highway,10,9,0.3333,0.3,0.3158
+eurosat,"Gemma 3 4B (no training, its 100 photos)",Industrial,10,9,0.6667,0.6,0.6316
+eurosat,"Gemma 3 4B (no training, its 100 photos)",Pasture,10,5,0.2,0.1,0.1333
+eurosat,"Gemma 3 4B (no training, its 100 photos)",PermanentCrop,10,0,0.0,0.0,0.0
+eurosat,"Gemma 3 4B (no training, its 100 photos)",Residential,10,8,0.375,0.3,0.3333
+eurosat,"Gemma 3 4B (no training, its 100 photos)",River,10,3,0.6667,0.2,0.3077
+eurosat,"Gemma 3 4B (no training, its 100 photos)",SeaLake,10,7,0.5714,0.4,0.4706
+real,healthy head,Cloud,772,817,0.8727,0.9236,0.8974
+real,healthy head,Trees,177,184,0.6957,0.7232,0.7091
+real,healthy head,ShrubGrass,239,211,0.7109,0.6276,0.6667
+real,healthy head,Cropland,83,92,0.6304,0.6988,0.6629
+real,healthy head,BuiltUp,1,0,0.0,0.0,0.0
+real,healthy head,Bare,139,146,0.7877,0.8273,0.807
+real,healthy head,SnowIce,28,0,0.0,0.0,0.0
+real,healthy head,Water,310,299,0.9197,0.8871,0.9031
+real,new place (EuroSAT head),Cloud,772,0,0.0,0.0,0.0
+real,new place (EuroSAT head),Trees,177,171,0.1637,0.1582,0.1609
+real,new place (EuroSAT head),ShrubGrass,239,631,0.2694,0.7113,0.3908
+real,new place (EuroSAT head),Cropland,83,177,0.2373,0.506,0.3231
+real,new place (EuroSAT head),BuiltUp,1,47,0.0213,1.0,0.0417
+real,new place (EuroSAT head),Bare,139,0,0.0,0.0,0.0
+real,new place (EuroSAT head),SnowIce,28,0,0.0,0.0,0.0
+real,new place (EuroSAT head),Water,310,723,0.1494,0.3484,0.2091
+real,silent swap,Cloud,772,813,0.877,0.9236,0.8997
+real,silent swap,Trees,177,183,0.6995,0.7232,0.7111
+real,silent swap,ShrubGrass,239,234,0.641,0.6276,0.6342
+real,silent swap,Cropland,83,74,0.5405,0.4819,0.5096
+real,silent swap,BuiltUp,1,0,0.0,0.0,0.0
+real,silent swap,Bare,139,146,0.7877,0.8273,0.807
+real,silent swap,SnowIce,28,0,0.0,0.0,0.0
+real,silent swap,Water,310,299,0.9197,0.8871,0.9031
+real,bit flips,Cloud,772,692,0.8512,0.763,0.8046
+real,bit flips,Trees,177,128,0.6875,0.4972,0.577
+real,bit flips,ShrubGrass,239,118,0.6356,0.3138,0.4202
+real,bit flips,Cropland,83,22,0.5909,0.1566,0.2476
+real,bit flips,BuiltUp,1,0,0.0,0.0,0.0
+real,bit flips,Bare,139,608,0.1086,0.4748,0.1767
+real,bit flips,SnowIce,28,0,0.0,0.0,0.0
+real,bit flips,Water,310,181,0.9613,0.5613,0.7088
+real,damaged camera: blur,Cloud,772,952,0.7763,0.9573,0.8573
+real,damaged camera: blur,Trees,177,106,0.7642,0.4576,0.5724
+real,damaged camera: blur,ShrubGrass,239,174,0.6897,0.5021,0.5811
+real,damaged camera: blur,Cropland,83,70,0.6714,0.5663,0.6144
+real,damaged camera: blur,BuiltUp,1,0,0.0,0.0,0.0
+real,damaged camera: blur,Bare,139,169,0.6568,0.7986,0.7208
+real,damaged camera: blur,SnowIce,28,0,0.0,0.0,0.0
+real,damaged camera: blur,Water,310,278,0.9173,0.8226,0.8673
+real,damaged camera: noise,Cloud,772,884,0.8088,0.9262,0.8635
+real,damaged camera: noise,Trees,177,246,0.5244,0.7288,0.6099
+real,damaged camera: noise,ShrubGrass,239,135,0.7333,0.4142,0.5294
+real,damaged camera: noise,Cropland,83,60,0.6667,0.4819,0.5594
+real,damaged camera: noise,BuiltUp,1,0,0.0,0.0,0.0
+real,damaged camera: noise,Bare,139,99,0.8384,0.5971,0.6975
+real,damaged camera: noise,SnowIce,28,0,0.0,0.0,0.0
+real,damaged camera: noise,Water,310,325,0.8615,0.9032,0.8819

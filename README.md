@@ -143,6 +143,39 @@ Files: `experiments/head_aid_siglip-base_n20_final.csv`, `experiments/head_aid_s
 
 File: `experiments/confidence_aid_test_gemma3-4b_r3_n10_skip20.csv` (+ `.png` chart)
 
+## Beyond accuracy: confusion matrices and per-class scores
+
+`python -m src.eval.metrics_report` scores every labeller with more than accuracy: balanced accuracy (every
+class counts the same), precision / recall / F1 per class, macro-F1, Cohen's kappa, calibration error, and
+Brier score (where every class's chance is known), plus the full confusion matrix of each one
+(`experiments/confusion/*.csv`, rows = true class, columns = label given).
+
+| | Accuracy | Balanced accuracy | Macro-F1 | Cohen's kappa | Calibration error | Brier |
+|---|---|---|---|---|---|---|
+| AID: small head | 95.7% | 95.7% | 95.6% | 0.955 | 0.036 | - |
+| AID: tiny CNN | 85.0% | 85.0% | 84.9% | 0.845 | 0.049 | - |
+| AID: SigLIP zero-shot | 66.3% | 66.3% | 63.8% | 0.652 | 0.046 | 0.452 |
+| AID: Gemma 3 4B | 63.0% | 63.0% | 60.8% | 0.617 | - | - |
+| Sentinel-2: small head | 92.8% | 92.8% | 92.8% | 0.920 | 0.016 | - |
+| Sentinel-2: tiny CNN | 94.6% | 94.6% | 94.5% | 0.940 | 0.016 | - |
+| **Real Sentinel-2A: healthy head** | 82.3% | 58.6% | 58.1% | 0.756 | 0.029 | 0.266 |
+| Real: new place (EuroSAT head) | 20.0% | 34.1% | 14.1% | 0.072 | 0.652 | 1.391 |
+| Real: bit flips | 57.5% | 34.6% | 36.7% | 0.442 | 0.331 | 0.798 |
+
+- **On balanced test sets (AID, EuroSAT: equal photos per class) the metrics all agree with accuracy.**
+- **On real photos they don't.** The healthy head is 82.3% right, but its balanced accuracy is only **58.6%**:
+  it **never** says SnowIce or BuiltUp. All 28 snow photos become Cloud (snow and cloud look alike in colour
+  photos, as the eye check found), and the training days had only ~15 snow and 3 built-up photos. Without
+  those two classes its macro-F1 would be 77%. This is why the audit's class shares, with an error bar per
+  class, are the product, not the labels.
+- Most mixed-up pairs: real photos ShrubGrass -> Trees, SnowIce -> Cloud, Water -> Cloud; Sentinel-2 River ->
+  Highway; AID (Gemma) Playground -> Stadium, Meadow -> Farmland.
+
+![Confusion matrices on what Sentinel-2A really photographed: healthy head and the EuroSAT head in a new place](docs/confusion_real.png)
+
+More: `docs/confusion_eurosat.png` (small head vs tiny CNN), `docs/confusion_aid.png` (small head vs Gemma 3).
+Files: `experiments/metrics_summary_*.csv`, `experiments/metrics_per_class_*.csv`.
+
 ## What we learned
 - **On real Sentinel-2 photos, the head must be trained on Sentinel-2 photos.** The AID-trained head
   gets only 33% on EuroSAT (Sentinel-2), about the same as Gemma (29%): it calls most blurry 64 px photos
@@ -278,6 +311,7 @@ python -m src.eval.label_check          # contact sheets to check the real label
 python -m src.data.eurosat_geo          # where each EuroSAT photo is (one 2 GB stream, nothing big saved)
 python -m src.eval.spatial_split        # Sentinel-2 accuracy with a test split by location (~5 min)
 python -m src.eval.jetson_bench         # time (and on a Jetson, energy) of the onboard steps
+python -m src.eval.metrics_report       # confusion matrices, per-class precision/recall/F1, kappa, Brier (~1 min)
 ```
 
 More commands (EuroSAT, prompts, image sizes, replay options) are in [docs/experiment_log.md](docs/experiment_log.md).
