@@ -14,5 +14,6 @@ langgraph       # the decision loop
 # Agent v4: frozen image model + small classifier (src/model/head.py)
 torch
 transformers
+sentencepiece   # SigLIP's text side (zero-shot rival, src/model/zeroshot.py)
 scikit-learn
 kaggle          # run training on a free Kaggle GPU (src/cloud/kaggle_run.py)

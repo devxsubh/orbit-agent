@@ -43,7 +43,7 @@ THUMB = 6_400   # a 160 px JPEG thumbnail (measured on AID photos, src/eval/comp
 FIRST_DAY = datetime(2026, 10, 19, tzinfo=timezone.utc)
 SEEDS = [42, 43, 44]
 LEVEL = 0.9
-INTERVALS = ["normal", "t", "safe", "scaled", "scaled+1"]
+INTERVALS = ["normal", "t", "safe", "scaled", "scaled+1", "betting"]
 # ASSUMPTION (not measured): an India-like mix of EuroSAT classes; three are rare (2-4%)
 SHARES = {"AnnualCrop": .30, "Forest": .12, "HerbaceousVegetation": .12, "Highway": .02,
           "Industrial": .02, "Pasture": .06, "PermanentCrop": .06, "Residential": .08,

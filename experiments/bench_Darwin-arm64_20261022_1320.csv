@@ -1,0 +1,5 @@
+computer,device,idle_watts,step,ms_per_photo,watts,joules_per_photo
+Darwin arm64,mps,nan,"image model, batch 1",26.86,nan,nan
+Darwin arm64,mps,nan,"image model, batch 8",19.07,nan,nan
+Darwin arm64,mps,nan,small head (CPU),0.0044,nan,nan
+Darwin arm64,mps,nan,"audit sampler, one pass of 500 photos",0.001,nan,nan
