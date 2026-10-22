@@ -1,0 +1,106 @@
+data,station,rate_mbps,seed,day,method,halfwidth_pts,holds,rmse_pts,worst_error_pts,head_right,labels_so_far
+real,delhi,0.1,42,2026-10-13,closed loop,4.426,0.875,4.349,7.852,0.4228,74
+real,delhi,0.1,42,2026-10-13,launch head + audit,7.699,1.0,5.618,12.613,,
+real,delhi,0.1,42,2026-10-13,launch head + triage,2.53,0.125,17.366,36.992,,
+real,delhi,0.1,42,2026-10-13,head trained before launch + audit,3.202,0.875,2.502,5.583,,
+real,delhi,0.1,42,2026-10-13,raw random,5.757,0.875,3.441,6.729,,
+real,delhi,0.1,42,2026-10-14,closed loop,7.362,1.0,4.586,10.355,0.6705,114
+real,delhi,0.1,42,2026-10-14,launch head + audit,11.242,1.0,6.927,9.893,,
+real,delhi,0.1,42,2026-10-14,launch head + triage,3.247,0.125,13.648,31.214,,
+real,delhi,0.1,42,2026-10-14,head trained before launch + audit,5.273,1.0,0.978,2.234,,
+real,delhi,0.1,42,2026-10-14,raw random,8.882,1.0,4.987,10.289,,
+real,delhi,0.1,42,2026-10-15,closed loop,3.201,1.0,1.753,3.537,0.8019,164
+real,delhi,0.1,42,2026-10-15,launch head + audit,8.533,1.0,4.317,10.345,,
+real,delhi,0.1,42,2026-10-15,launch head + triage,2.896,0.0,16.53,38.647,,
+real,delhi,0.1,42,2026-10-15,head trained before launch + audit,3.554,1.0,0.681,1.397,,
+real,delhi,0.1,42,2026-10-15,raw random,6.802,0.875,6.133,12.33,,
+real,delhi,0.1,42,2026-10-16,closed loop,4.524,1.0,2.031,4.34,0.8325,215
+real,delhi,0.1,42,2026-10-16,launch head + audit,9.937,1.0,4.523,10.037,,
+real,delhi,0.1,42,2026-10-16,launch head + triage,2.772,0.25,15.309,34.01,,
+real,delhi,0.1,42,2026-10-16,head trained before launch + audit,3.869,1.0,2.073,3.581,,
+real,delhi,0.1,42,2026-10-16,raw random,6.643,1.0,3.033,6.028,,
+real,delhi,0.1,42,2026-10-17,closed loop,3.714,0.75,2.986,5.72,0.7738,255
+real,delhi,0.1,42,2026-10-17,launch head + audit,11.523,1.0,11.372,23.034,,
+real,delhi,0.1,42,2026-10-17,launch head + triage,2.841,0.125,18.257,41.176,,
+real,delhi,0.1,42,2026-10-17,head trained before launch + audit,6.155,1.0,3.443,7.436,,
+real,delhi,0.1,42,2026-10-17,raw random,7.853,1.0,4.726,9.527,,
+real,delhi,0.1,42,2026-10-18,closed loop,4.178,1.0,2.299,4.309,0.8008,296
+real,delhi,0.1,42,2026-10-18,launch head + audit,10.768,0.875,8.09,16.515,,
+real,delhi,0.1,42,2026-10-18,launch head + triage,2.631,0.125,19.47,42.276,,
+real,delhi,0.1,42,2026-10-18,head trained before launch + audit,4.961,1.0,3.87,7.358,,
+real,delhi,0.1,42,2026-10-18,raw random,6.822,0.875,3.049,6.098,,
+real,delhi,0.1,42,2026-10-19,closed loop,4.036,1.0,2.919,4.092,0.8031,356
+real,delhi,0.1,42,2026-10-19,launch head + audit,6.987,0.75,7.652,16.2,,
+real,delhi,0.1,42,2026-10-19,launch head + triage,2.719,0.125,17.963,39.768,,
+real,delhi,0.1,42,2026-10-19,head trained before launch + audit,3.509,1.0,2.083,4.963,,
+real,delhi,0.1,42,2026-10-19,raw random,5.994,0.875,3.608,8.826,,
+real,delhi,0.1,43,2026-10-13,closed loop,3.644,0.875,2.891,5.402,0.4797,74
+real,delhi,0.1,43,2026-10-13,launch head + audit,8.339,0.875,5.736,14.8,,
+real,delhi,0.1,43,2026-10-13,launch head + triage,2.53,0.125,17.366,36.992,,
+real,delhi,0.1,43,2026-10-13,head trained before launch + audit,3.415,0.75,3.226,6.228,,
+real,delhi,0.1,43,2026-10-13,raw random,5.993,0.75,6.118,13.165,,
+real,delhi,0.1,43,2026-10-14,closed loop,7.642,1.0,4.187,9.798,0.6705,114
+real,delhi,0.1,43,2026-10-14,launch head + audit,11.817,1.0,5.353,12.61,,
+real,delhi,0.1,43,2026-10-14,launch head + triage,3.247,0.125,13.648,31.214,,
+real,delhi,0.1,43,2026-10-14,head trained before launch + audit,5.565,0.875,4.137,8.94,,
+real,delhi,0.1,43,2026-10-14,raw random,9.224,1.0,3.183,5.78,,
+real,delhi,0.1,43,2026-10-15,closed loop,5.538,1.0,4.235,9.4,0.7101,164
+real,delhi,0.1,43,2026-10-15,launch head + audit,9.714,0.875,12.562,28.618,,
+real,delhi,0.1,43,2026-10-15,launch head + triage,2.896,0.0,16.53,38.647,,
+real,delhi,0.1,43,2026-10-15,head trained before launch + audit,3.575,0.875,1.956,4.419,,
+real,delhi,0.1,43,2026-10-15,raw random,5.975,1.0,3.586,7.676,,
+real,delhi,0.1,43,2026-10-16,closed loop,3.092,1.0,0.928,2.169,0.8274,215
+real,delhi,0.1,43,2026-10-16,launch head + audit,9.04,0.875,4.339,7.614,,
+real,delhi,0.1,43,2026-10-16,launch head + triage,2.772,0.25,15.309,34.01,,
+real,delhi,0.1,43,2026-10-16,head trained before launch + audit,3.999,1.0,1.912,3.569,,
+real,delhi,0.1,43,2026-10-16,raw random,6.223,1.0,3.492,5.013,,
+real,delhi,0.1,43,2026-10-17,closed loop,7.086,1.0,3.887,8.006,0.7692,255
+real,delhi,0.1,43,2026-10-17,launch head + audit,7.442,0.75,11.677,23.823,,
+real,delhi,0.1,43,2026-10-17,launch head + triage,2.841,0.125,18.257,41.176,,
+real,delhi,0.1,43,2026-10-17,head trained before launch + audit,4.949,1.0,1.736,3.532,,
+real,delhi,0.1,43,2026-10-17,raw random,6.913,0.875,6.208,11.549,,
+real,delhi,0.1,43,2026-10-18,closed loop,7.187,1.0,2.571,6.508,0.7561,296
+real,delhi,0.1,43,2026-10-18,launch head + audit,9.197,0.875,8.183,13.664,,
+real,delhi,0.1,43,2026-10-18,launch head + triage,2.631,0.125,19.47,42.276,,
+real,delhi,0.1,43,2026-10-18,head trained before launch + audit,4.87,1.0,2.16,3.527,,
+real,delhi,0.1,43,2026-10-18,raw random,6.655,1.0,4.78,11.382,,
+real,delhi,0.1,43,2026-10-19,closed loop,3.081,1.0,1.589,3.216,0.7876,356
+real,delhi,0.1,43,2026-10-19,launch head + audit,7.619,1.0,4.34,9.643,,
+real,delhi,0.1,43,2026-10-19,launch head + triage,2.719,0.125,17.963,39.768,,
+real,delhi,0.1,43,2026-10-19,head trained before launch + audit,3.541,1.0,1.176,2.204,,
+real,delhi,0.1,43,2026-10-19,raw random,5.516,0.875,4.657,11.575,,
+real,delhi,0.1,44,2026-10-13,closed loop,4.676,0.875,3.327,7.476,0.4756,74
+real,delhi,0.1,44,2026-10-13,launch head + audit,9.054,1.0,2.275,4.973,,
+real,delhi,0.1,44,2026-10-13,launch head + triage,2.53,0.125,17.366,36.992,,
+real,delhi,0.1,44,2026-10-13,head trained before launch + audit,3.208,1.0,1.082,2.083,,
+real,delhi,0.1,44,2026-10-13,raw random,6.094,1.0,3.15,5.981,,
+real,delhi,0.1,44,2026-10-14,closed loop,8.234,1.0,3.931,7.584,0.6936,114
+real,delhi,0.1,44,2026-10-14,launch head + audit,10.085,1.0,2.203,4.045,,
+real,delhi,0.1,44,2026-10-14,launch head + triage,3.247,0.125,13.648,31.214,,
+real,delhi,0.1,44,2026-10-14,head trained before launch + audit,5.311,0.875,6.374,14.64,,
+real,delhi,0.1,44,2026-10-14,raw random,9.186,1.0,7.63,13.064,,
+real,delhi,0.1,44,2026-10-15,closed loop,3.52,0.875,2.355,3.992,0.8019,164
+real,delhi,0.1,44,2026-10-15,launch head + audit,8.755,0.875,8.241,13.965,,
+real,delhi,0.1,44,2026-10-15,launch head + triage,2.896,0.0,16.53,38.647,,
+real,delhi,0.1,44,2026-10-15,head trained before launch + audit,3.928,1.0,1.504,2.619,,
+real,delhi,0.1,44,2026-10-15,raw random,5.785,0.875,5.763,10.76,,
+real,delhi,0.1,44,2026-10-16,closed loop,3.574,1.0,2.159,4.701,0.8376,215
+real,delhi,0.1,44,2026-10-16,launch head + audit,9.607,1.0,7.891,18.461,,
+real,delhi,0.1,44,2026-10-16,launch head + triage,2.772,0.25,15.309,34.01,,
+real,delhi,0.1,44,2026-10-16,head trained before launch + audit,3.594,1.0,2.033,4.492,,
+real,delhi,0.1,44,2026-10-16,raw random,6.274,1.0,3.515,6.853,,
+real,delhi,0.1,44,2026-10-17,closed loop,3.334,1.0,1.72,2.669,0.7738,255
+real,delhi,0.1,44,2026-10-17,launch head + audit,10.858,1.0,10.638,20.521,,
+real,delhi,0.1,44,2026-10-17,launch head + triage,2.841,0.125,18.257,41.176,,
+real,delhi,0.1,44,2026-10-17,head trained before launch + audit,4.442,1.0,2.477,4.263,,
+real,delhi,0.1,44,2026-10-17,raw random,7.86,1.0,2.489,4.942,,
+real,delhi,0.1,44,2026-10-18,closed loop,3.582,1.0,2.069,3.101,0.7805,296
+real,delhi,0.1,44,2026-10-18,launch head + audit,9.777,1.0,5.04,9.452,,
+real,delhi,0.1,44,2026-10-18,launch head + triage,2.631,0.125,19.47,42.276,,
+real,delhi,0.1,44,2026-10-18,head trained before launch + audit,4.294,1.0,1.286,2.617,,
+real,delhi,0.1,44,2026-10-18,raw random,7.018,1.0,4.21,7.317,,
+real,delhi,0.1,44,2026-10-19,closed loop,4.112,1.0,2.603,4.299,0.7954,356
+real,delhi,0.1,44,2026-10-19,launch head + audit,7.318,1.0,3.91,7.363,,
+real,delhi,0.1,44,2026-10-19,launch head + triage,2.719,0.125,17.963,39.768,,
+real,delhi,0.1,44,2026-10-19,head trained before launch + audit,3.46,1.0,1.451,2.909,,
+real,delhi,0.1,44,2026-10-19,raw random,5.913,1.0,3.602,8.448,,

@@ -1,6 +1,6 @@
 # orbit-agent: context for Claude
 
-Last updated: 18 Oct 2026 (handed over from a claude.ai chat).
+Last updated: 22 Oct 2026 (first written 18 Oct, handed over from a claude.ai chat).
 
 ## How to work with me (Subham)
 - **Write simple, short, plain language.** Dense answers are hard for me to read.
@@ -102,6 +102,22 @@ smart compression (FOOL paper).
 | `src/eval/overfit_check.py` | Overfitting checks for the small head: train/tuning/final/FRESH accuracy with bootstrap ranges, near-duplicate (cosine > 0.95) check, replay with fresh photos. FRESH = AID 131-160/class, EuroSAT next 100/class | **done, works** |
 | `paper/outline.md` | Paper outline for IGARSS 2027 (4 pages, deadline ~10 Jan 2027): titles, sections with page budget, Tables 1-2 + Figures (results.png, label_curve.png) with numbers and source files, TODO list (Jetson first), timeline | draft |
 | `src/cloud/kaggle_run.py` + `kaggle/` | Runs `head.py` on a free Kaggle T4 from the terminal: writes `kaggle/orbit-agent-head.ipynb` (clones the repo from GitHub, so push first), pushes, waits, copies CSVs to `experiments/` and embeddings to `data/processed/` | **done, works** (full run 20 Oct, 72 min on a T4) |
+| `notes/research_review_2026-10-20.md` + `notes/pilots/` | Senior-researcher review: weak spots, 3 new directions, the pick (audited downlink), plan; two pilots (compress-to-fit, audit) | done |
+| `src/data/s2_real.py` | **Real replay:** for every 30 s daylight slot of Sentinel-2A's real path, finds the image Sentinel-2A really took within 5 min (Element 84 Earth Search STAC, AWS COGs), cuts a 224 px chip (10 m), label = image's cloud map (SCL) if mostly cloud/snow else main ESA WorldCover 2021 class (8 classes). Resumable (`slots.csv`, `chips.csv`), 6-19 Oct 2026. Sim times match real images within 0-7 s; ~1 in 6 slots has an image (land + coast only) | **done, works** |
+| `src/agent/audit.py` | **Audited downlink** policy: label + chances for every photo, then full photos picked at random with known chances (∝ expected error, floor x average chance), fixed count per pass (Pareto sampling). Also raw in order / raw random / labels only / triage (v4 rule) / stratified, all on arrays | **done, works** |
+| `src/eval/estimate.py` | Ground side: count, raw, difference (Horvitz-Thompson), tuned (PPI++-style, cross-fitted), stratified (Olofsson); per-pass combine; error bars normal / t / safe / scaled / **scaled+1** (default) / **betting** (22 Oct, no approximation, wider). `python -m src.eval.estimate` = self-test on fakes | **done, works** |
+| `src/model/faults.py` | Failure suite: new camera (mapped chances), silent swap (as sure as right answers), radiation bit flips in the 30 KB head (subtle: 5-30 pt drop), damaged camera (blur/noise/stripes, re-embedded); chances computed in 64-bit | **done, works** |
+| `src/eval/audit_test.py` | Main audit experiment: `--data eurosat` (stand-in replay, India-like shares ASSUMED) or `--data real`; scenarios x policies x rates x 3 stations x 7 days x 3 seeds -> `experiments/audit_summary_*.csv` (+ every estimate in `data/processed/audit_runs_*.csv.gz`) | **done, works** |
+| `src/eval/audit_floor.py`, `src/eval/compress_test.py`, `src/eval/audit_loop.py` | Floor sweep; R sweep with compress-to-fit (real JPEG ladder) + thumbnail audits; closed loop (new camera, zero labels, head retrained after every pass, used 1 pass later) | **done, works** |
+| `src/agent/self_check.py` | **Self-checking audit:** ground keeps seen/expected mistakes over all checks so far; > 1.5 -> safe mode (uniform checks + chances recalibrated from past checks, a predicted->true table). Decided on EuroSAT only, tested once on real photos. Method "audit, self-check" in `audit_test` (memory across a mission); the demo uses it | **done, works** |
+| `src/eval/audit_tables.py`, `src/eval/plot_audit.py` | Markdown tables from the newest CSVs; charts `docs/audit_{honesty,floor,rsweep,loop,loop_real}.png` (palette validated: blue/yellow/magenta + grey) | **done, works** |
+| `src/demo/export_audit.py` + `demo/audit.html` | Second demo page "the satellite reports its own error": per day, class shares truth vs audit (± bar) vs triage vs labels; onboard model switch; checked real photos; `?model=1&day=3`; tested at 1440 px and 390 px | **done, works** |
+| `paper/outline_v2_audit.md` | New paper outline (audited downlink); old outline kept, its agent v4 = baseline | draft |
+| `src/model/zeroshot.py` | Fair zero-shot rival: SigLIP-base + class names ("a satellite photo of {words}."), same saved embeddings, temperature fitted on tuning. CSV in head format (`zeroshot_{aid,eurosat}_...`, not picked up by run_agent unless `--head`) | **done, works** |
+| `src/eval/label_check.py` | Real labels by eye: 150 real test-day photos (~20/class, seed 0), 6 contact sheets in `data/processed/label_check/`, verdicts in `experiments/label_check_real.csv`; `--summary` | **done** (first pass by Claude, Subham to re-check) |
+| `src/data/eurosat_geo.py` | EuroSAT coordinates: streams `EuroSAT_MS.zip` (2 GB) from Zenodo once, keeps the first 4 KB of each GeoTIFF (geo tags), -> `data/processed/eurosat_coords.csv`. Zenodo gives 429 after ~100 small range requests, so one stream | **done, works** |
+| `src/eval/spatial_split.py` | EuroSAT head with a split by location: 10 km blocks (50 km check), whole blocks to train/tuning/final, same sizes, 3 seeds | **done, works** |
+| `src/eval/jetson_bench.py` | Time (+ energy via `tegrastats` on a Jetson) of image model (batch 1/8) + head + audit sampler; saves `experiments/bench_<board>_*.csv` (board name, never the host name) | **done** (Mac only) |
 
 ## How to run
 ```bash
@@ -130,6 +146,18 @@ python -m src.model.vlm path/to/photo.jpg                # describe one photo
 python -m src.model.head --backbone siglip-base --train-per-class 20   # agent v4 head, quick Mac test (~15 min first time)
 python -m src.cloud.kaggle_run                           # agent v4 full run on a Kaggle GPU (push code first)
 python check_setup.py                                    # health check
+
+# Audited downlink (20 Oct)
+python -m src.data.s2_real                               # real replay: what Sentinel-2A really photographed, 6-19 Oct (resumable)
+python -m src.eval.estimate                              # self-test of the ground estimators (fakes, 10 s)
+python -m src.eval.audit_test                            # audit vs policies, healthy/broken model, EuroSAT replay (~5 min)
+python -m src.eval.audit_test --data real                # same on the real replay (head trained 6-12 Oct, tested 13-19)
+python -m src.eval.audit_floor                           # floor sweep (~5 min)
+python -m src.eval.compress_test                         # R sweep vs compress-to-fit (~3 min)
+python -m src.eval.audit_loop --data real                # closed loop: new camera, zero labels
+python -m src.eval.audit_tables                          # markdown tables from the newest CSVs
+python -m src.eval.plot_audit                            # docs/audit_*.png
+python -m src.demo.export_audit && open demo/audit.html  # second demo page (?model=1&day=3)
 ```
 
 ## Results so far
@@ -222,8 +250,45 @@ python check_setup.py                                    # health check
 - **README, chart and demo show agent v4 (small head) since 20 Oct.** Screenshots made with headless Chrome:
   `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --window-size=1440,900
   --virtual-time-budget=5000 --screenshot=out.png "file://$PWD/demo/index.html?t=19900"` (t=86400 = end of day).
+- **Research review + pivot (20 Oct evening, `notes/research_review_2026-10-20.md`):** the old score can't fail
+  (a 50 B label = a 280 KB photo = "1 correct") and compress-to-fit (no AI) ties agent v4 in the old replay
+  range. New direction = **audited downlink**: product = the day's class shares with a 90% error bar; policy =
+  labels for all + random checks with known chances (floor 0.5) -> honest whatever the onboard model is like.
+- **Real replay (20 Oct, `src/data/s2_real.py`):** 3,527 photos Sentinel-2A really took, 6-19 Oct (cloud 46%,
+  water 17%, built-up 0.1%). Head trained 6-12 Oct = 82.3% right on 13-19 Oct. `audit_summary_real_20261020_2023.csv`,
+  0.05 Mbps: healthy labels-only 1.9 pts / bars held 80% (rare 60%) -> even a healthy model misleads on real photos;
+  EuroSAT head (no cloud class): labels 19.5 / 9%, triage 16.6 / 20%, audit 8.3 / 97%. Audit holds 85-99% everywhere
+  (weakest: bit flips at 0.25 Mbps 85%; floor 1 = 98%). Price: with a badly broken model the audit is noisier than
+  raw random (8.3 vs 5.9). Real closed loop (0.1 Mbps): 46% -> 83% right in 4 days from 215 checked photos,
+  bars held 96%; launch head + triage 12%. Demo `demo/audit.html` uses this data at 0.1 Mbps.
+- **Audit results, EuroSAT replay (20 Oct, `audit_summary_eurosat_20261020_2023.csv`, 0.25 Mbps, 63 days):**
+  healthy head: triage 0.26 pts error (best, but no honest bar), audit 0.47 / bar held 98%. Broken models
+  (new camera 28% right, silent swap, bit flips 84%, damaged camera 43-62%): labels-only / triage off by
+  1.4-11.6 pts, bars held 0-80%; audit 1.2-2.7 pts, held 86-97%. Default bar = "scaled+1" (rare classes);
+  still open: new camera, rare classes, 0.25-0.5 Mbps ~80-87% -> try betting intervals.
+- **Self-checking audit (20 Oct, late, `src/agent/self_check.py`):** T = 1.5 and safe mode chosen on EuroSAT, one real
+  test: broken models now BEAT raw random (real 0.05 Mbps: EuroSAT head 5.34 vs 5.89, bit flips 5.50 vs 5.89; plain
+  audit was 8.3/8.1), bars 95-98%; real bit flips 0.25 Mbps 85% -> 96%; EuroSAT new camera rare classes 80% -> 95%.
+  Healthy: <= 3% of passes switched. Costs: EuroSAT damaged camera +0.1-0.3 pts; real 0.02 Mbps false switches
+  (swap 9.1 vs 5.7). Next idea: recalibrate with the full chance vector.
+- **Floor sweep:** floor 0.5 = free insurance (healthy 0.47 pts like lower floors; bit flips held 95% vs 86-88%).
+- **R sweep (compress_test, same bytes + same human checks):** R <= 14 compress-to-fit is exact (onboard AI adds
+  nothing); R >= 140 thumbnail audits (160 px, 6.4 KB) give ±0.4-1.1 vs ±1.8-4.5 for compression; R* ~ 30.
+- **Closed loop (EuroSAT, 0.25 Mbps):** head from zero labels reaches 91% by day 2, bars held 100% (EuroSAT photos
+  repeat, so inflated); launch head + triage held 5%, 24 pts worst day. Loop CSVs now named `audit_loop_<data>_<rate>mbps_*`.
 - **Kaggle:** username `subhammahapatra004`. Login works with the new token in `~/.kaggle/access_token` (20 Oct).
-- **Work is on git branch `main`** (agent-v2 was merged via PRs #1 and #2). GitHub Pages deploys from main.
+- **Fixes for the "100%" flaws (22 Oct):** README now leads with the audit; the old per-photo score is "Older result"
+  with a warning (compress-to-fit also gets 100% / 0 wrong at 0.25-4 Mbps, checked in `compress_sweep_20261020_1938.csv`).
+  Demo index.html has a "Careful" note + link to audit.html. SigLIP zero-shot: AID 66.3% (Gemma 63%), EuroSAT 40.8%
+  (Gemma 29%); as agent v4 labeller at 1 Mbps 94% / 67 wrong. Betting bars (`interval(e, "betting")`, hedged capital,
+  c = 0.75 picked on fake data): held >= 90% for every class in every cell (EuroSAT + real), 2.4x wider on EuroSAT,
+  1.1x on real at 0.25 Mbps; old audit columns unchanged (`audit_summary_*_20261022_13*.csv`). Eye check: 119/123 = 97%
+  where the eye could tell; snow vs cloud can't be told in RGB; half-cloudy photos get the land class. Mac bench 19 ms/photo.
+  Spatial split (10 km blocks, 3 seeds): 93.4% ± 0.6% (50 km 92.5%) vs random 92.7% -> no leak; near-twins (cos > 0.95)
+  stay ~67% even 50 km apart, so the old "88.4% without twins" was a selection effect, not a leak.
+- **Git:** PR #3 (audited downlink, branch `audited-downlink`) and the self-check PR #4 (branch `self-check-audit`,
+  stacked on #3) wait for Subham to merge (auto-merge was blocked: merges need his review). GitHub Pages deploys from main.
+  The 22 Oct fixes are on branch `fix-100-flaws` (stacked on `self-check-audit`).
 
 ## Key decisions
 - Satellites: Sentinel-2A (NORAD 40697), Sentinel-2B (42063). Default ground station: Delhi.
@@ -237,15 +302,12 @@ python check_setup.py                                    # health check
 - Compare our accuracy with NAVI's 88.16% on AID (AID photos are sharper than EuroSAT's).
 - Big files stay out of git: `data/raw/*` and the PDFs are in `.gitignore`.
 
-## Next steps
-1. Run the EuroSAT baseline on the real model. Record accuracy, speed and mix-ups in README.
-2. Improve the baseline: try prompts, image size, other models (e.g. gemma3n), and the AID dataset.
-3. Connect orbit + photos: replay photos along the satellite's real path (`ground_track()`),
-   so the "satellite" sees a queue of photos between ground passes.
-4. Build agent v1 in `src/agent/` with LangGraph: skip / describe / crop / full + "not sure"
-   (abstain), with a downlink budget taken from the contact windows.
-5. Experiments vs the baselines. Main number: correct info per MB sent.
-6. Demo video by about week 4 (for internship applications). Paper draft by week 10.
+## Next steps (updated 22 Oct; label check, betting bars, spatial split, zero-shot rival done)
+1. Paper = the self-checking audited downlink (`paper/outline_v2_audit.md`, IGARSS 2027). Write sections 3-4.
+2. Subham re-checks `experiments/label_check_real.csv` (Claude's first pass). Maybe: SWIR to split snow from cloud.
+3. Jetson Orin Nano: run `python -m src.eval.jetson_bench` on the board (time + energy).
+4. Demo video from `demo/audit.html` (switch to a broken model: triage's numbers go wrong, the audit's bars hold).
+5. Optional: more real days; a second station network. (Spatial EuroSAT split done 22 Oct: no leak.)
 
 ## Papers (in `papers/`, reading order in `papers/README.md`)
 01 Orbital Edge Computing (Denby & Lucia 2020) · 02 Kodan (2023, **missing**: my network blocks NSF,

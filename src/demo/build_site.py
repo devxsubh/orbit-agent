@@ -76,6 +76,14 @@ def main() -> None:
     shutil.copy(ROOT / "docs" / "logo.svg", SITE / "docs" / "logo.svg")
     (SITE / "index.html").write_text(REDIRECT)
 
+    # Second page (the audited downlink), if its data was exported (python -m src.demo.export_audit).
+    # Its thumbnails are small JPEGs of real Sentinel-2 photos in demo/audit_thumbs/ (commit them to publish).
+    if (DEMO / "audit_data.js").exists():
+        shutil.copy(DEMO / "audit.html", SITE / "demo" / "audit.html")
+        shutil.copy(DEMO / "audit_data.js", SITE / "demo" / "audit_data.js")
+        if (DEMO / "audit_thumbs").exists():
+            shutil.copytree(DEMO / "audit_thumbs", SITE / "demo" / "audit_thumbs")
+
     names = photo_names()
     print(f"Making {len(names)} thumbnails (downloads photos you don't have yet)...")
     for i, name in enumerate(names, 1):
